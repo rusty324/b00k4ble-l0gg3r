@@ -469,6 +469,11 @@
     </div>
 
     <div class="form-group">
+      <label>Series <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light)">(optional)</span></label>
+      <input type="text" class="plain" id="f-series" placeholder="e.g. The Expanse #1">
+    </div>
+
+    <div class="form-group">
       <label>Format <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light)">(select all that apply)</span></label>
       <div class="radio-group" id="f-format-group">
         <label class="radio-btn active" for="fmt-physical">📚 Physical<input type="checkbox" id="fmt-physical" value="physical" checked></label>
@@ -622,6 +627,7 @@
           <div class="book-title">${esc(b.title)}</div>
         </div>
         ${b.author ? `<div class="book-author">${esc(b.author)}</div>` : ''}
+        ${b.series ? `<div class="book-author" style="font-style:italic">📖 ${esc(b.series)}</div>` : ''}
         <div class="book-meta">
           ${formatBadges}
           <span class="badge ${stCls}">${statusLabel}</span>
@@ -653,6 +659,7 @@
     document.getElementById('modalTitle').textContent = 'Add a book';
     document.getElementById('f-title').value = '';
     document.getElementById('f-author').value = '';
+    document.getElementById('f-series').value = '';
     document.getElementById('f-notes').value = '';
     setFormats(['physical']);
     setRadio('status', 'want');
@@ -670,6 +677,7 @@
     document.getElementById('modalTitle').textContent = 'Edit book';
     document.getElementById('f-title').value = b.title;
     document.getElementById('f-author').value = b.author || '';
+    document.getElementById('f-series').value = b.series || '';
     document.getElementById('f-notes').value = b.notes || '';
     // migrate old single-format string to array
     const fmts = b.formats ? b.formats : (b.format ? [b.format] : ['physical']);
@@ -735,6 +743,7 @@
     const title = document.getElementById('f-title').value.trim();
     if (!title) { document.getElementById('f-title').focus(); return; }
     const author = document.getElementById('f-author').value.trim();
+    const series = document.getElementById('f-series').value.trim();
     const formats = [...document.querySelectorAll('#f-format-group input[type="checkbox"]:checked')].map(cb => cb.value);
     if (!formats.length) {
       document.getElementById('fmt-error').style.display = 'block';
@@ -746,9 +755,9 @@
 
     if (editingId !== null) {
       const i = books.findIndex(b => b.id === editingId);
-      if (i !== -1) books[i] = { ...books[i], title, author, formats, status, notes, rating: currentRating };
+      if (i !== -1) books[i] = { ...books[i], title, author, series, formats, status, notes, rating: currentRating };
     } else {
-      books.push({ id: Date.now(), title, author, formats, status, notes, rating: currentRating });
+      books.push({ id: Date.now(), title, author, series, formats, status, notes, rating: currentRating });
     }
     save();
     closeModal();
