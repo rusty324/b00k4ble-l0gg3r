@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --amber-50: #FAEEDA;
+    --amber-100: #FAC775;
+    --amber-200: #EF9F27;
+    --amber-600: #854F0B;
+    --amber-800: #633806;
+    --amber-900: #412402;
+    --gray-50: #F1EFE8;
+    --gray-100: #D3D1C7;
+    --gray-200: #B4B2A9;
+    --gray-400: #888780;
+    --gray-600: #5F5E5A;
+    --gray-800: #444441;
+    --gray-900: #2C2C2A;
+    --teal-50: #E1F5EE;
+    --teal-200: #5DCAA5;
+    --teal-600: #0F6E56;
+    --teal-800: #085041;
+    --coral-50: #FAECE7;
+    --coral-200: #F0997B;
+    --coral-600: #993C1D;
+    --blue-50: #E6F1FB;
+    --blue-200: #85B7EB;
+    --blue-600: #185FA5;
+    --bg: #FAF8F4;
+    --surface: #FFFFF8;
+    --border: rgba(66,36,2,0.12);
+    --border-mid: rgba(66,36,2,0.2);
+    --text: #2C2C2A;
+    --text-muted: #888780;
+    --text-light: #B4B2A9;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+  }
+
+  /* ─── Layout ─── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .brand {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--amber-900);
+    letter-spacing: -0.02em;
+  }
+
+  .brand span { color: var(--amber-200); }
+
+  .header-actions { display: flex; gap: 0.5rem; align-items: center; }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+  /* ─── Stats bar ─── */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.25rem;
+  }
+
+  .stat-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    font-weight: 500;
+    color: var(--amber-900);
+    line-height: 1;
+  }
+
+  .stat-sub {
+    font-size: 11px;
+    color: var(--text-light);
+    margin-top: 0.2rem;
+  }
+
+  /* ─── Toolbar ─── */
+  .toolbar {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .search-wrap svg {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  input[type="text"], input[type="search"] {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.875rem 0.55rem 2.25rem;
+    font-size: 14px;
+    color: var(--text);
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  input[type="text"]:focus, input[type="search"]:focus { border-color: var(--amber-200); }
+
+  .filter-pills { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+  .pill {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    font-weight: 400;
+  }
+
+  .pill:hover { border-color: var(--amber-100); color: var(--amber-800); }
+  .pill.active { background: var(--amber-900); border-color: var(--amber-900); color: var(--amber-50); }
+
+  /* ─── Book grid ─── */
+  .books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  .book-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    transition: border-color 0.15s, transform 0.15s;
+    cursor: default;
+  }
+
+  .book-card:hover { border-color: var(--border-mid); transform: translateY(-1px); }
+
+  .book-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+
+  .book-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--amber-900);
+    line-height: 1.3;
+    flex: 1;
+  }
+
+  .book-author { font-size: 13px; color: var(--text-muted); }
+
+  .book-meta { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin-top: 0.2rem; }
+
+  .badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+  }
+
+  .badge-physical { background: var(--amber-50); color: var(--amber-800); }
+  .badge-ebook    { background: var(--blue-50); color: var(--blue-600); }
+  .badge-audio    { background: var(--teal-50); color: var(--teal-600); }
+
+  .badge-read     { background: var(--teal-50); color: var(--teal-600); }
+  .badge-reading  { background: var(--amber-50); color: var(--amber-800); }
+  .badge-want     { background: var(--gray-50); color: var(--gray-600); }
+
+  .stars { color: var(--amber-200); font-size: 13px; letter-spacing: 1px; }
+  .stars .empty { color: var(--gray-100); }
+
+  .book-notes { font-size: 13px; color: var(--text-muted); font-style: italic; line-height: 1.4; }
+
+  .book-actions { display: flex; gap: 0.5rem; margin-top: auto; padding-top: 0.5rem; }
+
+  /* ─── Buttons ─── */
+  .btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 0.45rem 0.9rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .btn:hover { border-color: var(--border-mid); background: var(--gray-50); }
+  .btn-primary { background: var(--amber-900); border-color: var(--amber-900); color: var(--amber-50); }
+  .btn-primary:hover { background: var(--amber-800); border-color: var(--amber-800); }
+  .btn-danger { color: var(--coral-600); }
+  .btn-danger:hover { background: var(--coral-50); border-color: var(--coral-200); }
+  .btn-sm { font-size: 12px; padding: 0.3rem 0.65rem; }
+
+  /* ─── Modal ─── */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(42,36,2,0.35);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border-radius: 14px;
+    border: 1px solid var(--border-mid);
+    width: 100%;
+    max-width: 520px;
+    padding: 1.75rem;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: var(--amber-900);
+    margin-bottom: 1.25rem;
+  }
+
+  .form-group { margin-bottom: 1rem; }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  input[type="text"].plain, textarea, select {
+    font-family: 'DM Sans', sans-serif;
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 0.875rem;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  input[type="text"].plain:focus, textarea:focus, select:focus { border-color: var(--amber-200); }
+  textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+
+  .radio-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+  .radio-btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    padding: 0.4rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .radio-btn.active { background: var(--amber-900); border-color: var(--amber-900); color: var(--amber-50); }
+  input[type="radio"] { display: none; }
+
+  .star-picker { display: flex; gap: 4px; }
+
+  .star-btn {
+    font-size: 22px;
+    cursor: pointer;
+    color: var(--gray-100);
+    background: none;
+    border: none;
+    transition: color 0.1s, transform 0.1s;
+    line-height: 1;
+    padding: 0;
+  }
+
+  .star-btn.lit { color: var(--amber-200); }
+  .star-btn:hover { transform: scale(1.2); }
+
+  .modal-footer { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem; }
+
+  /* ─── Empty state ─── */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-muted);
+  }
+
+  .empty-state svg { margin-bottom: 1rem; opacity: 0.35; }
+  .empty-state h3 { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--amber-900); margin-bottom: 0.5rem; }
+
+  /* ─── Sort select ─── */
+  select.sort-select {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 0.875rem;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    outline: none;
+  }
+
+  /* ─── Import/Export ─── */
+  #importFile { display: none; }
+
+  /* ─── Scrollbar ─── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--gray-100); border-radius: 3px; }
+
+  @media (max-width: 600px) {
+    header { padding: 1rem; }
+    main { padding: 1.25rem 1rem; }
+    .brand { font-size: 1.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">My<span>·</span>Library</div>
+  <div class="header-actions">
+    <button class="btn btn-sm" onclick="exportData()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export
+    </button>
+    <button class="btn btn-sm" onclick="document.getElementById('importFile').click()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Import
+    </button>
+    <input type="file" id="importFile" accept=".json" onchange="importData(event)">
+    <button class="btn btn-primary" onclick="openAddModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add book
+    </button>
+  </div>
+</header>
+
+<main>
+  <!-- Stats -->
+  <div class="stats-bar" id="statsBar"></div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" id="searchInput" placeholder="Search title or author…" oninput="render()">
+    </div>
+
+    <div class="filter-pills" id="formatPills">
+      <button class="pill active" data-format="all" onclick="setFilter('format','all',this)">All formats</button>
+      <button class="pill" data-format="physical" onclick="setFilter('format','physical',this)">📚 Physical</button>
+      <button class="pill" data-format="ebook" onclick="setFilter('format','ebook',this)">📱 E-book</button>
+      <button class="pill" data-format="audio" onclick="setFilter('format','audio',this)">🎧 Audiobook</button>
+    </div>
+
+    <div class="filter-pills" id="statusPills">
+      <button class="pill active" data-status="all" onclick="setFilter('status','all',this)">All statuses</button>
+      <button class="pill" data-status="read" onclick="setFilter('status','read',this)">Read</button>
+      <button class="pill" data-status="reading" onclick="setFilter('status','reading',this)">Reading</button>
+      <button class="pill" data-status="want" onclick="setFilter('status','want',this)">Want to read</button>
+    </div>
+
+    <select class="sort-select" id="sortSelect" onchange="render()">
+      <option value="added-desc">Newest added</option>
+      <option value="added-asc">Oldest added</option>
+      <option value="title-asc">Title A–Z</option>
+      <option value="title-desc">Title Z–A</option>
+      <option value="author-asc">Author A–Z</option>
+      <option value="rating-desc">Rating ↓</option>
+    </select>
+  </div>
+
+  <!-- Grid -->
+  <div class="books-grid" id="booksGrid"></div>
+</main>
+
+<!-- Add / Edit Modal -->
+<div class="modal-backdrop" id="modal" onclick="handleBackdropClick(event)">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Add a book</div>
+
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" class="plain" id="f-title" placeholder="Book title" required>
+    </div>
+
+    <div class="form-group">
+      <label>Author</label>
+      <input type="text" class="plain" id="f-author" placeholder="Author name">
+    </div>
+
+    <div class="form-group">
+      <label>Format <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light)">(select all that apply)</span></label>
+      <div class="radio-group" id="f-format-group">
+        <label class="radio-btn active" for="fmt-physical">📚 Physical<input type="checkbox" id="fmt-physical" value="physical" checked></label>
+        <label class="radio-btn" for="fmt-ebook">📱 E-book<input type="checkbox" id="fmt-ebook" value="ebook"></label>
+        <label class="radio-btn" for="fmt-audio">🎧 Audiobook<input type="checkbox" id="fmt-audio" value="audio"></label>
+      </div>
+      <div id="fmt-error" style="display:none;font-size:12px;color:var(--coral-600);margin-top:0.35rem">Select at least one format.</div>
+    </div>
+
+    <div class="form-group">
+      <label>Status</label>
+      <div class="radio-group" id="f-status-group">
+        <label class="radio-btn active" for="st-want">Want to read<input type="radio" name="status" id="st-want" value="want" checked></label>
+        <label class="radio-btn" for="st-reading">Reading<input type="radio" name="status" id="st-reading" value="reading"></label>
+        <label class="radio-btn" for="st-read">Read<input type="radio" name="status" id="st-read" value="read"></label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Rating</label>
+      <div class="star-picker" id="starPicker">
+        <button class="star-btn" type="button" data-val="1" onclick="setRating(1)">★</button>
+        <button class="star-btn" type="button" data-val="2" onclick="setRating(2)">★</button>
+        <button class="star-btn" type="button" data-val="3" onclick="setRating(3)">★</button>
+        <button class="star-btn" type="button" data-val="4" onclick="setRating(4)">★</button>
+        <button class="star-btn" type="button" data-val="5" onclick="setRating(5)">★</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea id="f-notes" placeholder="Optional notes, thoughts, quotes…"></textarea>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveBook()">Save book</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ─── State ───────────────────────────────────────────────
+  let books = JSON.parse(localStorage.getItem('myLibrary') || '[]');
+  let filters = { format: 'all', status: 'all' };
+  let editingId = null;
+  let currentRating = 0;
+
+  // ─── Persist ─────────────────────────────────────────────
+  function save() {
+    localStorage.setItem('myLibrary', JSON.stringify(books));
+  }
+
+  // ─── Filters ─────────────────────────────────────────────
+  function setFilter(type, val, el) {
+    filters[type] = val;
+    const group = type === 'format' ? 'formatPills' : 'statusPills';
+    document.querySelectorAll('#' + group + ' .pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    render();
+  }
+
+  // ─── Stats ───────────────────────────────────────────────
+  function renderStats() {
+    const total = books.length;
+    const read = books.filter(b => b.status === 'read').length;
+    const getFmts = b => b.formats || (b.format ? [b.format] : []);
+    const physical = books.filter(b => getFmts(b).includes('physical')).length;
+    const ebook = books.filter(b => getFmts(b).includes('ebook')).length;
+    const audio = books.filter(b => getFmts(b).includes('audio')).length;
+    const rated = books.filter(b => b.rating > 0);
+    const avgRating = rated.length ? (rated.reduce((s, b) => s + b.rating, 0) / rated.length).toFixed(1) : '—';
+
+    document.getElementById('statsBar').innerHTML = `
+      <div class="stat-card">
+        <div class="stat-label">Total books</div>
+        <div class="stat-value">${total}</div>
+        <div class="stat-sub">${read} read · ${books.filter(b=>b.status==='reading').length} in progress</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Physical</div>
+        <div class="stat-value">${physical}</div>
+        <div class="stat-sub">${total ? Math.round(physical/total*100) : 0}% of collection</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">E-books</div>
+        <div class="stat-value">${ebook}</div>
+        <div class="stat-sub">${total ? Math.round(ebook/total*100) : 0}% of collection</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Audiobooks</div>
+        <div class="stat-value">${audio}</div>
+        <div class="stat-sub">${total ? Math.round(audio/total*100) : 0}% of collection</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg rating</div>
+        <div class="stat-value">${avgRating}</div>
+        <div class="stat-sub">${rated.length} rated books</div>
+      </div>
+    `;
+  }
+
+  // ─── Render grid ─────────────────────────────────────────
+  function render() {
+    renderStats();
+    const query = document.getElementById('searchInput').value.toLowerCase();
+    const sort = document.getElementById('sortSelect').value;
+
+    let filtered = books.filter(b => {
+      const fmts = b.formats || (b.format ? [b.format] : []);
+      if (filters.format !== 'all' && !fmts.includes(filters.format)) return false;
+      if (filters.status !== 'all' && b.status !== filters.status) return false;
+      if (query && !b.title.toLowerCase().includes(query) && !(b.author||'').toLowerCase().includes(query)) return false;
+      return true;
+    });
+
+    filtered.sort((a, b) => {
+      switch (sort) {
+        case 'added-asc':  return a.id - b.id;
+        case 'title-asc':  return a.title.localeCompare(b.title);
+        case 'title-desc': return b.title.localeCompare(a.title);
+        case 'author-asc': return a.author.localeCompare(b.author);
+        case 'rating-desc':return (b.rating || 0) - (a.rating || 0);
+        default:           return b.id - a.id;
+      }
+    });
+
+    const grid = document.getElementById('booksGrid');
+
+    if (!filtered.length) {
+      grid.innerHTML = `
+        <div class="empty-state" style="grid-column:1/-1">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <h3>${books.length === 0 ? 'Your library is empty' : 'No books match your filters'}</h3>
+          <p style="font-size:14px">${books.length === 0 ? 'Add your first book to get started.' : 'Try adjusting your search or filters.'}</p>
+        </div>`;
+      return;
+    }
+
+    grid.innerHTML = filtered.map(b => {
+      const fmts = b.formats || (b.format ? [b.format] : []);
+      const fmtLabels = { physical: '📚 Physical', ebook: '📱 E-book', audio: '🎧 Audiobook' };
+      const fmtCls   = { physical: 'badge-physical', ebook: 'badge-ebook', audio: 'badge-audio' };
+      const formatBadges = fmts.map(f => `<span class="badge ${fmtCls[f]}">${fmtLabels[f]}</span>`).join('');
+      const statusLabel = { read: 'Read', reading: 'Reading', want: 'Want to read' }[b.status];
+      const stCls  = { read: 'badge-read', reading: 'badge-reading', want: 'badge-want' }[b.status];
+      const stars = b.rating ? '★'.repeat(b.rating) + '<span class="empty">' + '★'.repeat(5-b.rating) + '</span>' : '';
+      return `
+      <div class="book-card">
+        <div class="book-header">
+          <div class="book-title">${esc(b.title)}</div>
+        </div>
+        ${b.author ? `<div class="book-author">${esc(b.author)}</div>` : ''}
+        <div class="book-meta">
+          ${formatBadges}
+          <span class="badge ${stCls}">${statusLabel}</span>
+          ${stars ? `<span class="stars">${stars}</span>` : ''}
+        </div>
+        ${b.notes ? `<div class="book-notes">${esc(b.notes)}</div>` : ''}
+        <div class="book-actions">
+          <button class="btn btn-sm" onclick="openEditModal(${b.id})">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+          </button>
+          <button class="btn btn-sm btn-danger" onclick="deleteBook(${b.id})">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            Delete
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function esc(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ─── Modal ────────────────────────────────────────────────
+  function openAddModal() {
+    editingId = null;
+    currentRating = 0;
+    document.getElementById('modalTitle').textContent = 'Add a book';
+    document.getElementById('f-title').value = '';
+    document.getElementById('f-author').value = '';
+    document.getElementById('f-notes').value = '';
+    setFormats(['physical']);
+    setRadio('status', 'want');
+    updateStars(0);
+    document.getElementById('fmt-error').style.display = 'none';
+    document.getElementById('modal').classList.add('open');
+    document.getElementById('f-title').focus();
+  }
+
+  function openEditModal(id) {
+    const b = books.find(x => x.id === id);
+    if (!b) return;
+    editingId = id;
+    currentRating = b.rating || 0;
+    document.getElementById('modalTitle').textContent = 'Edit book';
+    document.getElementById('f-title').value = b.title;
+    document.getElementById('f-author').value = b.author || '';
+    document.getElementById('f-notes').value = b.notes || '';
+    // migrate old single-format string to array
+    const fmts = b.formats ? b.formats : (b.format ? [b.format] : ['physical']);
+    setFormats(fmts);
+    setRadio('status', b.status);
+    updateStars(currentRating);
+    document.getElementById('fmt-error').style.display = 'none';
+    document.getElementById('modal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('modal').classList.remove('open');
+  }
+
+  function handleBackdropClick(e) {
+    if (e.target === document.getElementById('modal')) closeModal();
+  }
+
+  function setFormats(vals) {
+    document.querySelectorAll('#f-format-group input[type="checkbox"]').forEach(cb => {
+      cb.checked = vals.includes(cb.value);
+      cb.closest('.radio-btn').classList.toggle('active', cb.checked);
+    });
+  }
+
+  function setRadio(name, val) {
+    document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
+      r.checked = r.value === val;
+      r.closest('.radio-btn').classList.toggle('active', r.value === val);
+    });
+  }
+
+  // Radio button style toggle (status)
+  document.querySelectorAll('.radio-btn input[type="radio"]').forEach(r => {
+    r.addEventListener('change', function() {
+      const group = this.closest('.radio-group');
+      group.querySelectorAll('.radio-btn').forEach(l => l.classList.remove('active'));
+      this.closest('.radio-btn').classList.add('active');
+    });
+  });
+
+  // Checkbox style toggle (format)
+  document.querySelectorAll('#f-format-group input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', function() {
+      this.closest('.radio-btn').classList.toggle('active', this.checked);
+    });
+  });
+
+  // ─── Stars ───────────────────────────────────────────────
+  function setRating(val) {
+    currentRating = currentRating === val ? 0 : val;
+    updateStars(currentRating);
+  }
+
+  function updateStars(val) {
+    document.querySelectorAll('.star-btn').forEach(btn => {
+      btn.classList.toggle('lit', parseInt(btn.dataset.val) <= val);
+    });
+  }
+
+  // ─── CRUD ────────────────────────────────────────────────
+  function saveBook() {
+    const title = document.getElementById('f-title').value.trim();
+    if (!title) { document.getElementById('f-title').focus(); return; }
+    const author = document.getElementById('f-author').value.trim();
+    const formats = [...document.querySelectorAll('#f-format-group input[type="checkbox"]:checked')].map(cb => cb.value);
+    if (!formats.length) {
+      document.getElementById('fmt-error').style.display = 'block';
+      return;
+    }
+    document.getElementById('fmt-error').style.display = 'none';
+    const status = document.querySelector('input[name="status"]:checked').value;
+    const notes = document.getElementById('f-notes').value.trim();
+
+    if (editingId !== null) {
+      const i = books.findIndex(b => b.id === editingId);
+      if (i !== -1) books[i] = { ...books[i], title, author, formats, status, notes, rating: currentRating };
+    } else {
+      books.push({ id: Date.now(), title, author, formats, status, notes, rating: currentRating });
+    }
+    save();
+    closeModal();
+    render();
+  }
+
+  function deleteBook(id) {
+    const b = books.find(x => x.id === id);
+    if (!b) return;
+    if (!confirm(`Delete "${b.title}"?`)) return;
+    books = books.filter(x => x.id !== id);
+    save();
+    render();
+  }
+
+  // ─── Import / Export ─────────────────────────────────────
+  function exportData() {
+    const blob = new Blob([JSON.stringify(books, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'my-library.json';
+    a.click();
+  }
+
+  function importData(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (!Array.isArray(data)) throw new Error('Invalid format');
+        if (!confirm(`Import ${data.length} books? This will merge with your existing library.`)) return;
+        const existingIds = new Set(books.map(b => b.id));
+        const newBooks = data.filter(b => !existingIds.has(b.id));
+        books = [...books, ...newBooks];
+        save();
+        render();
+        alert(`Imported ${newBooks.length} new books (${data.length - newBooks.length} duplicates skipped).`);
+      } catch(err) {
+        alert('Failed to import: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+
+  // ─── Init ─────────────────────────────────────────────────
+  render();
+</script>
+</body>
+</html>
