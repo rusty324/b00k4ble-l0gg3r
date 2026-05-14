@@ -792,7 +792,17 @@
         if (!Array.isArray(data)) throw new Error('Invalid format');
         if (!confirm(`Import ${data.length} books? This will merge with your existing library.`)) return;
         const existingIds = new Set(books.map(b => b.id));
-        const newBooks = data.filter(b => !existingIds.has(b.id));
+        const newBooks = data
+          .filter(b => !existingIds.has(b.id))
+          .map(b => ({
+            ...b,
+            // normalize formats: string → array, missing → derive from format field
+            formats: Array.isArray(b.formats)
+              ? b.formats
+              : b.formats
+                ? [b.formats]
+                : b.format ? [b.format] : ['physical']
+          }));
         books = [...books, ...newBooks];
         save();
         render();
