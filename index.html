@@ -517,7 +517,19 @@
 
 <script>
   // ─── State ───────────────────────────────────────────────
-  let books = JSON.parse(localStorage.getItem('myLibrary') || '[]');
+  function normalizeBook(b) {
+    return {
+      ...b,
+      author: Array.isArray(b.author) ? b.author.join(', ') : (b.author || '').replace(/[;,\s]+$/, ''),
+      status: ({ 'want to read': 'want', 'reading': 'reading', 'read': 'read' }[b.status] || b.status || 'want'),
+      formats: Array.isArray(b.formats) ? b.formats
+        : b.formats ? [b.formats]
+        : Array.isArray(b.format) ? b.format
+        : b.format ? [b.format]
+        : ['physical']
+    };
+  }
+  let books = JSON.parse(localStorage.getItem('myLibrary') || '[]').map(normalizeBook);
   let filters = { format: 'all', status: 'all' };
   let editingId = null;
   let currentRating = 0;
@@ -791,29 +803,8 @@
         const data = JSON.parse(ev.target.result);
         if (!Array.isArray(data)) throw new Error('Invalid format');
         if (!confirm(`Import ${data.length} books? This will merge with your existing library.`)) return;
-        const statusMap = { 'want to read': 'want', 'reading': 'reading', 'read': 'read' };
         const existingIds = new Set(books.map(b => b.id));
-        const newBooks = data
-          .filter(b => !existingIds.has(b.id))
-          .map(b => ({
-            ...b,
-            // normalize author: array → comma-joined string, trim trailing punctuation
-            author: Array.isArray(b.author)
-              ? b.author.join(', ')
-              : (b.author || '').replace(/[;,\s]+$/, ''),
-            // normalize status: "want to read" → "want"
-            status: statusMap[b.status] || b.status || 'want',
-            // normalize formats: string → array, missing → derive from format field
-            formats: Array.isArray(b.formats)
-              ? b.formats
-              : b.formats
-                ? [b.formats]
-                : Array.isArray(b.format)
-                  ? b.format
-                  : b.format
-                    ? [b.format]
-                    : ['physical']
-          }));
+        const newBooks = data.filter(b => !existingIds.has(b.id)).map(normalizeBook);
         books = [...books, ...newBooks];
         save();
         render();
