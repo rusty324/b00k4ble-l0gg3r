@@ -595,7 +595,7 @@
         case 'added-asc':  return a.id - b.id;
         case 'title-asc':  return a.title.localeCompare(b.title);
         case 'title-desc': return b.title.localeCompare(a.title);
-        case 'author-asc': return a.author.localeCompare(b.author);
+        case 'author-asc': return (a.author||'').localeCompare(b.author||'');
         case 'rating-desc':return (b.rating || 0) - (a.rating || 0);
         default:           return b.id - a.id;
       }
@@ -791,17 +791,28 @@
         const data = JSON.parse(ev.target.result);
         if (!Array.isArray(data)) throw new Error('Invalid format');
         if (!confirm(`Import ${data.length} books? This will merge with your existing library.`)) return;
+        const statusMap = { 'want to read': 'want', 'reading': 'reading', 'read': 'read' };
         const existingIds = new Set(books.map(b => b.id));
         const newBooks = data
           .filter(b => !existingIds.has(b.id))
           .map(b => ({
             ...b,
+            // normalize author: array → comma-joined string, trim trailing punctuation
+            author: Array.isArray(b.author)
+              ? b.author.join(', ')
+              : (b.author || '').replace(/[;,\s]+$/, ''),
+            // normalize status: "want to read" → "want"
+            status: statusMap[b.status] || b.status || 'want',
             // normalize formats: string → array, missing → derive from format field
             formats: Array.isArray(b.formats)
               ? b.formats
               : b.formats
                 ? [b.formats]
-                : b.format ? [b.format] : ['physical']
+                : Array.isArray(b.format)
+                  ? b.format
+                  : b.format
+                    ? [b.format]
+                    : ['physical']
           }));
         books = [...books, ...newBooks];
         save();
