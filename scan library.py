@@ -88,14 +88,15 @@ def read_calibre(calibre_path):
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
 
-        # Pull books with authors (grouped) and first series association
+        # Pull books with authors (grouped), series, and rating.
+        # Ratings are NOT a column on books — they live in a separate
+        # ratings table joined via books_ratings_link.
         cur.execute("""
             SELECT
                 b.id,
                 b.title,
                 b.timestamp,
-                b.rating,
-                b.comment,
+                r.rating                     AS rating,
                 GROUP_CONCAT(a.name, ' & ') AS authors,
                 s.name                       AS series_name,
                 bsl.series_index             AS series_index
@@ -104,6 +105,8 @@ def read_calibre(calibre_path):
             LEFT JOIN authors             a   ON bal.author = a.id
             LEFT JOIN books_series_link   bsl ON b.id = bsl.book
             LEFT JOIN series              s   ON bsl.series = s.id
+            LEFT JOIN books_ratings_link  brl ON b.id = brl.book
+            LEFT JOIN ratings             r   ON brl.rating = r.id
             GROUP BY b.id
             ORDER BY b.timestamp DESC
         """)
