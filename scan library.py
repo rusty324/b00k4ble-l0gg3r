@@ -99,7 +99,7 @@ def read_calibre(calibre_path):
                 r.rating                     AS rating,
                 GROUP_CONCAT(a.name, ' & ') AS authors,
                 s.name                       AS series_name,
-                bsl.series_index             AS series_index
+                b.series_index             AS series_index
             FROM books b
             LEFT JOIN books_authors_link  bal ON b.id = bal.book
             LEFT JOIN authors             a   ON bal.author = a.id
