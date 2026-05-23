@@ -183,7 +183,13 @@ def read_abs_metadata(metadata_path):
             meta = data.get('metadata', data)
 
             title  = (meta.get('title') or '').strip()
-            author = (meta.get('authorName') or meta.get('author') or '').strip()
+
+            # ABS stores authors as a list of strings: ["Author One", "Author Two"]
+            raw_authors = meta.get('authors') or meta.get('author') or meta.get('authorName') or ''
+            if isinstance(raw_authors, list):
+                author = ', '.join(a.strip() for a in raw_authors if a.strip())
+            else:
+                author = str(raw_authors).strip()
 
             if not title:
                 continue
@@ -410,21 +416,37 @@ def merge_with_existing(scanned, existing_path):
 
 # ─── Main ───────────────────────────────────────────────────────────────────
 
+AUTO_CALIBRE      = '/mnt/media/ebooks/Calibre Library'
+AUTO_ABS_METADATA = '/mnt/docker-data/audiobookshelf/metadata'
+AUTO_OUTPUT       = 'my-library.json'
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Scan Calibre + Audiobookshelf and output my-library.json',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__
     )
+    parser.add_argument('--auto',           action='store_true',
+                        help=f'Use default paths: Calibre={AUTO_CALIBRE}, ABS={AUTO_ABS_METADATA}, '
+                             f'output={AUTO_OUTPUT}. Also auto-merges with existing output if present.')
     parser.add_argument('--calibre',        metavar='PATH', help='Calibre library root (contains metadata.db)')
     parser.add_argument('--abs-metadata',   metavar='PATH', help='ABS config/metadata dir (best for ABS)')
-    parser.add_argument('--audiobookshelf', metavar='PATH', help='ABS media folder — fallback audio scan')
+    parser.add_argument('--audiobookshelf', metavar='PATH', help='ABS media folder - fallback audio scan')
     parser.add_argument('--merge',          metavar='PATH', help='Existing my-library.json to merge with')
     parser.add_argument('--output',         metavar='PATH', default='my-library.json', help='Output path (default: my-library.json)')
     args = parser.parse_args()
 
+    if args.auto:
+        args.calibre      = args.calibre      or AUTO_CALIBRE
+        args.abs_metadata = args.abs_metadata or AUTO_ABS_METADATA
+        args.output       = AUTO_OUTPUT
+        if args.merge is None and Path(AUTO_OUTPUT).exists():
+            args.merge = AUTO_OUTPUT
+            print(f"[auto] Merging with existing {AUTO_OUTPUT}", file=sys.stderr)
+
     if not any([args.calibre, args.abs_metadata, args.audiobookshelf]):
-        parser.error('Provide at least one of: --calibre, --abs-metadata, --audiobookshelf')
+        parser.error('Provide at least one of: --auto, --calibre, --abs-metadata, --audiobookshelf')
 
     all_books = []
 
