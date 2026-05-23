@@ -318,6 +318,91 @@ def scan_audio_folder(audio_path):
 SOURCE_PRIORITY = {'calibre': 0, 'abs_metadata': 1, 'audio_scan': 2}
 
 
+
+def diagnose_abs(metadata_path):
+    """
+    Audit the ABS metadata directory and report exactly why items are missing.
+    Compares item directories against what was successfully parsed.
+    """
+    base = Path(metadata_path)
+    items_dir = base / 'items'
+    if not items_dir.exists():
+        alt = base / 'metadata' / 'items'
+        if alt.exists():
+            items_dir = alt
+        else:
+            print(f"[diagnose] No items/ dir found under {base}", file=sys.stderr)
+            return
+
+    item_dirs = [d for d in items_dir.iterdir() if d.is_dir()]
+    print(f"\n[diagnose] {len(item_dirs)} item directories in {items_dir}")
+
+    no_metadata   = []
+    empty_title   = []
+    parse_error   = []
+    ok            = []
+    duplicates    = {}
+
+    for item_dir in sorted(item_dirs):
+        mf = item_dir / 'metadata.json'
+        if not mf.exists():
+            no_metadata.append(item_dir.name)
+            continue
+        try:
+            with open(mf, encoding='utf-8') as f:
+                data = json.load(f)
+            meta  = data.get('metadata', data)
+            title = (meta.get('title') or '').strip()
+            if not title:
+                empty_title.append(str(mf))
+                continue
+            raw_authors = meta.get('authors') or meta.get('author') or meta.get('authorName') or ''
+            if isinstance(raw_authors, list):
+                author = ', '.join(a.strip() for a in raw_authors if a.strip())
+            else:
+                author = str(raw_authors).strip()
+            key = (title.lower(), author.lower())
+            if key in duplicates:
+                duplicates[key].append(title)
+            else:
+                duplicates[key] = [title]
+            ok.append(title)
+        except Exception as e:
+            parse_error.append((str(mf), str(e)))
+
+    dup_groups = {k: v for k, v in duplicates.items() if len(v) > 1}
+
+    print(f"[diagnose] {len(ok)} parsed successfully")
+    print(f"[diagnose] {len(no_metadata)} directories missing metadata.json")
+    print(f"[diagnose] {len(empty_title)} items with empty/missing title")
+    print(f"[diagnose] {len(parse_error)} items that failed to parse")
+    print(f"[diagnose] {len(dup_groups)} duplicate title+author pairs (collapsed by dedup)")
+
+    if no_metadata:
+        print(f"\n--- Missing metadata.json ({len(no_metadata)}) ---")
+        for d in no_metadata:
+            print(f"  {d}")
+
+    if empty_title:
+        print(f"\n--- Empty title ({len(empty_title)}) ---")
+        for p in empty_title:
+            print(f"  {p}")
+
+    if parse_error:
+        print(f"\n--- Parse errors ({len(parse_error)}) ---")
+        for p, e in parse_error:
+            print(f"  {p}: {e}")
+
+    if dup_groups:
+        print(f"\n--- Duplicates collapsed by dedup ({len(dup_groups)} groups) ---")
+        for (title, author), entries in dup_groups.items():
+            print(f"  '{title}' by '{author}' appears {len(entries)}x")
+
+    total_accounted = len(ok) - sum(len(v) - 1 for v in dup_groups.values())
+    print(f"\n[diagnose] Net after dedup: {total_accounted}  (ABS reports: ?)")
+    print(f"[diagnose] Unaccounted gap: {len(item_dirs) - len(ok) - len(no_metadata) - len(empty_title) - len(parse_error)}")
+
+
 def merge_sources(all_books):
     """
     Merge books from all sources.
@@ -427,6 +512,9 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__
     )
+    parser.add_argument('--diagnose-abs', metavar='PATH', nargs='?', const='AUTO',
+                        help='Audit ABS metadata dir and report missing/skipped items. '
+                             'Uses --abs-metadata path or AUTO_ABS_METADATA if no path given.')
     parser.add_argument('--auto',           action='store_true',
                         help=f'Use default paths: Calibre={AUTO_CALIBRE}, ABS={AUTO_ABS_METADATA}, '
                              f'output={AUTO_OUTPUT}. Also auto-merges with existing output if present.')
@@ -444,6 +532,14 @@ def main():
         if args.merge is None and Path(AUTO_OUTPUT).exists():
             args.merge = AUTO_OUTPUT
             print(f"[auto] Merging with existing {AUTO_OUTPUT}", file=sys.stderr)
+
+    # Handle --diagnose-abs (can be used standalone)
+    if args.diagnose_abs is not None:
+        diag_path = (AUTO_ABS_METADATA if args.diagnose_abs == 'AUTO'
+                     else args.diagnose_abs)
+        diagnose_abs(diag_path)
+        if not any([args.calibre, args.abs_metadata, args.audiobookshelf]):
+            return
 
     if not any([args.calibre, args.abs_metadata, args.audiobookshelf]):
         parser.error('Provide at least one of: --auto, --calibre, --abs-metadata, --audiobookshelf')
