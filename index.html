@@ -146,6 +146,9 @@
   .empty-state svg { margin-bottom: 1rem; opacity: 0.3; }
   .empty-state h3 { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--amber-900); margin-bottom: 0.5rem; }
 
+  #tags-ac .ac-item { padding: 0.45rem 0.875rem; font-size: 13px; cursor: pointer; color: var(--text); transition: background 0.1s; }
+  #tags-ac .ac-item:hover, #tags-ac .ac-item.ac-active { background: var(--amber-50); color: var(--amber-900); }
+
   #importFile { display: none; }
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -238,15 +241,20 @@
     </div>
     <div class="form-group">
       <label>Author</label>
-      <input type="text" class="plain" id="f-author" placeholder="Author name">
+      <input type="text" class="plain" id="f-author" placeholder="Author name" autocomplete="off" list="dl-authors">
+      <datalist id="dl-authors"></datalist>
     </div>
     <div class="form-group">
       <label>Series <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light)">(optional)</span></label>
-      <input type="text" class="plain" id="f-series" placeholder="e.g. The Expanse #1">
+      <input type="text" class="plain" id="f-series" placeholder="e.g. The Expanse #1" autocomplete="off" list="dl-series">
+      <datalist id="dl-series"></datalist>
     </div>
     <div class="form-group">
       <label>Tags <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light)">(optional)</span></label>
-      <input type="text" class="plain" id="f-tags" placeholder="sci-fi, favorites, gift…">
+      <div style="position:relative">
+        <input type="text" class="plain" id="f-tags" placeholder="sci-fi, favorites, gift…" autocomplete="off" oninput="tagsAC()" onkeydown="tagsACKey(event)" onblur="setTimeout(closeTagsAC,150)">
+        <div id="tags-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border-mid);border-radius:8px;margin-top:3px;z-index:300;max-height:180px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.12)"></div>
+      </div>
       <div class="hint">Comma-separated. e.g. sci-fi, favorites</div>
     </div>
     <div class="form-group">
@@ -559,6 +567,81 @@ document.querySelectorAll('#f-format-group input[type="checkbox"]').forEach(cb =
   });
 });
 
+// ─── Datalists ────────────────────────────────────────────
+function populateDataLists() {
+  // Authors — unique, sorted
+  const authors = [...new Set(books.map(b => b.author).filter(Boolean))].sort();
+  document.getElementById('dl-authors').innerHTML =
+    authors.map(a => `<option value="${esc(a)}">`).join('');
+
+  // Series names — strip trailing index (#1, 3.0 etc) to get base names, then
+  // also include the full string so the exact value autocompletes
+  const seriesSet = new Set();
+  books.forEach(b => { if (b.series) seriesSet.add(b.series); });
+  const seriesList = [...seriesSet].sort();
+  document.getElementById('dl-series').innerHTML =
+    seriesList.map(s => `<option value="${esc(s)}">`).join('');
+}
+
+// ─── Tags autocomplete ────────────────────────────────────
+let tagsACIndex = -1;
+
+function tagsAC() {
+  const input = document.getElementById('f-tags');
+  const parts = input.value.split(',');
+  const query = parts[parts.length - 1].trim().toLowerCase();
+  const ac = document.getElementById('tags-ac');
+
+  if (!query) { closeTagsAC(); return; }
+
+  const existing = new Set(parts.slice(0, -1).map(t => t.trim().toLowerCase()));
+  const matches = allTags().filter(t =>
+    t.toLowerCase().includes(query) && !existing.has(t.toLowerCase())
+  );
+
+  if (!matches.length) { closeTagsAC(); return; }
+
+  tagsACIndex = -1;
+  ac.innerHTML = matches.map((t, i) =>
+    `<div class="ac-item" data-val="${esc(t)}" onmousedown="pickTag('${esc(t)}')">${esc(t)}</div>`
+  ).join('');
+  ac.style.display = 'block';
+}
+
+function tagsACKey(e) {
+  const ac = document.getElementById('tags-ac');
+  const items = ac.querySelectorAll('.ac-item');
+  if (!items.length || ac.style.display === 'none') return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    tagsACIndex = Math.min(tagsACIndex + 1, items.length - 1);
+    items.forEach((el, i) => el.classList.toggle('ac-active', i === tagsACIndex));
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    tagsACIndex = Math.max(tagsACIndex - 1, 0);
+    items.forEach((el, i) => el.classList.toggle('ac-active', i === tagsACIndex));
+  } else if (e.key === 'Enter' && tagsACIndex >= 0) {
+    e.preventDefault();
+    pickTag(items[tagsACIndex].dataset.val);
+  } else if (e.key === 'Escape') {
+    closeTagsAC();
+  }
+}
+
+function pickTag(tag) {
+  const input = document.getElementById('f-tags');
+  const parts = input.value.split(',');
+  parts[parts.length - 1] = ' ' + tag;
+  input.value = parts.join(',').replace(/^,\s*/, '') + ', ';
+  input.focus();
+  closeTagsAC();
+}
+
+function closeTagsAC() {
+  document.getElementById('tags-ac').style.display = 'none';
+  tagsACIndex = -1;
+}
+
 // ─── Open/close modal ────────────────────────────────────
 function openAddModal() {
   editingId = null; currentRating = 0;
@@ -568,6 +651,7 @@ function openAddModal() {
   setRadio('status','want');
   updateStars(0);
   document.getElementById('fmt-error').style.display = 'none';
+  populateDataLists();
   document.getElementById('modal').classList.add('open');
   document.getElementById('f-title').focus();
 }
@@ -585,6 +669,7 @@ function openEditModal(id) {
   setRadio('status', b.status);
   updateStars(currentRating);
   document.getElementById('fmt-error').style.display = 'none';
+  populateDataLists();
   document.getElementById('modal').classList.add('open');
 }
 function closeModal() { document.getElementById('modal').classList.remove('open'); }
