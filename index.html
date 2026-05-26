@@ -1,92 +1,283 @@
 <!DOCTYPE html>
+<!--
+  My Library — a single-file book tracker
+  =========================================
+  All data lives in the browser's localStorage and optionally syncs from
+  a JSON file hosted in the same GitHub Pages repo (data/books.json).
+
+  File structure:
+    1. <head>  — fonts, meta tags
+    2. <style> — all CSS (design tokens, layout, components)
+    3. <body>  — static HTML skeleton (header, filters, modal)
+    4. <script>— all JavaScript (state, rendering, CRUD, import/export)
+-->
 <html lang="en" data-theme="light">
+<!--
+  data-theme="light" is the default. JavaScript reads and toggles this
+  attribute to switch between light and dark mode. CSS reacts to it via
+  the [data-theme="dark"] selector block.
+-->
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Library</title>
+
+<!-- Google Fonts: Playfair Display for headings, DM Sans for body text -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
 <style>
-  /* ─── Tokens: light ─── */
+  /*
+    ─── DESIGN TOKENS (CSS Custom Properties) ───────────────────────────
+    Custom properties (--variable-name) work like variables. Every color
+    used in the app references one of these. To change a color, you only
+    need to edit it here — every element that uses it updates automatically.
+
+    The naming convention is: --color-shade, where shade follows a
+    Tailwind-style scale (50 = lightest, 900 = darkest).
+  */
+
+  /* Light mode token values — applied when data-theme="light" (the default) */
   :root {
-    --amber-50: #FAEEDA; --amber-100: #FAC775; --amber-200: #EF9F27;
-    --amber-600: #854F0B; --amber-800: #633806; --amber-900: #412402;
-    --gray-50: #F1EFE8; --gray-100: #D3D1C7; --gray-200: #B4B2A9;
-    --gray-400: #888780; --gray-600: #5F5E5A; --gray-800: #444441; --gray-900: #2C2C2A;
-    --teal-50: #E1F5EE; --teal-600: #0F6E56;
-    --coral-50: #FAECE7; --coral-200: #F0997B; --coral-600: #993C1D;
-    --blue-50: #E6F1FB; --blue-200: #85B7EB; --blue-600: #185FA5;
-    --bg: #FAF8F4; --surface: #FFFFF8;
-    --border: rgba(66,36,2,0.12); --border-mid: rgba(66,36,2,0.2);
-    --text: #2C2C2A; --text-muted: #888780; --text-light: #B4B2A9;
-    --shadow: 0 1px 3px rgba(0,0,0,0.06);
+    /* Amber: primary brand color, used for titles, active states, primary buttons */
+    --amber-50: #FAEEDA;   /* very light amber — badge backgrounds */
+    --amber-100: #FAC775;  /* light amber — hover states */
+    --amber-200: #EF9F27;  /* mid amber — stars, focus rings */
+    --amber-600: #854F0B;  /* dark amber — badge text */
+    --amber-800: #633806;  /* darker amber — hover button bg */
+    --amber-900: #412402;  /* darkest amber — headings, primary button bg */
+
+    /* Gray: neutral tones for text, borders, backgrounds */
+    --gray-50: #F1EFE8;    /* lightest gray — subtle backgrounds */
+    --gray-100: #D3D1C7;   /* empty star color, scrollbar thumb */
+    --gray-200: #B4B2A9;   /* light muted text */
+    --gray-400: #888780;   /* muted text */
+    --gray-600: #5F5E5A;   /* secondary text */
+    --gray-800: #444441;   /* near-dark text */
+    --gray-900: #2C2C2A;   /* main body text */
+
+    /* Teal: used for "read" status badges */
+    --teal-50: #E1F5EE;    /* teal badge background */
+    --teal-600: #0F6E56;   /* teal badge text */
+
+    /* Coral: used for destructive/danger actions */
+    --coral-50: #FAECE7;   /* danger hover background */
+    --coral-200: #F0997B;  /* danger hover border */
+    --coral-600: #993C1D;  /* danger text color */
+
+    /* Blue: used for e-book badges and tag badges */
+    --blue-50: #E6F1FB;    /* blue badge background */
+    --blue-200: #85B7EB;   /* blue border */
+    --blue-600: #185FA5;   /* blue badge text, active tag pills */
+
+    /* Semantic surface colors */
+    --bg: #FAF8F4;          /* page background */
+    --surface: #FFFFF8;     /* card/modal/header background */
+    --border: rgba(66,36,2,0.12);     /* subtle border */
+    --border-mid: rgba(66,36,2,0.2);  /* slightly stronger border (hover states) */
+    --text: #2C2C2A;        /* primary text */
+    --text-muted: #888780;  /* secondary text (author names, labels) */
+    --text-light: #B4B2A9;  /* tertiary text (hints, series names) */
+    --shadow: 0 1px 3px rgba(0,0,0,0.06); /* card hover shadow */
   }
-  /* ─── Tokens: dark ─── */
+
+  /*
+    Dark mode overrides.
+    When JS sets data-theme="dark" on <html>, these values replace the
+    :root ones above. Only colors need to change — all layout/spacing
+    CSS still applies since it references the same variable names.
+
+    Note how the amber scale inverts: --amber-900 becomes nearly white
+    because it's used for headings, which need to be light in dark mode.
+  */
   [data-theme="dark"] {
-    --amber-50: #3a2200; --amber-100: #7a4500; --amber-200: #EF9F27;
-    --amber-600: #FAC775; --amber-800: #FAEEDA; --amber-900: #fff3dc;
-    --gray-50: #1e1d1b; --gray-100: #2e2d2b; --gray-200: #3e3d3a;
-    --gray-400: #888780; --gray-600: #aaa9a3; --gray-800: #d0cfc8; --gray-900: #f0efe8;
-    --teal-50: #0a2018; --teal-600: #5DCAA5;
-    --coral-50: #2a100a; --coral-200: #993C1D; --coral-600: #F0997B;
-    --blue-50: #0a1828; --blue-200: #185FA5; --blue-600: #85B7EB;
-    --bg: #161513; --surface: #1f1e1b;
-    --border: rgba(255,220,150,0.1); --border-mid: rgba(255,220,150,0.2);
-    --text: #f0efe8; --text-muted: #888780; --text-light: #555450;
+    --amber-50: #3a2200;
+    --amber-100: #7a4500;
+    --amber-200: #EF9F27;   /* accent orange stays the same */
+    --amber-600: #FAC775;   /* inverted: was dark, now light */
+    --amber-800: #FAEEDA;
+    --amber-900: #fff3dc;   /* headings need to be near-white in dark mode */
+
+    --gray-50: #1e1d1b;
+    --gray-100: #2e2d2b;
+    --gray-200: #3e3d3a;
+    --gray-400: #888780;
+    --gray-600: #aaa9a3;
+    --gray-800: #d0cfc8;
+    --gray-900: #f0efe8;
+
+    --teal-50: #0a2018;
+    --teal-600: #5DCAA5;    /* lighter teal for dark backgrounds */
+
+    --coral-50: #2a100a;
+    --coral-200: #993C1D;
+    --coral-600: #F0997B;
+
+    --blue-50: #0a1828;
+    --blue-200: #185FA5;
+    --blue-600: #85B7EB;    /* lighter blue for dark backgrounds */
+
+    --bg: #161513;
+    --surface: #1f1e1b;
+    --border: rgba(255,220,150,0.1);
+    --border-mid: rgba(255,220,150,0.2);
+    --text: #f0efe8;
+    --text-muted: #888780;
+    --text-light: #555450;
     --shadow: 0 1px 3px rgba(0,0,0,0.3);
   }
 
+  /*
+    ─── RESET ───────────────────────────────────────────────────────────
+    box-sizing: border-box means padding and border are included in an
+    element's declared width/height — much more predictable layout math.
+    margin/padding: 0 wipes browser defaults so we start from scratch.
+  */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; transition: background 0.2s, color 0.2s; }
 
-  /* ─── Header ─── */
-  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1.25rem 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
+  /*
+    ─── BODY ────────────────────────────────────────────────────────────
+    transition on background/color gives a smooth fade when switching themes.
+  */
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh; /* at least full viewport height even with few books */
+    font-size: 15px;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  /* ─── HEADER ─────────────────────────────────────────────────────── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    position: sticky; /* sticks to top of viewport as you scroll */
+    top: 0;
+    z-index: 100;     /* renders above cards and filters */
+    box-shadow: var(--shadow);
+  }
+
+  /* Brand/logo text */
   .brand { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 500; color: var(--amber-900); letter-spacing: -0.02em; }
-  .brand span { color: var(--amber-200); }
+  .brand span { color: var(--amber-200); } /* the middle dot gets its own color */
   .header-actions { display: flex; gap: 0.5rem; align-items: center; }
 
-  /* ─── Theme toggle ─── */
-  .theme-toggle { background: none; border: 1px solid var(--border); border-radius: 8px; padding: 0.4rem 0.6rem; cursor: pointer; color: var(--text-muted); font-size: 15px; line-height: 1; transition: all 0.15s; }
+  /* ─── THEME TOGGLE BUTTON ────────────────────────────────────────── */
+  .theme-toggle {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.4rem 0.6rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 15px;
+    line-height: 1;
+    transition: all 0.15s;
+  }
   .theme-toggle:hover { border-color: var(--amber-200); color: var(--amber-200); }
 
-  /* ─── Main ─── */
-  main { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+  /* ─── MAIN CONTENT AREA ──────────────────────────────────────────── */
+  main {
+    max-width: 1200px; /* prevents ultra-wide lines on large screens */
+    margin: 0 auto;    /* centers the content horizontally */
+    padding: 2rem 1.5rem;
+  }
 
-  /* ─── Status banner ─── */
+  /* ─── STATUS BANNER ──────────────────────────────────────────────── */
+  /*
+    Shown briefly after a repo sync or failed fetch.
+    Hidden by default (display: none), shown by adding class "visible".
+  */
   .status-banner { font-size: 13px; color: var(--text-muted); padding: 0.5rem 0.875rem; background: var(--gray-50); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 1.25rem; display: none; }
   .status-banner.visible { display: block; }
 
-  /* ─── Stats ─── */
+  /* ─── STATS BAR ──────────────────────────────────────────────────── */
+  /*
+    CSS Grid with auto-fit: the browser calculates how many columns fit
+    in the available width, each at least 130px wide.
+  */
   .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 2rem; }
   .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem; }
   .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.25rem; }
   .stat-value { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 500; color: var(--amber-900); line-height: 1; }
   .stat-sub { font-size: 11px; color: var(--text-light); margin-top: 0.2rem; }
 
-  /* ─── Toolbar ─── */
+  /* ─── TOOLBAR (search + sort) ────────────────────────────────────── */
   .toolbar { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+
+  /*
+    Search wrapper uses position: relative so the SVG icon can be
+    positioned absolutely inside it, sitting over the input's left edge.
+  */
   .search-wrap { position: relative; flex: 1; min-width: 200px; }
-  .search-wrap svg { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
-  input[type="search"] { font-family: 'DM Sans', sans-serif; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.55rem 0.875rem 0.55rem 2.25rem; font-size: 14px; color: var(--text); width: 100%; outline: none; transition: border-color 0.15s; }
+  .search-wrap svg {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%); /* vertically centers the icon */
+    color: var(--text-muted);
+    pointer-events: none; /* clicks pass through the icon to the input */
+  }
+  input[type="search"] {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.875rem 0.55rem 2.25rem; /* extra left padding for the icon */
+    font-size: 14px;
+    color: var(--text);
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s;
+  }
   input[type="search"]:focus { border-color: var(--amber-200); }
   select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.875rem; font-size: 13px; color: var(--text); cursor: pointer; outline: none; }
 
+  /* ─── FILTER ROWS ────────────────────────────────────────────────── */
   .filter-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.5rem; align-items: center; }
   .filter-label { font-size: 11px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.06em; margin-right: 0.25rem; white-space: nowrap; }
 
-  /* ─── Pills ─── */
+  /* ─── FILTER PILLS ───────────────────────────────────────────────── */
+  /*
+    Pills are styled buttons that act as toggle filters.
+    The .active class is toggled by JS to show which filter is selected.
+    border-radius: 999px creates a fully rounded "pill" shape regardless of content size.
+  */
   .pill { font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 0.3rem 0.75rem; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
   .pill:hover { border-color: var(--amber-100); color: var(--amber-800); }
   .pill.active { background: var(--amber-900); border-color: var(--amber-900); color: var(--amber-50); }
+  /* Tag pills use blue instead of amber when active, to visually distinguish them */
   .pill.tag-pill.active { background: var(--blue-600); border-color: var(--blue-600); color: #fff; }
 
-  /* ─── Pagination ─── */
+  /* ─── PAGINATION ─────────────────────────────────────────────────── */
   .pagination { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; flex-wrap: wrap; }
   .page-info { font-size: 13px; color: var(--text-muted); }
 
-  /* ─── Book grid ─── */
+  /* ─── BOOK GRID ──────────────────────────────────────────────────── */
+  /*
+    auto-fill vs auto-fit: auto-fill creates as many columns as fit
+    (even empty ones), auto-fit collapses empty columns. We use auto-fill
+    here so cards don't stretch to fill the full row when there are few results.
+  */
   .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
-  .book-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; transition: border-color 0.15s, box-shadow 0.15s; }
+
+  /* Each book card is a flex column so "book-actions" can sit at the bottom */
+  .book-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
   .book-card:hover { border-color: var(--border-mid); box-shadow: var(--shadow); }
   .book-title { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 500; color: var(--amber-900); line-height: 1.3; }
   .book-author { font-size: 13px; color: var(--text-muted); }
@@ -94,9 +285,11 @@
   .book-meta { display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; margin-top: 0.1rem; }
   .book-tags { display: flex; gap: 0.3rem; flex-wrap: wrap; }
   .book-notes { font-size: 12px; color: var(--text-muted); font-style: italic; line-height: 1.4; }
+  /* margin-top: auto pushes actions to the bottom of the card regardless of content height */
   .book-actions { display: flex; gap: 0.5rem; margin-top: auto; padding-top: 0.4rem; }
 
-  /* ─── Badges ─── */
+  /* ─── BADGES ─────────────────────────────────────────────────────── */
+  /* Small colored labels for format, status, and tags */
   .badge { font-size: 11px; font-weight: 500; padding: 0.15rem 0.55rem; border-radius: 999px; letter-spacing: 0.02em; }
   .badge-physical { background: var(--amber-50); color: var(--amber-800); }
   .badge-ebook    { background: var(--blue-50);  color: var(--blue-600);  }
@@ -105,11 +298,28 @@
   .badge-reading  { background: var(--amber-50); color: var(--amber-800); }
   .badge-want     { background: var(--gray-50);  color: var(--gray-600);  }
   .badge-tag      { background: var(--blue-50);  color: var(--blue-600);  font-size: 10px; }
-  .stars { color: var(--amber-200); font-size: 13px; letter-spacing: 1px; }
-  .stars .empty { color: var(--gray-100); }
 
-  /* ─── Buttons ─── */
-  .btn { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; padding: 0.45rem 0.9rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; transition: all 0.15s; white-space: nowrap; display: inline-flex; align-items: center; gap: 0.35rem; }
+  /* Star rating display */
+  .stars { color: var(--amber-200); font-size: 13px; letter-spacing: 1px; }
+  .stars .empty { color: var(--gray-100); } /* unfilled stars */
+
+  /* ─── BUTTONS ────────────────────────────────────────────────────── */
+  .btn {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 0.45rem 0.9rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+    display: inline-flex; /* lets us align the SVG icon and text vertically */
+    align-items: center;
+    gap: 0.35rem;
+  }
   .btn:hover { border-color: var(--border-mid); background: var(--gray-50); }
   .btn-primary { background: var(--amber-900); border-color: var(--amber-900); color: var(--amber-50); }
   .btn-primary:hover { background: var(--amber-800); border-color: var(--amber-800); }
@@ -117,43 +327,83 @@
   .btn-danger:hover { background: var(--coral-50); border-color: var(--coral-200); }
   .btn-sm { font-size: 12px; padding: 0.3rem 0.65rem; }
 
-  /* ─── Modal ─── */
+  /* ─── MODAL ──────────────────────────────────────────────────────── */
+  /*
+    The backdrop covers the entire screen (position: fixed, inset: 0).
+    It's hidden by default; JS adds/removes class "open" to show/hide it.
+    Clicking the backdrop itself (not the modal box) also closes it.
+  */
   .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; padding: 1.5rem; }
-  .modal-backdrop.open { display: flex; }
+  .modal-backdrop.open { display: flex; } /* flex here centers the .modal child */
+
+  /* The white modal box itself */
   .modal { background: var(--surface); border-radius: 14px; border: 1px solid var(--border-mid); width: 100%; max-width: 520px; padding: 1.75rem; max-height: 90vh; overflow-y: auto; }
   .modal-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 500; color: var(--amber-900); margin-bottom: 1.25rem; }
   .form-group { margin-bottom: 1rem; }
+
+  /* Form labels styled as small uppercase text */
   label { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* Text inputs, textareas, and selects share the same base style */
   input[type="text"].plain, textarea, select.plain {
-    font-family: 'DM Sans', sans-serif; width: 100%; background: var(--bg); border: 1px solid var(--border);
-    border-radius: 8px; padding: 0.6rem 0.875rem; font-size: 14px; color: var(--text); outline: none; transition: border-color 0.15s;
+    font-family: 'DM Sans', sans-serif;
+    width: 100%;
+    background: var(--bg);       /* slightly darker than surface to show it's editable */
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 0.875rem;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
   }
   input[type="text"].plain:focus, textarea:focus, select.plain:focus { border-color: var(--amber-200); }
   textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+
+  /* ─── RADIO/CHECKBOX BUTTON GROUPS ───────────────────────────────── */
+  /*
+    Format and status selectors look like pill buttons but are backed by
+    hidden <input> elements. The <label> wraps both the visible text and
+    the hidden input, so clicking the label toggles the input.
+    JS adds/removes class "active" to style the selected state.
+  */
   .radio-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
   .radio-btn { font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 0.4rem 0.9rem; border-radius: 999px; border: 1px solid var(--border); background: var(--bg); color: var(--text-muted); cursor: pointer; transition: all 0.15s; user-select: none; }
   .radio-btn.active { background: var(--amber-900); border-color: var(--amber-900); color: var(--amber-50); }
+  /* The actual inputs are visually hidden — we only show the styled labels */
   input[type="radio"], input[type="checkbox"] { display: none; }
+
+  /* ─── STAR PICKER ────────────────────────────────────────────────── */
   .star-picker { display: flex; gap: 4px; }
   .star-btn { font-size: 22px; cursor: pointer; color: var(--gray-100); background: none; border: none; transition: color 0.1s, transform 0.1s; line-height: 1; padding: 0; }
-  .star-btn.lit { color: var(--amber-200); }
+  .star-btn.lit { color: var(--amber-200); } /* filled star */
   .star-btn:hover { transform: scale(1.2); }
+
   .modal-footer { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem; }
   .hint { font-size: 11px; color: var(--text-light); margin-top: 0.3rem; }
 
-  /* ─── Empty state ─── */
+  /* ─── EMPTY STATE ────────────────────────────────────────────────── */
+  /* grid-column: 1/-1 makes the empty state span all grid columns */
   .empty-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); grid-column: 1/-1; }
   .empty-state svg { margin-bottom: 1rem; opacity: 0.3; }
   .empty-state h3 { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--amber-900); margin-bottom: 0.5rem; }
 
+  /* ─── TAGS AUTOCOMPLETE DROPDOWN ─────────────────────────────────── */
+  /* Each row in the custom dropdown */
   #tags-ac .ac-item { padding: 0.45rem 0.875rem; font-size: 13px; cursor: pointer; color: var(--text); transition: background 0.1s; }
+  /* Highlighted row (hover or keyboard navigation) */
   #tags-ac .ac-item:hover, #tags-ac .ac-item.ac-active { background: var(--amber-50); color: var(--amber-900); }
 
+  /* Hidden file input for JSON import — triggered by a visible button */
   #importFile { display: none; }
+
+  /* ─── CUSTOM SCROLLBAR ───────────────────────────────────────────── */
+  /* Only applies in WebKit browsers (Chrome, Safari, Edge) */
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--gray-100); border-radius: 3px; }
 
+  /* ─── MOBILE ADJUSTMENTS ─────────────────────────────────────────── */
   @media (max-width: 600px) {
     header { padding: 1rem; }
     main { padding: 1.25rem 1rem; }
@@ -163,19 +413,38 @@
 </head>
 <body>
 
+<!--
+  ═══════════════════════════════════════════════════════════════════════
+  HTML SKELETON
+  The page has minimal hard-coded content — JS fills in the book cards,
+  stats, filter pills, and pagination dynamically.
+  ═══════════════════════════════════════════════════════════════════════
+-->
+
+<!-- Sticky header with logo and action buttons -->
 <header>
   <div class="brand">My<span>·</span>Library</div>
   <div class="header-actions">
+
+    <!-- 🌙/☀️ icon swaps in JS based on current theme -->
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode" id="themeBtn">🌙</button>
+
+    <!-- Export: downloads current localStorage data as a JSON file -->
     <button class="btn btn-sm" onclick="exportData()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Export
     </button>
+
+    <!-- Import: clicking this button triggers the hidden file input below -->
     <button class="btn btn-sm" onclick="document.getElementById('importFile').click()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       Import
     </button>
+
+    <!-- Hidden: the actual file picker, only accepts .json files -->
     <input type="file" id="importFile" accept=".json" onchange="importData(event)">
+
+    <!-- Opens the add-book modal -->
     <button class="btn btn-primary" onclick="openAddModal()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Add book
@@ -184,14 +453,22 @@
 </header>
 
 <main>
+  <!-- Brief notification shown after a repo sync (JS fills in the text) -->
   <div class="status-banner" id="statusBanner"></div>
+
+  <!-- Stats row — JS fills this in via renderStats() -->
   <div class="stats-bar" id="statsBar"></div>
 
+  <!-- Search input and sort dropdown -->
   <div class="toolbar">
     <div class="search-wrap">
+      <!-- SVG magnifying glass icon, visually overlaid on the input -->
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <!-- oninput fires on every keystroke; debouncedRender waits 200ms before filtering -->
       <input type="search" id="searchInput" placeholder="Search title, author, series, or tag…" oninput="debouncedRender()">
     </div>
+
+    <!-- Sort order selector — changing it immediately re-renders the grid -->
     <select class="sort-select" id="sortSelect" onchange="render()">
       <option value="added-desc">Newest added</option>
       <option value="added-asc">Oldest added</option>
@@ -203,6 +480,7 @@
     </select>
   </div>
 
+  <!-- Format filter pills — only one can be active at a time -->
   <div class="filter-row">
     <span class="filter-label">Format</span>
     <div id="formatPills" style="display:flex;gap:0.4rem;flex-wrap:wrap;">
@@ -212,6 +490,8 @@
       <button class="pill" onclick="setFilter('format','audio',this)">🎧 Audio</button>
     </div>
   </div>
+
+  <!-- Status filter pills -->
   <div class="filter-row">
     <span class="filter-label">Status</span>
     <div id="statusPills" style="display:flex;gap:0.4rem;flex-wrap:wrap;">
@@ -221,61 +501,116 @@
       <button class="pill" onclick="setFilter('status','want',this)">Want to read</button>
     </div>
   </div>
+
+  <!--
+    Tag filter row — hidden by default (style="display:none").
+    JS shows this row and populates #tagPills only when at least one
+    book in the library has a tag.
+  -->
   <div class="filter-row" id="tagFilterRow" style="display:none;">
     <span class="filter-label">Tag</span>
     <div id="tagPills" style="display:flex;gap:0.4rem;flex-wrap:wrap;"></div>
   </div>
 
+  <!-- Book cards are injected here by render() -->
   <div class="books-grid" id="booksGrid"></div>
+
+  <!-- Page navigation buttons injected here by renderPagination() -->
   <div class="pagination" id="pagination"></div>
 </main>
 
-<!-- Modal -->
+<!--
+  ─── ADD / EDIT MODAL ────────────────────────────────────────────────
+  The backdrop div covers the whole screen. Clicking it (but not the
+  inner .modal box) calls closeModal() via handleBackdropClick().
+  class "open" is toggled by JS to show/hide.
+-->
 <div class="modal-backdrop" id="modal" onclick="handleBackdropClick(event)">
   <div class="modal">
+
+    <!-- Title changes between "Add a book" and "Edit book" in JS -->
     <div class="modal-title" id="modalTitle">Add a book</div>
 
     <div class="form-group">
       <label>Title</label>
       <input type="text" class="plain" id="f-title" placeholder="Book title">
     </div>
+
     <div class="form-group">
       <label>Author</label>
+      <!--
+        list="dl-authors" connects this input to the <datalist> below.
+        As you type, the browser shows matching options from the datalist.
+        autocomplete="off" prevents the browser's own form history from
+        competing with our datalist suggestions.
+      -->
       <input type="text" class="plain" id="f-author" placeholder="Author name" autocomplete="off" list="dl-authors">
+      <!-- datalist is invisible — it's just a data source for the input above -->
       <datalist id="dl-authors"></datalist>
     </div>
+
     <div class="form-group">
       <label>Series <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light)">(optional)</span></label>
+      <!-- Same datalist pattern as author -->
       <input type="text" class="plain" id="f-series" placeholder="e.g. The Expanse #1" autocomplete="off" list="dl-series">
       <datalist id="dl-series"></datalist>
     </div>
+
     <div class="form-group">
       <label>Tags <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light)">(optional)</span></label>
+      <!--
+        Tags use a custom dropdown instead of <datalist> because tags are
+        comma-separated — we need to suggest completions for the word
+        currently being typed, not the entire input value.
+        The wrapper div (position:relative) anchors the dropdown absolutely.
+      -->
       <div style="position:relative">
-        <input type="text" class="plain" id="f-tags" placeholder="sci-fi, favorites, gift…" autocomplete="off" oninput="tagsAC()" onkeydown="tagsACKey(event)" onblur="setTimeout(closeTagsAC,150)">
+        <!-- oninput → show/update dropdown; onkeydown → keyboard nav; onblur → close after 150ms delay (delay lets click register first) -->
+        <input type="text" class="plain" id="f-tags" placeholder="sci-fi, favorites, gift…" autocomplete="off"
+               oninput="tagsAC()" onkeydown="tagsACKey(event)" onblur="setTimeout(closeTagsAC,150)">
+        <!-- The custom dropdown container — JS fills and shows/hides this -->
         <div id="tags-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border-mid);border-radius:8px;margin-top:3px;z-index:300;max-height:180px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.12)"></div>
       </div>
       <div class="hint">Comma-separated. e.g. sci-fi, favorites</div>
     </div>
+
     <div class="form-group">
       <label>Format <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light)">(select all that apply)</span></label>
+      <!--
+        Format uses checkboxes (multiple selection allowed).
+        The actual <input type="checkbox"> is hidden; the visible <label>
+        wraps it, so clicking the label toggles the checkbox.
+        JS adds/removes class "active" on the <label> for styling.
+      -->
       <div class="radio-group" id="f-format-group">
         <label class="radio-btn active" for="fmt-physical">📚 Physical<input type="checkbox" id="fmt-physical" value="physical" checked></label>
         <label class="radio-btn" for="fmt-ebook">📱 E-book<input type="checkbox" id="fmt-ebook" value="ebook"></label>
         <label class="radio-btn" for="fmt-audio">🎧 Audiobook<input type="checkbox" id="fmt-audio" value="audio"></label>
       </div>
+      <!-- Shown by JS if the user tries to save with no format selected -->
       <div id="fmt-error" style="display:none;font-size:12px;color:var(--coral-600);margin-top:0.35rem">Select at least one format.</div>
     </div>
+
     <div class="form-group">
       <label>Status</label>
+      <!--
+        Status uses radio buttons (only one allowed).
+        Same hidden-input pattern as format above.
+        name="status" groups them so selecting one deselects the others.
+      -->
       <div class="radio-group">
         <label class="radio-btn active" for="st-want">Want to read<input type="radio" name="status" id="st-want" value="want" checked></label>
         <label class="radio-btn" for="st-reading">Reading<input type="radio" name="status" id="st-reading" value="reading"></label>
         <label class="radio-btn" for="st-read">Read<input type="radio" name="status" id="st-read" value="read"></label>
       </div>
     </div>
+
     <div class="form-group">
       <label>Rating</label>
+      <!--
+        Five star buttons. Each has data-val="N" so JS knows which star
+        was clicked. Clicking the current rating again clears it (toggle to 0).
+      -->
       <div class="star-picker">
         <button class="star-btn" type="button" data-val="1" onclick="setRating(1)">★</button>
         <button class="star-btn" type="button" data-val="2" onclick="setRating(2)">★</button>
@@ -284,6 +619,7 @@
         <button class="star-btn" type="button" data-val="5" onclick="setRating(5)">★</button>
       </div>
     </div>
+
     <div class="form-group">
       <label>Notes</label>
       <textarea id="f-notes" placeholder="Optional notes, thoughts, quotes…"></textarea>
@@ -297,166 +633,383 @@
 </div>
 
 <script>
-// ─── Config ──────────────────────────────────────────────
+/*
+  ═══════════════════════════════════════════════════════════════════════
+  JAVASCRIPT
+  ═══════════════════════════════════════════════════════════════════════
+*/
+
+// ─── CONFIGURATION ────────────────────────────────────────────────────
+// Path to the JSON file in the repo. On GitHub Pages this resolves to:
+// https://rusty324.github.io/b00k4ble-l0gg3r/data/books.json
 const REPO_JSON_URL = 'data/books.json';
+
+// How many book cards to show per page. Lower = faster rendering.
 const PAGE_SIZE = 48;
 
-// ─── State ───────────────────────────────────────────────
+
+// ─── DATA NORMALIZATION ───────────────────────────────────────────────
+/*
+  normalizeBook() is a pure function — it takes a raw book object (from
+  localStorage, an imported file, or the repo JSON) and returns a clean
+  version with guaranteed field shapes. This means the rest of the code
+  never has to defensively check "is author a string or array?" etc.
+
+  It handles several real-world inconsistencies:
+  - author can be a string or an array (Goodreads exports use arrays)
+  - status can be "want to read" (full) or "want" (short internal form)
+  - formats can be a string, an array, or stored under the key "format"
+  - tags can be a string, an array, or missing
+*/
 function normalizeBook(b) {
   return {
-    ...b,
-    author: Array.isArray(b.author) ? b.author.join(', ') : (b.author || '').replace(/[;,\s]+$/, ''),
-    status: ({'want to read':'want','reading':'reading','read':'read'}[b.status] || b.status || 'want'),
+    ...b, // spread all existing fields first, then override specific ones below
+
+    // If author is an array like ["Ann Leckie", "translator"], join with ", "
+    // Otherwise strip trailing semicolons/commas that Goodreads sometimes adds
+    author: Array.isArray(b.author)
+      ? b.author.join(', ')
+      : (b.author || '').replace(/[;,\s]+$/, ''),
+
+    // Normalize status strings. The lookup table maps full phrases to short keys.
+    // The || chain falls back: if not in the table, use whatever's there, or 'want'
+    status: ({ 'want to read': 'want', 'reading': 'reading', 'read': 'read' }[b.status]
+             || b.status
+             || 'want'),
+
+    // Normalize formats to always be an array.
+    // Priority: formats (array) > formats (string) > format (array) > format (string) > default
     formats: Array.isArray(b.formats) ? b.formats
-      : b.formats ? [b.formats]
-      : Array.isArray(b.format) ? b.format
-      : b.format ? [b.format]
-      : ['physical'],
+           : b.formats              ? [b.formats]
+           : Array.isArray(b.format) ? b.format
+           : b.format               ? [b.format]
+           : ['physical'],
+
+    // Normalize tags to always be an array of trimmed, non-empty strings
     tags: Array.isArray(b.tags) ? b.tags
-      : (b.tags && typeof b.tags === 'string') ? b.tags.split(',').map(t => t.trim()).filter(Boolean)
-      : []
+        : (b.tags && typeof b.tags === 'string')
+          ? b.tags.split(',').map(t => t.trim()).filter(Boolean)
+        : []
   };
 }
 
+
+// ─── APPLICATION STATE ────────────────────────────────────────────────
+/*
+  All mutable state lives here as module-level variables.
+  When state changes, we call render() to rebuild the UI from scratch.
+  This is simpler than trying to patch individual DOM elements.
+*/
+
+// The main book array. Loaded from localStorage on startup, then kept
+// in sync via save() after every change.
 let books = JSON.parse(localStorage.getItem('myLibrary') || '[]').map(normalizeBook);
+
+// Active filter values. Each starts as 'all' (no filter applied).
 let filters = { format: 'all', status: 'all', tag: 'all' };
+
+// Which page of results we're currently showing (1-indexed)
 let currentPage = 1;
+
+// When editing a book, this holds its ID. null means we're adding a new book.
 let editingId = null;
+
+// Tracks the star rating currently selected in the modal (0 = no rating)
 let currentRating = 0;
+
+// Timer reference for the search debounce (see debouncedRender)
 let searchTimer = null;
 
-// ─── Theme ───────────────────────────────────────────────
+
+// ─── THEME ────────────────────────────────────────────────────────────
+/*
+  Theme is stored in localStorage so it persists between visits.
+  applyTheme() is the single source of truth — it updates the HTML
+  attribute, the button emoji, and localStorage all at once.
+*/
 function applyTheme(theme) {
+  // Setting this attribute triggers the [data-theme="dark"] CSS block
   document.documentElement.setAttribute('data-theme', theme);
+  // Swap the emoji to show what clicking the button will do next
   document.getElementById('themeBtn').textContent = theme === 'dark' ? '☀️' : '🌙';
   localStorage.setItem('theme', theme);
 }
+
 function toggleTheme() {
-  applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  // Read current theme and flip it
+  const current = document.documentElement.getAttribute('data-theme');
+  applyTheme(current === 'dark' ? 'light' : 'dark');
 }
+
+// Apply saved theme immediately on load (before any rendering happens)
 applyTheme(localStorage.getItem('theme') || 'light');
 
-// ─── Repo JSON fetch ─────────────────────────────────────
+
+// ─── REPO JSON SYNC ───────────────────────────────────────────────────
+/*
+  On page load, we try to fetch data/books.json from the same server.
+  If successful, we find books in the file that aren't in localStorage
+  (by ID) and add them. This is one-directional: the file can add books
+  to the local state, but local edits don't go back to the file.
+
+  The ?t=Date.now() cache-buster forces the browser to revalidate rather
+  than serving a stale cached version of the JSON.
+*/
 async function fetchRepoBooks() {
   const banner = document.getElementById('statusBanner');
   try {
     const res = await fetch(REPO_JSON_URL + '?t=' + Date.now());
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`); // e.g. 404 if file doesn't exist yet
+
     const data = await res.json();
     const normalized = data.map(normalizeBook);
+
+    // Build a Set of existing IDs for O(1) lookup instead of O(n) array search
     const existingIds = new Set(books.map(b => b.id));
+
+    // Only keep books from the file that we don't already have
     const newBooks = normalized.filter(b => !existingIds.has(b.id));
+
     if (newBooks.length) {
-      books = [...books, ...newBooks];
+      books = [...books, ...newBooks]; // merge new books in
       save();
       banner.textContent = `✓ Synced ${newBooks.length} new book${newBooks.length > 1 ? 's' : ''} from repo.`;
     } else {
       banner.textContent = `✓ Library up to date (${books.length} books).`;
     }
+
     banner.classList.add('visible');
+    // Auto-hide the banner after 4 seconds
     setTimeout(() => banner.classList.remove('visible'), 4000);
+
   } catch (e) {
-    // Silently fall through — offline or file not found, localStorage data is fine
+    // fetch throws on network error; !res.ok throws above on HTTP error.
+    // Either way: silently fall back to localStorage data.
+    // Only show an error if the library is completely empty.
     if (books.length === 0) {
       banner.textContent = 'Could not reach data/books.json — add books manually or import a JSON file.';
       banner.classList.add('visible');
     }
   }
+
+  // Always render after the fetch attempt (success or failure)
   render();
 }
 
-// ─── Persist ─────────────────────────────────────────────
-function save() { localStorage.setItem('myLibrary', JSON.stringify(books)); }
 
-// ─── Filters ─────────────────────────────────────────────
+// ─── PERSISTENCE ──────────────────────────────────────────────────────
+// Writes the current books array to localStorage as a JSON string.
+// Called after every add, edit, delete, or import.
+function save() {
+  localStorage.setItem('myLibrary', JSON.stringify(books));
+}
+
+
+// ─── FILTERS ──────────────────────────────────────────────────────────
+/*
+  Called when a filter pill is clicked.
+  type: 'format', 'status', or 'tag'
+  val:  the filter value, e.g. 'ebook' or 'all'
+  el:   the DOM element that was clicked (to add the 'active' class)
+*/
 function setFilter(type, val, el) {
   filters[type] = val;
+
+  // Map filter type → pill container ID so we can deactivate all siblings
   const groupId = { format: 'formatPills', status: 'statusPills', tag: 'tagPills' }[type];
   document.querySelectorAll('#' + groupId + ' .pill').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
-  currentPage = 1;
+
+  currentPage = 1; // reset to page 1 whenever a filter changes
   render();
 }
 
-// ─── Debounce search ─────────────────────────────────────
+
+// ─── DEBOUNCED SEARCH ─────────────────────────────────────────────────
+/*
+  Without debouncing, render() would fire on every single keystroke —
+  fine for small libraries but noticeably slow at 1000+ books.
+
+  clearTimeout cancels any pending render, then setTimeout schedules a
+  new one 200ms in the future. The net effect: render() only runs once
+  the user pauses typing for 200ms.
+*/
 function debouncedRender() {
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => { currentPage = 1; render(); }, 200);
+  searchTimer = setTimeout(() => {
+    currentPage = 1; // searching should always start from page 1
+    render();
+  }, 200);
 }
 
-// ─── Tags index ──────────────────────────────────────────
+
+// ─── TAG INDEX ────────────────────────────────────────────────────────
+// Collects every unique tag across all books, sorted alphabetically.
+// Used both for the filter pill row and the tags autocomplete dropdown.
 function allTags() {
-  const set = new Set();
+  const set = new Set(); // Set automatically deduplicates
   books.forEach(b => (b.tags || []).forEach(t => set.add(t)));
   return [...set].sort();
 }
 
+/*
+  Renders the Tag filter row. If no books have tags, the row is hidden.
+  Otherwise, it generates one pill per unique tag plus an "All" pill.
+  The currently active tag gets class "active" for highlight styling.
+*/
 function renderTagFilter() {
   const tags = allTags();
   const row = document.getElementById('tagFilterRow');
   const container = document.getElementById('tagPills');
+
   if (!tags.length) { row.style.display = 'none'; return; }
   row.style.display = 'flex';
+
   const current = filters.tag;
+
+  // Build the pill HTML: "All" first, then one per tag
+  // JSON.stringify(t) safely quotes the tag value in the onclick attribute
   container.innerHTML = [
     `<button class="pill tag-pill ${current === 'all' ? 'active' : ''}" onclick="setFilter('tag','all',this)">All</button>`,
-    ...tags.map(t => `<button class="pill tag-pill ${current === t ? 'active' : ''}" onclick="setFilter('tag',${JSON.stringify(t)},this)">${esc(t)}</button>`)
+    ...tags.map(t =>
+      `<button class="pill tag-pill ${current === t ? 'active' : ''}" onclick="setFilter('tag',${JSON.stringify(t)},this)">${esc(t)}</button>`
+    )
   ].join('');
 }
 
-// ─── Stats ───────────────────────────────────────────────
+
+// ─── STATS BAR ────────────────────────────────────────────────────────
+// Computes totals from the full books array (not the filtered subset)
+// and injects them into the stats cards at the top of the page.
 function renderStats() {
-  const total = books.length;
-  const read = books.filter(b => b.status === 'read').length;
+  const total    = books.length;
+  const read     = books.filter(b => b.status === 'read').length;
   const physical = books.filter(b => b.formats.includes('physical')).length;
   const ebook    = books.filter(b => b.formats.includes('ebook')).length;
   const audio    = books.filter(b => b.formats.includes('audio')).length;
   const rated    = books.filter(b => b.rating > 0);
-  const avg = rated.length ? (rated.reduce((s,b) => s + b.rating, 0) / rated.length).toFixed(1) : '—';
+
+  // reduce() sums all ratings; divide by count for average; toFixed(1) = "4.2"
+  const avg = rated.length
+    ? (rated.reduce((sum, b) => sum + b.rating, 0) / rated.length).toFixed(1)
+    : '—'; // no rated books
+
   document.getElementById('statsBar').innerHTML = `
-    <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${total}</div><div class="stat-sub">${read} read · ${books.filter(b=>b.status==='reading').length} in progress</div></div>
-    <div class="stat-card"><div class="stat-label">Physical</div><div class="stat-value">${physical}</div><div class="stat-sub">${total ? Math.round(physical/total*100) : 0}% of library</div></div>
-    <div class="stat-card"><div class="stat-label">E-books</div><div class="stat-value">${ebook}</div><div class="stat-sub">${total ? Math.round(ebook/total*100) : 0}% of library</div></div>
-    <div class="stat-card"><div class="stat-label">Audiobooks</div><div class="stat-value">${audio}</div><div class="stat-sub">${total ? Math.round(audio/total*100) : 0}% of library</div></div>
-    <div class="stat-card"><div class="stat-label">Avg rating</div><div class="stat-value">${avg}</div><div class="stat-sub">${rated.length} rated</div></div>`;
+    <div class="stat-card">
+      <div class="stat-label">Total</div>
+      <div class="stat-value">${total}</div>
+      <div class="stat-sub">${read} read · ${books.filter(b => b.status === 'reading').length} in progress</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Physical</div>
+      <div class="stat-value">${physical}</div>
+      <div class="stat-sub">${total ? Math.round(physical / total * 100) : 0}% of library</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">E-books</div>
+      <div class="stat-value">${ebook}</div>
+      <div class="stat-sub">${total ? Math.round(ebook / total * 100) : 0}% of library</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Audiobooks</div>
+      <div class="stat-value">${audio}</div>
+      <div class="stat-sub">${total ? Math.round(audio / total * 100) : 0}% of library</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg rating</div>
+      <div class="stat-value">${avg}</div>
+      <div class="stat-sub">${rated.length} rated</div>
+    </div>`;
 }
 
-// ─── Render ───────────────────────────────────────────────
+
+// ─── MAIN RENDER FUNCTION ─────────────────────────────────────────────
+/*
+  render() is the heart of the app. It:
+  1. Rebuilds the stats bar
+  2. Rebuilds the tag filter pills
+  3. Filters the books array based on current filters + search query
+  4. Sorts the filtered results
+  5. Slices to the current page
+  6. Builds HTML strings for each card
+  7. Injects them into the DOM in one operation
+  8. Renders pagination controls
+
+  Re-rendering from scratch on every change is simpler than surgically
+  patching individual DOM elements, and fast enough at this scale.
+*/
 function render() {
   renderStats();
   renderTagFilter();
+
   const query = document.getElementById('searchInput').value.toLowerCase().trim();
   const sort  = document.getElementById('sortSelect').value;
 
+  // ── Step 1: Filter ──────────────────────────────────────────────────
   let filtered = books.filter(b => {
+    // Format filter: does the book's formats array include the selected format?
     if (filters.format !== 'all' && !b.formats.includes(filters.format)) return false;
+
+    // Status filter: exact match
     if (filters.status !== 'all' && b.status !== filters.status) return false;
-    if (filters.tag    !== 'all' && !(b.tags || []).includes(filters.tag)) return false;
+
+    // Tag filter: does the book's tags array include the selected tag?
+    if (filters.tag !== 'all' && !(b.tags || []).includes(filters.tag)) return false;
+
+    // Search: concatenate all searchable fields into one string, then check
+    // if the query appears anywhere in it
     if (query) {
-      const hay = [b.title, b.author, b.series, ...(b.tags||[])].join(' ').toLowerCase();
+      const hay = [b.title, b.author, b.series, ...(b.tags || [])].join(' ').toLowerCase();
       if (!hay.includes(query)) return false;
     }
-    return true;
+
+    return true; // book passes all filters
   });
 
+  // ── Step 2: Sort ────────────────────────────────────────────────────
   filtered.sort((a, b) => {
     switch (sort) {
-      case 'added-asc':  return a.id - b.id;
-      case 'title-asc':  return a.title.localeCompare(b.title);
-      case 'title-desc': return b.title.localeCompare(a.title);
-      case 'author-asc': return (a.author||'').localeCompare(b.author||'');
-      case 'rating-desc':return (b.rating||0) - (a.rating||0);
-      default:           return b.id - a.id;
+      case 'added-asc':
+        // IDs are timestamps, so sorting by ID = sorting by add date
+        return a.id - b.id;
+
+      case 'title-asc':
+        // localeCompare handles accented characters correctly (é, ñ, etc.)
+        return a.title.localeCompare(b.title);
+
+      case 'title-desc':
+        return b.title.localeCompare(a.title);
+
+      case 'author-asc':
+        // || '' guards against undefined author fields
+        return (a.author || '').localeCompare(b.author || '');
+
+      case 'rating-desc':
+        // || 0 treats unrated books as 0 stars so they sort to the bottom
+        return (b.rating || 0) - (a.rating || 0);
+
+      case 'series-asc':
+        return seriesSort(a, b);
+
+      default: // 'added-desc' — newest first
+        return b.id - a.id;
     }
   });
 
+  // ── Step 3: Pagination ──────────────────────────────────────────────
   const grid = document.getElementById('booksGrid');
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+
+  // If the current page no longer exists (e.g. after filtering), clamp it
   if (currentPage > totalPages) currentPage = totalPages;
 
+  // ── Step 4: Empty state ─────────────────────────────────────────────
   if (!filtered.length) {
     grid.innerHTML = `<div class="empty-state">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+      </svg>
       <h3>${books.length === 0 ? 'Your library is empty' : 'No books match your filters'}</h3>
       <p style="font-size:14px">${books.length === 0 ? 'Add a book or import a JSON file.' : 'Try adjusting your search or filters.'}</p>
     </div>`;
@@ -464,17 +1017,41 @@ function render() {
     return;
   }
 
+  // ── Step 5: Slice to current page ───────────────────────────────────
+  // e.g. page 2 with PAGE_SIZE=48: slice(48, 96)
   const page = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-  const fmtLabels = { physical:'📚 Physical', ebook:'📱 E-book', audio:'🎧 Audiobook' };
-  const fmtCls    = { physical:'badge-physical', ebook:'badge-ebook', audio:'badge-audio' };
-  const stCls     = { read:'badge-read', reading:'badge-reading', want:'badge-want' };
-  const stLabel   = { read:'Read', reading:'Reading', want:'Want to read' };
 
-  // Build HTML as array then join — faster than string concat
+  // Lookup tables to convert internal keys to display strings/CSS classes
+  const fmtLabels = { physical: '📚 Physical', ebook: '📱 E-book', audio: '🎧 Audiobook' };
+  const fmtCls    = { physical: 'badge-physical', ebook: 'badge-ebook', audio: 'badge-audio' };
+  const stCls     = { read: 'badge-read', reading: 'badge-reading', want: 'badge-want' };
+  const stLabel   = { read: 'Read', reading: 'Reading', want: 'Want to read' };
+
+  // ── Step 6: Build card HTML ─────────────────────────────────────────
+  /*
+    We build an array of HTML strings (one per book) then join them at
+    the end. This is faster than concatenating strings in a loop because
+    JavaScript engines optimize Array.join better than repeated += on strings.
+  */
   const html = page.map(b => {
-    const fmtBadges = b.formats.map(f => `<span class="badge ${fmtCls[f]}">${fmtLabels[f]}</span>`).join('');
-    const tagBadges = (b.tags||[]).map(t => `<span class="badge badge-tag">${esc(t)}</span>`).join('');
-    const stars = b.rating ? '★'.repeat(b.rating) + `<span class="empty">${'★'.repeat(5-b.rating)}</span>` : '';
+    // One colored badge per format (a book can have multiple)
+    const fmtBadges = b.formats
+      .map(f => `<span class="badge ${fmtCls[f]}">${fmtLabels[f]}</span>`)
+      .join('');
+
+    // One small blue badge per tag
+    const tagBadges = (b.tags || [])
+      .map(t => `<span class="badge badge-tag">${esc(t)}</span>`)
+      .join('');
+
+    // Star display: filled stars + empty stars in a dimmer color
+    const stars = b.rating
+      ? '★'.repeat(b.rating) + `<span class="empty">${'★'.repeat(5 - b.rating)}</span>`
+      : ''; // no stars if unrated
+
+    // Template literal produces the full card HTML.
+    // esc() sanitizes user-entered text to prevent XSS (see esc function below).
+    // The conditional template `${condition ? html : ''}` omits optional fields.
     return `<div class="book-card">
       <div class="book-title">${esc(b.title)}</div>
       ${b.author ? `<div class="book-author">${esc(b.author)}</div>` : ''}
@@ -488,151 +1065,301 @@ function render() {
       ${b.notes ? `<div class="book-notes">${esc(b.notes)}</div>` : ''}
       <div class="book-actions">
         <button class="btn btn-sm" onclick="openEditModal(${b.id})">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
           Edit
         </button>
         <button class="btn btn-sm btn-danger" onclick="deleteBook(${b.id})">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            <path d="M10 11v6"/><path d="M14 11v6"/>
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          </svg>
           Delete
         </button>
       </div>
     </div>`;
   });
 
-  // Use a DocumentFragment to do a single DOM update
+  // ── Step 7: Single DOM update ────────────────────────────────────────
+  /*
+    Instead of setting innerHTML directly (which causes one big reflow),
+    we use a DocumentFragment as a staging area. We build the DOM nodes
+    off-screen, then move them into the live document in one operation.
+    This is measurably faster for large card counts.
+  */
   const frag = document.createDocumentFragment();
-  const tmp = document.createElement('div');
-  tmp.innerHTML = html.join('');
-  while (tmp.firstChild) frag.appendChild(tmp.firstChild);
-  grid.innerHTML = '';
-  grid.appendChild(frag);
+  const tmp  = document.createElement('div');
+  tmp.innerHTML = html.join(''); // parse all HTML at once
+  while (tmp.firstChild) frag.appendChild(tmp.firstChild); // move nodes to fragment
+  grid.innerHTML = ''; // clear old cards
+  grid.appendChild(frag); // one DOM insertion
 
-  // Pagination
+  // ── Step 8: Pagination ───────────────────────────────────────────────
   renderPagination(filtered.length, totalPages);
 }
 
+
+// ─── SERIES SORT HELPER ────────────────────────────────────────────────
+/*
+  Parses a series string like "The Expanse #3" or "Mistborn 2.0" into
+  a comparable { name, index } object, then sorts by name first, then
+  by numeric index within the same series.
+
+  Books with no series are pushed to the end of the list.
+*/
+function seriesSort(a, b) {
+  // Extract series name and numeric index from a string like "Expanse #2" or "Bobiverse 4.0"
+  function parseSeries(book) {
+    if (!book.series) return null; // no series → sort to end
+
+    // Try to match "Name #N" or "Name N.N" patterns
+    const match = book.series.match(/^(.+?)[\s#]+(\d+(?:\.\d+)?)$/);
+    if (match) {
+      return { name: match[1].trim().toLowerCase(), index: parseFloat(match[2]) };
+    }
+
+    // No numeric index found — use the whole string as name, index 0
+    return { name: book.series.toLowerCase(), index: 0 };
+  }
+
+  const sa = parseSeries(a);
+  const sb = parseSeries(b);
+
+  // Push books with no series to the end
+  if (!sa && !sb) return 0;   // both have no series — leave in current order
+  if (!sa) return 1;           // a has no series — a goes after b
+  if (!sb) return -1;          // b has no series — b goes after a
+
+  // Sort by series name first
+  const nameCmp = sa.name.localeCompare(sb.name);
+  if (nameCmp !== 0) return nameCmp;
+
+  // Same series name → sort by numeric index (vol 1 before vol 2)
+  return sa.index - sb.index;
+}
+
+
+// ─── PAGINATION RENDERER ─────────────────────────────────────────────
+/*
+  Renders the page navigation bar below the grid.
+  Shows a window of page numbers around the current page,
+  with "…" ellipsis for gaps, and Prev/Next buttons.
+
+  w = 2 means we show 2 pages either side of the current one.
+  Example with 10 pages, current = 5, w = 2:
+    1 … 3 4 [5] 6 7 … 10
+*/
 function renderPagination(total, totalPages) {
   const pg = document.getElementById('pagination');
-  if (totalPages <= 1) { pg.innerHTML = ''; return; }
+  if (totalPages <= 1) { pg.innerHTML = ''; return; } // no controls needed for one page
+
   const start = (currentPage - 1) * PAGE_SIZE + 1;
   const end   = Math.min(currentPage * PAGE_SIZE, total);
+
   let html = `<span class="page-info">${start}–${end} of ${total}</span>`;
-  html += `<button class="btn btn-sm" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹ Prev</button>`;
-  // Show a window of pages
+  html += `<button class="btn btn-sm" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>‹ Prev</button>`;
+
   const w = 2;
   for (let p = 1; p <= totalPages; p++) {
+    // Always show: first page, last page, and pages within ±w of current
     if (p === 1 || p === totalPages || (p >= currentPage - w && p <= currentPage + w)) {
-      html += `<button class="btn btn-sm ${p===currentPage?'btn-primary':''}" onclick="goPage(${p})">${p}</button>`;
+      html += `<button class="btn btn-sm ${p === currentPage ? 'btn-primary' : ''}" onclick="goPage(${p})">${p}</button>`;
     } else if (p === currentPage - w - 1 || p === currentPage + w + 1) {
+      // Show "…" exactly once at each gap boundary
       html += `<span class="page-info">…</span>`;
     }
+    // All other pages are silently skipped
   }
-  html += `<button class="btn btn-sm" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>Next ›</button>`;
+
+  html += `<button class="btn btn-sm" onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>Next ›</button>`;
   pg.innerHTML = html;
 }
 
+// Changes the current page and scrolls the grid into view
 function goPage(p) {
   currentPage = p;
   render();
   document.getElementById('booksGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// ─── Escape ───────────────────────────────────────────────
+
+// ─── HTML ESCAPE ─────────────────────────────────────────────────────
+/*
+  Prevents XSS (cross-site scripting). If a book title contained
+  something like <script>alert('hi')</script>, injecting it directly
+  into innerHTML would execute it. esc() converts the dangerous
+  characters to their safe HTML entity equivalents.
+
+  & must be replaced first, otherwise the other replacements would
+  double-escape (e.g. &lt; → &amp;lt;)
+*/
 function esc(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
-// ─── Modal helpers ────────────────────────────────────────
+
+// ─── MODAL HELPERS ────────────────────────────────────────────────────
+
+/*
+  Sets format checkboxes to match a given array of format strings.
+  Also updates the visual "active" class on the label wrappers.
+*/
 function setFormats(vals) {
   document.querySelectorAll('#f-format-group input[type="checkbox"]').forEach(cb => {
     cb.checked = vals.includes(cb.value);
     cb.closest('.radio-btn').classList.toggle('active', cb.checked);
   });
 }
+
+/*
+  Sets a radio button group to a specific value.
+  Also syncs the visual "active" class on label wrappers.
+*/
 function setRadio(name, val) {
   document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
     r.checked = r.value === val;
     r.closest('.radio-btn').classList.toggle('active', r.value === val);
   });
 }
+
+// Keep status radio button styling in sync when the user clicks one
 document.querySelectorAll('.radio-btn input[type="radio"]').forEach(r => {
   r.addEventListener('change', function() {
+    // Deactivate all labels in this group, then activate the selected one
     this.closest('.radio-group').querySelectorAll('.radio-btn').forEach(l => l.classList.remove('active'));
     this.closest('.radio-btn').classList.add('active');
   });
 });
+
+// Keep format checkbox styling in sync when the user clicks one
 document.querySelectorAll('#f-format-group input[type="checkbox"]').forEach(cb => {
   cb.addEventListener('change', function() {
+    // toggle() with a boolean sets or removes the class based on checked state
     this.closest('.radio-btn').classList.toggle('active', this.checked);
   });
 });
 
-// ─── Datalists ────────────────────────────────────────────
+
+// ─── DATALISTS (author & series autocomplete) ─────────────────────────
+/*
+  HTML <datalist> provides browser-native autocomplete for text inputs.
+  We repopulate it every time the modal opens so it reflects the
+  current library (including newly added books).
+*/
 function populateDataLists() {
-  // Authors — unique, sorted
+  // Collect unique authors, filter out empty strings, sort alphabetically
   const authors = [...new Set(books.map(b => b.author).filter(Boolean))].sort();
+
+  // Each <option> in the datalist is a suggestion for the linked input
   document.getElementById('dl-authors').innerHTML =
     authors.map(a => `<option value="${esc(a)}">`).join('');
 
-  // Series names — strip trailing index (#1, 3.0 etc) to get base names, then
-  // also include the full string so the exact value autocompletes
+  // Collect unique series names (including the full "Series #N" strings)
   const seriesSet = new Set();
   books.forEach(b => { if (b.series) seriesSet.add(b.series); });
   const seriesList = [...seriesSet].sort();
+
   document.getElementById('dl-series').innerHTML =
     seriesList.map(s => `<option value="${esc(s)}">`).join('');
 }
 
-// ─── Tags autocomplete ────────────────────────────────────
-let tagsACIndex = -1;
+
+// ─── TAGS AUTOCOMPLETE ────────────────────────────────────────────────
+/*
+  Tags use a custom dropdown instead of <datalist> because the input is
+  comma-separated. We need to suggest completions for only the word
+  currently being typed, not the entire input value.
+
+  Flow:
+  1. User types in the tags input
+  2. tagsAC() fires, parses out the current word, finds matches
+  3. Dropdown appears with matching tags
+  4. User navigates with arrows or clicks to pick a tag
+  5. pickTag() replaces the current word and appends ", " for the next
+  6. closeTagsAC() hides the dropdown
+*/
+
+let tagsACIndex = -1; // which dropdown item is keyboard-highlighted (-1 = none)
 
 function tagsAC() {
   const input = document.getElementById('f-tags');
+  const ac    = document.getElementById('tags-ac');
+
+  // Split on commas to find what the user is currently typing
+  // e.g. "sci-fi, fav" → parts = ["sci-fi", " fav"] → query = "fav"
   const parts = input.value.split(',');
   const query = parts[parts.length - 1].trim().toLowerCase();
-  const ac = document.getElementById('tags-ac');
 
-  if (!query) { closeTagsAC(); return; }
+  if (!query) { closeTagsAC(); return; } // nothing typed yet
 
+  // Tags already entered (all but the last part) — don't suggest these again
   const existing = new Set(parts.slice(0, -1).map(t => t.trim().toLowerCase()));
+
+  // Find tags that contain the query string and haven't been entered yet
   const matches = allTags().filter(t =>
     t.toLowerCase().includes(query) && !existing.has(t.toLowerCase())
   );
 
-  if (!matches.length) { closeTagsAC(); return; }
+  if (!matches.length) { closeTagsAC(); return; } // no matches
 
-  tagsACIndex = -1;
-  ac.innerHTML = matches.map((t, i) =>
-    `<div class="ac-item" data-val="${esc(t)}" onmousedown="pickTag('${esc(t)}')">${esc(t)}</div>`
-  ).join('');
+  tagsACIndex = -1; // reset keyboard selection
+
+  // Build a dropdown row for each match.
+  // onmousedown (not onclick) fires before onblur, so the click registers
+  // before the input loses focus and closes the dropdown.
+  ac.innerHTML = matches
+    .map(t => `<div class="ac-item" data-val="${esc(t)}" onmousedown="pickTag('${esc(t)}')">${esc(t)}</div>`)
+    .join('');
+
   ac.style.display = 'block';
 }
 
+// Handles keyboard navigation within the tags dropdown
 function tagsACKey(e) {
-  const ac = document.getElementById('tags-ac');
+  const ac    = document.getElementById('tags-ac');
   const items = ac.querySelectorAll('.ac-item');
+
+  // Do nothing if dropdown isn't visible or has no items
   if (!items.length || ac.style.display === 'none') return;
+
   if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    tagsACIndex = Math.min(tagsACIndex + 1, items.length - 1);
+    e.preventDefault(); // prevent cursor moving in the input
+    tagsACIndex = Math.min(tagsACIndex + 1, items.length - 1); // clamp to last item
     items.forEach((el, i) => el.classList.toggle('ac-active', i === tagsACIndex));
+
   } else if (e.key === 'ArrowUp') {
     e.preventDefault();
-    tagsACIndex = Math.max(tagsACIndex - 1, 0);
+    tagsACIndex = Math.max(tagsACIndex - 1, 0); // clamp to first item
     items.forEach((el, i) => el.classList.toggle('ac-active', i === tagsACIndex));
+
   } else if (e.key === 'Enter' && tagsACIndex >= 0) {
-    e.preventDefault();
+    e.preventDefault(); // prevent form submission
     pickTag(items[tagsACIndex].dataset.val);
+
   } else if (e.key === 'Escape') {
     closeTagsAC();
   }
 }
 
+// Inserts the selected tag into the input, replacing the partial word
 function pickTag(tag) {
   const input = document.getElementById('f-tags');
   const parts = input.value.split(',');
+
+  // Replace the last (partial) word with the selected tag
   parts[parts.length - 1] = ' ' + tag;
+
+  // Rejoin, clean up any leading comma+space, then add ", " for the next tag
   input.value = parts.join(',').replace(/^,\s*/, '') + ', ';
+
   input.focus();
   closeTagsAC();
 }
@@ -642,29 +1369,45 @@ function closeTagsAC() {
   tagsACIndex = -1;
 }
 
-// ─── Open/close modal ────────────────────────────────────
+
+// ─── MODAL OPEN / CLOSE ───────────────────────────────────────────────
+
+// Opens the modal in "add new book" mode with all fields cleared
 function openAddModal() {
-  editingId = null; currentRating = 0;
+  editingId     = null;
+  currentRating = 0;
   document.getElementById('modalTitle').textContent = 'Add a book';
-  ['f-title','f-author','f-series','f-tags','f-notes'].forEach(id => document.getElementById(id).value = '');
-  setFormats(['physical']);
-  setRadio('status','want');
+
+  // Clear all text fields in one loop
+  ['f-title', 'f-author', 'f-series', 'f-tags', 'f-notes'].forEach(id =>
+    document.getElementById(id).value = ''
+  );
+
+  setFormats(['physical']); // default format
+  setRadio('status', 'want');
   updateStars(0);
   document.getElementById('fmt-error').style.display = 'none';
-  populateDataLists();
+  populateDataLists(); // refresh author/series suggestions from current library
   document.getElementById('modal').classList.add('open');
-  document.getElementById('f-title').focus();
+  document.getElementById('f-title').focus(); // put cursor in first field
 }
+
+// Opens the modal in "edit existing book" mode, pre-filled with the book's data
 function openEditModal(id) {
   const b = books.find(x => x.id === id);
-  if (!b) return;
-  editingId = id; currentRating = b.rating || 0;
+  if (!b) return; // guard against stale IDs
+
+  editingId     = id;
+  currentRating = b.rating || 0;
+
   document.getElementById('modalTitle').textContent = 'Edit book';
   document.getElementById('f-title').value  = b.title;
   document.getElementById('f-author').value = b.author || '';
   document.getElementById('f-series').value = b.series || '';
+  // Convert tags array back to comma-separated string for the input
   document.getElementById('f-tags').value   = (b.tags || []).join(', ');
   document.getElementById('f-notes').value  = b.notes || '';
+
   setFormats(b.formats || ['physical']);
   setRadio('status', b.status);
   updateStars(currentRating);
@@ -672,75 +1415,144 @@ function openEditModal(id) {
   populateDataLists();
   document.getElementById('modal').classList.add('open');
 }
-function closeModal() { document.getElementById('modal').classList.remove('open'); }
-function handleBackdropClick(e) { if (e.target === document.getElementById('modal')) closeModal(); }
 
-// ─── Stars ───────────────────────────────────────────────
-function setRating(val) { currentRating = currentRating === val ? 0 : val; updateStars(currentRating); }
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+// Only close if the click was on the backdrop itself, not on the modal box
+function handleBackdropClick(e) {
+  if (e.target === document.getElementById('modal')) closeModal();
+}
+
+
+// ─── STAR RATING ─────────────────────────────────────────────────────
+
+// Called when a star button is clicked.
+// Clicking the same star twice clears the rating (toggle behavior).
+function setRating(val) {
+  currentRating = (currentRating === val) ? 0 : val;
+  updateStars(currentRating);
+}
+
+// Lights up stars 1–val, dims the rest
 function updateStars(val) {
   document.querySelectorAll('.star-btn').forEach(btn => {
+    // data-val is the star's position (1–5); lit if position <= current rating
     btn.classList.toggle('lit', parseInt(btn.dataset.val) <= val);
   });
 }
 
-// ─── Save / Delete ───────────────────────────────────────
+
+// ─── SAVE / DELETE ────────────────────────────────────────────────────
+
 function saveBook() {
   const title = document.getElementById('f-title').value.trim();
-  if (!title) { document.getElementById('f-title').focus(); return; }
+  if (!title) { document.getElementById('f-title').focus(); return; } // title is required
+
   const author  = document.getElementById('f-author').value.trim();
   const series  = document.getElementById('f-series').value.trim();
-  const tags    = document.getElementById('f-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
-  const formats = [...document.querySelectorAll('#f-format-group input[type="checkbox"]:checked')].map(cb => cb.value);
-  if (!formats.length) { document.getElementById('fmt-error').style.display = 'block'; return; }
+
+  // Split comma-separated tags, trim whitespace, remove empty strings
+  const tags = document.getElementById('f-tags').value
+    .split(',')
+    .map(t => t.trim())
+    .filter(Boolean);
+
+  // Collect values of all checked format checkboxes
+  const formats = [...document.querySelectorAll('#f-format-group input[type="checkbox"]:checked')]
+    .map(cb => cb.value);
+
+  if (!formats.length) {
+    document.getElementById('fmt-error').style.display = 'block';
+    return; // validation failed — at least one format required
+  }
   document.getElementById('fmt-error').style.display = 'none';
+
   const status = document.querySelector('input[name="status"]:checked').value;
   const notes  = document.getElementById('f-notes').value.trim();
 
   if (editingId !== null) {
+    // Edit mode: find the book in the array and replace it
+    // Spread ...books[i] preserves any fields we don't edit (like original id)
     const i = books.findIndex(b => b.id === editingId);
-    if (i !== -1) books[i] = { ...books[i], title, author, series, tags, formats, status, notes, rating: currentRating };
+    if (i !== -1) {
+      books[i] = { ...books[i], title, author, series, tags, formats, status, notes, rating: currentRating };
+    }
   } else {
+    // Add mode: create a new book object with a timestamp ID
+    // Date.now() gives milliseconds since epoch — unique enough for our purposes
     books.push({ id: Date.now(), title, author, series, tags, formats, status, notes, rating: currentRating });
   }
-  save(); closeModal(); render();
+
+  save();      // persist to localStorage
+  closeModal();
+  render();    // rebuild the UI
 }
 
 function deleteBook(id) {
   const b = books.find(x => x.id === id);
-  if (!b || !confirm(`Delete "${b.title}"?`)) return;
+  if (!b) return;
+  if (!confirm(`Delete "${b.title}"?`)) return; // native confirmation dialog
+
+  // filter() returns a new array excluding the deleted book
   books = books.filter(x => x.id !== id);
-  save(); render();
+  save();
+  render();
 }
 
-// ─── Import / Export ─────────────────────────────────────
+
+// ─── IMPORT / EXPORT ─────────────────────────────────────────────────
+
+// Creates a downloadable JSON file from the current books array
 function exportData() {
+  // Blob is a file-like object in memory; JSON.stringify with indent=2 for readability
   const blob = new Blob([JSON.stringify(books, null, 2)], { type: 'application/json' });
+
+  // Create a temporary invisible link, click it to trigger download, then clean up
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  a.href = URL.createObjectURL(blob); // creates a temporary URL pointing to the blob
   a.download = 'my-library.json';
   a.click();
 }
+
+// Reads a user-selected JSON file and merges its contents into the library
 function importData(e) {
   const file = e.target.files[0];
   if (!file) return;
+
   const reader = new FileReader();
   reader.onload = ev => {
     try {
       const data = JSON.parse(ev.target.result);
       if (!Array.isArray(data)) throw new Error('Expected a JSON array');
       if (!confirm(`Import ${data.length} books? Duplicates (by ID) will be skipped.`)) return;
+
+      // Build a Set of existing IDs for fast deduplication
       const existingIds = new Set(books.map(b => b.id));
-      const newBooks = data.filter(b => !existingIds.has(b.id)).map(normalizeBook);
+
+      // Keep only books whose ID doesn't already exist, then normalize them
+      const newBooks = data
+        .filter(b => !existingIds.has(b.id))
+        .map(normalizeBook);
+
       books = [...books, ...newBooks];
-      save(); render();
+      save();
+      render();
       alert(`Imported ${newBooks.length} new books (${data.length - newBooks.length} duplicates skipped).`);
-    } catch(err) { alert('Failed to import: ' + err.message); }
+
+    } catch (err) {
+      alert('Failed to import: ' + err.message);
+    }
   };
-  reader.readAsText(file);
-  e.target.value = '';
+
+  reader.readAsText(file); // triggers onload above when done
+  e.target.value = '';     // reset the file input so the same file can be re-imported later
 }
 
-// ─── Init ─────────────────────────────────────────────────
+
+// ─── INIT ─────────────────────────────────────────────────────────────
+// Kick everything off: fetch the repo JSON (which calls render() when done)
 fetchRepoBooks();
 </script>
 </body>
