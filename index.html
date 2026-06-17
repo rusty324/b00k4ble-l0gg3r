@@ -241,7 +241,8 @@
 
   /* ─── FILTER ROWS ────────────────────────────────────────────────── */
   .filter-row { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.5rem; align-items: center; }
-  .filter-label { font-size: 11px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.06em; margin-right: 0.25rem; white-space: nowrap; }
+  .filter-label { font-size: 11px; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.06em; margin-right: 0.25rem; white-space: nowrap; flex-shrink: 0; }
+  .pill-group { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 
   /* ─── FILTER PILLS ───────────────────────────────────────────────── */
   /*
@@ -266,6 +267,48 @@
     here so cards don't stretch to fill the full row when there are few results.
   */
   .books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+
+  /* ─── LIST VIEW ─────────────────────────────────────────────────────── */
+  .books-list { display: flex; flex-direction: column; }
+  .book-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    transition: background 0.12s;
+  }
+  .book-row:nth-child(even) { background: var(--gray-50); }
+  .book-row:hover { background: var(--amber-50); }
+  .book-row-thumb {
+    width: 32px; height: 32px; border-radius: 4px;
+    object-fit: cover; flex-shrink: 0;
+  }
+  .book-row-initial {
+    width: 32px; height: 32px; border-radius: 4px;
+    background: var(--amber-900); color: var(--amber-50);
+    font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .book-row-title { font-weight: 500; color: var(--amber-900); font-size: 14px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .book-row-author { font-size: 13px; color: var(--text-muted); flex: 0 0 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .book-row-badges { display: flex; gap: 0.3rem; flex-shrink: 0; }
+  .book-row-actions { display: flex; gap: 0.35rem; flex-shrink: 0; opacity: 0; transition: opacity 0.15s; }
+  .book-row:hover .book-row-actions { opacity: 1; }
+
+  /* ─── CARD VIEW COVER ────────────────────────────────────────────────── */
+  .book-card-cover {
+    width: 100%; height: 110px; object-fit: cover;
+    border-radius: 6px; margin-bottom: 0.15rem;
+  }
+  .book-card-initial {
+    width: 100%; height: 110px; border-radius: 6px;
+    background: var(--amber-900); color: var(--amber-50);
+    font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 0.15rem; opacity: 0.65;
+  }
 
   /* Each book card is a flex column so "book-actions" can sit at the bottom */
   .book-card {
@@ -403,11 +446,33 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--gray-100); border-radius: 3px; }
 
-  /* ─── MOBILE ADJUSTMENTS ─────────────────────────────────────────── */
-  @media (max-width: 600px) {
-    header { padding: 1rem; }
-    main { padding: 1.25rem 1rem; }
-    .brand { font-size: 1.25rem; }
+  /* ─── RESPONSIVE: TABLET ─────────────────────────────────────────── */
+  @media (max-width: 768px) {
+    .books-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+    main { padding: 1.5rem 1.25rem; }
+  }
+
+  /* ─── RESPONSIVE: LARGE PHONE ────────────────────────────────────── */
+  @media (max-width: 480px) {
+    header { padding: 0.75rem 1rem; flex-wrap: wrap; gap: 0.5rem; }
+    .brand { font-size: 1.2rem; flex: 1; }
+    .header-actions { width: 100%; justify-content: flex-end; gap: 0.4rem; flex-wrap: nowrap; }
+    .btn, .pill, .theme-toggle { min-height: 44px; }
+    .btn-primary { flex: 1; justify-content: center; }
+    .filter-row { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; scrollbar-width: none; }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .pill-group { flex-wrap: nowrap; }
+    .books-grid { grid-template-columns: 1fr; }
+    .book-row-author { display: none; }
+    main { padding: 1rem 0.75rem; }
+    .toolbar { gap: 0.5rem; }
+    .sort-select { width: 100%; }
+  }
+
+  /* ─── RESPONSIVE: SMALL PHONE ────────────────────────────────────── */
+  @media (max-width: 360px) {
+    .brand { font-size: 1.1rem; }
+    .export-label, .import-label { display: none; }
   }
 </style>
 </head>
@@ -426,19 +491,22 @@
   <div class="brand">My<span>·</span>Library</div>
   <div class="header-actions">
 
+    <!-- Card/list view toggle -->
+    <button class="btn btn-sm" id="viewToggleBtn" onclick="toggleView()" title="Toggle list / card view">⊞</button>
+
     <!-- 🌙/☀️ icon swaps in JS based on current theme -->
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode" id="themeBtn">🌙</button>
 
     <!-- Export: downloads current localStorage data as a JSON file -->
     <button class="btn btn-sm" onclick="exportData()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Export
+      <span class="export-label">Export</span>
     </button>
 
     <!-- Import: clicking this button triggers the hidden file input below -->
     <button class="btn btn-sm" onclick="document.getElementById('importFile').click()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Import
+      <span class="import-label">Import</span>
     </button>
 
     <!-- Hidden: the actual file picker, only accepts .json files -->
@@ -483,7 +551,7 @@
   <!-- Format filter pills — only one can be active at a time -->
   <div class="filter-row">
     <span class="filter-label">Format</span>
-    <div id="formatPills" style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+    <div id="formatPills" class="pill-group">
       <button class="pill active" onclick="setFilter('format','all',this)">All</button>
       <button class="pill" onclick="setFilter('format','physical',this)">📚 Physical</button>
       <button class="pill" onclick="setFilter('format','ebook',this)">📱 E-book</button>
@@ -494,7 +562,7 @@
   <!-- Status filter pills -->
   <div class="filter-row">
     <span class="filter-label">Status</span>
-    <div id="statusPills" style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+    <div id="statusPills" class="pill-group">
       <button class="pill active" onclick="setFilter('status','all',this)">All</button>
       <button class="pill" onclick="setFilter('status','read',this)">Read</button>
       <button class="pill" onclick="setFilter('status','reading',this)">Reading</button>
@@ -509,7 +577,7 @@
   -->
   <div class="filter-row" id="tagFilterRow" style="display:none;">
     <span class="filter-label">Tag</span>
-    <div id="tagPills" style="display:flex;gap:0.4rem;flex-wrap:wrap;"></div>
+    <div id="tagPills" class="pill-group"></div>
   </div>
 
   <!-- Book cards are injected here by render() -->
@@ -551,9 +619,14 @@
 
     <div class="form-group">
       <label>Series <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light)">(optional)</span></label>
-      <!-- Same datalist pattern as author -->
-      <input type="text" class="plain" id="f-series" placeholder="e.g. The Expanse #1" autocomplete="off" list="dl-series">
-      <datalist id="dl-series"></datalist>
+      <!-- Series name with datalist + narrow index field side by side -->
+      <div style="display:flex;gap:0.5rem;align-items:flex-start">
+        <div style="flex:1;min-width:0">
+          <input type="text" class="plain" id="f-series" placeholder="e.g. The Expanse" autocomplete="off" list="dl-series">
+          <datalist id="dl-series"></datalist>
+        </div>
+        <input type="text" class="plain" id="f-seriesIndex" placeholder="#" style="width:56px;flex-shrink:0" autocomplete="off">
+      </div>
     </div>
 
     <div class="form-group">
@@ -625,6 +698,12 @@
       <textarea id="f-notes" placeholder="Optional notes, thoughts, quotes…"></textarea>
     </div>
 
+    <div class="form-group">
+      <label>Cover URL <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light)">(optional)</span></label>
+      <input type="text" class="plain" id="f-coverUrl" placeholder="https://covers.openlibrary.org/…">
+      <div class="hint">Paste a direct image URL, or leave blank to auto-fetch from Open Library.</div>
+    </div>
+
     <div class="modal-footer">
       <button class="btn" onclick="closeModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveBook()">Save book</button>
@@ -662,35 +741,29 @@ const PAGE_SIZE = 48;
   - tags can be a string, an array, or missing
 */
 function normalizeBook(b) {
-  return {
-    ...b, // spread all existing fields first, then override specific ones below
+  const author = Array.isArray(b.author)
+    ? b.author.join(', ')
+    : (b.author || '').replace(/[;,\s]+$/, '');
 
-    // If author is an array like ["Ann Leckie", "translator"], join with ", "
-    // Otherwise strip trailing semicolons/commas that Goodreads sometimes adds
-    author: Array.isArray(b.author)
-      ? b.author.join(', ')
-      : (b.author || '').replace(/[;,\s]+$/, ''),
+  const status = ({ 'want to read': 'want', 'reading': 'reading', 'read': 'read' }[b.status]
+    || b.status
+    || 'want');
 
-    // Normalize status strings. The lookup table maps full phrases to short keys.
-    // The || chain falls back: if not in the table, use whatever's there, or 'want'
-    status: ({ 'want to read': 'want', 'reading': 'reading', 'read': 'read' }[b.status]
-             || b.status
-             || 'want'),
+  const formats = Array.isArray(b.formats) ? b.formats
+    : b.formats              ? [b.formats]
+    : Array.isArray(b.format) ? b.format
+    : b.format               ? [b.format]
+    : ['physical'];
 
-    // Normalize formats to always be an array.
-    // Priority: formats (array) > formats (string) > format (array) > format (string) > default
-    formats: Array.isArray(b.formats) ? b.formats
-           : b.formats              ? [b.formats]
-           : Array.isArray(b.format) ? b.format
-           : b.format               ? [b.format]
-           : ['physical'],
+  const tags = Array.isArray(b.tags) ? b.tags
+    : (b.tags && typeof b.tags === 'string')
+      ? b.tags.split(',').map(t => t.trim()).filter(Boolean)
+    : [];
 
-    // Normalize tags to always be an array of trimmed, non-empty strings
-    tags: Array.isArray(b.tags) ? b.tags
-        : (b.tags && typeof b.tags === 'string')
-          ? b.tags.split(',').map(t => t.trim()).filter(Boolean)
-        : []
-  };
+  // Pre-built lowercase search string — computed once, used on every filter call
+  const _searchStr = [b.title || '', author, b.series || '', ...tags].join(' ').toLowerCase();
+
+  return { ...b, author, status, formats, tags, _searchStr };
 }
 
 
@@ -720,6 +793,17 @@ let currentRating = 0;
 // Timer reference for the search debounce (see debouncedRender)
 let searchTimer = null;
 
+// View mode: 'card' (grid with covers) or 'list' (compact rows)
+let viewMode = localStorage.getItem('viewMode') || 'card';
+
+// Filter/sort result cache — recomputed only when filters, sort, or books change
+let _filteredCache = null;
+let _filteredCacheKey = '';
+let _booksMutation = 0;  // bumped by save() to invalidate _filteredCache
+
+// In-memory cover URL cache: book.id → URL | 'none' | 'pending'
+const _coverCache = {};
+
 
 // ─── THEME ────────────────────────────────────────────────────────────
 /*
@@ -735,6 +819,73 @@ function applyTheme(theme) {
   localStorage.setItem('theme', theme);
 }
 
+function toggleView() {
+  viewMode = viewMode === 'card' ? 'list' : 'card';
+  localStorage.setItem('viewMode', viewMode);
+  document.getElementById('viewToggleBtn').textContent = viewMode === 'card' ? '⊞' : '☰';
+  render();
+}
+
+
+// ─── COVER IMAGE FETCH ────────────────────────────────────────────────
+// Lazily fetches a cover from Open Library (free, no API key needed).
+// Result is cached in _coverCache and persisted back to the book record.
+async function fetchCover(book) {
+  if (_coverCache[book.id] !== undefined) return _coverCache[book.id];
+  _coverCache[book.id] = 'pending';
+  try {
+    const q = encodeURIComponent((book.title || '').slice(0, 60));
+    const a = encodeURIComponent((book.author || '').slice(0, 40));
+    const res = await fetch(
+      `https://openlibrary.org/search.json?title=${q}&author=${a}&limit=1&fields=cover_i`
+    );
+    if (!res.ok) throw new Error('network');
+    const data = await res.json();
+    const coverId = data.docs?.[0]?.cover_i;
+    if (coverId) {
+      const url = `https://covers.openlibrary.org/b/id/${coverId}-M.jpg`;
+      _coverCache[book.id] = url;
+      const i = books.findIndex(b => b.id === book.id);
+      if (i !== -1 && !books[i].coverUrl) {
+        books[i].coverUrl = url;
+        save();
+      }
+      return url;
+    }
+    _coverCache[book.id] = 'none';
+    return 'none';
+  } catch {
+    _coverCache[book.id] = 'none';
+    return 'none';
+  }
+}
+
+let _coverObserver = null;
+function getCoverObserver() {
+  if (_coverObserver) return _coverObserver;
+  _coverObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      _coverObserver.unobserve(entry.target);
+      const id = parseInt(entry.target.dataset.bookId, 10);
+      const book = books.find(b => b.id === id);
+      if (!book) return;
+      const isList = entry.target.classList.contains('book-row-initial');
+      fetchCover(book).then(url => {
+        if (!url || url === 'none' || url === 'pending') return;
+        const img = document.createElement('img');
+        img.className = isList ? 'book-row-thumb' : 'book-card-cover';
+        img.src = url;
+        img.alt = '';
+        img.loading = 'lazy';
+        if (entry.target.isConnected) entry.target.replaceWith(img);
+      });
+    });
+  }, { rootMargin: '200px' });
+  return _coverObserver;
+}
+
+
 function toggleTheme() {
   // Read current theme and flip it
   const current = document.documentElement.getAttribute('data-theme');
@@ -743,6 +894,9 @@ function toggleTheme() {
 
 // Apply saved theme immediately on load (before any rendering happens)
 applyTheme(localStorage.getItem('theme') || 'light');
+
+// Sync view toggle button icon to the persisted view mode
+document.getElementById('viewToggleBtn').textContent = viewMode === 'card' ? '⊞' : '☰';
 
 
 // ─── REPO JSON SYNC ───────────────────────────────────────────────────
@@ -801,6 +955,7 @@ async function fetchRepoBooks() {
 // Writes the current books array to localStorage as a JSON string.
 // Called after every add, edit, delete, or import.
 function save() {
+  _booksMutation++;
   localStorage.setItem('myLibrary', JSON.stringify(books));
 }
 
@@ -945,66 +1100,44 @@ function render() {
   const query = document.getElementById('searchInput').value.toLowerCase().trim();
   const sort  = document.getElementById('sortSelect').value;
 
-  // ── Step 1: Filter ──────────────────────────────────────────────────
-  let filtered = books.filter(b => {
-    // Format filter: does the book's formats array include the selected format?
-    if (filters.format !== 'all' && !b.formats.includes(filters.format)) return false;
+  // ── Step 1: Filter + Sort (cached) ─────────────────────────────────
+  // Only recompute when filters, sort, search, or the book list changes.
+  const key = `${query}|${sort}|${filters.format}|${filters.status}|${filters.tag}|${_booksMutation}`;
+  if (_filteredCacheKey !== key || _filteredCache === null) {
+    const fresh = books.filter(b => {
+      if (filters.format !== 'all' && !b.formats.includes(filters.format)) return false;
+      if (filters.status !== 'all' && b.status !== filters.status) return false;
+      if (filters.tag !== 'all' && !(b.tags || []).includes(filters.tag)) return false;
+      // _searchStr is pre-built in normalizeBook — no join/toLowerCase per call
+      if (query && !b._searchStr.includes(query)) return false;
+      return true;
+    });
 
-    // Status filter: exact match
-    if (filters.status !== 'all' && b.status !== filters.status) return false;
+    fresh.sort((a, b) => {
+      switch (sort) {
+        case 'added-asc':  return a.id - b.id;
+        case 'title-asc':  return a.title.localeCompare(b.title);
+        case 'title-desc': return b.title.localeCompare(a.title);
+        case 'author-asc': return (a.author || '').localeCompare(b.author || '');
+        case 'rating-desc': return (b.rating || 0) - (a.rating || 0);
+        case 'series-asc': return seriesSort(a, b);
+        default:           return b.id - a.id; // 'added-desc'
+      }
+    });
 
-    // Tag filter: does the book's tags array include the selected tag?
-    if (filters.tag !== 'all' && !(b.tags || []).includes(filters.tag)) return false;
+    _filteredCache = fresh;
+    _filteredCacheKey = key;
+  }
+  const filtered = _filteredCache;
 
-    // Search: concatenate all searchable fields into one string, then check
-    // if the query appears anywhere in it
-    if (query) {
-      const hay = [b.title, b.author, b.series, ...(b.tags || [])].join(' ').toLowerCase();
-      if (!hay.includes(query)) return false;
-    }
-
-    return true; // book passes all filters
-  });
-
-  // ── Step 2: Sort ────────────────────────────────────────────────────
-  filtered.sort((a, b) => {
-    switch (sort) {
-      case 'added-asc':
-        // IDs are timestamps, so sorting by ID = sorting by add date
-        return a.id - b.id;
-
-      case 'title-asc':
-        // localeCompare handles accented characters correctly (é, ñ, etc.)
-        return a.title.localeCompare(b.title);
-
-      case 'title-desc':
-        return b.title.localeCompare(a.title);
-
-      case 'author-asc':
-        // || '' guards against undefined author fields
-        return (a.author || '').localeCompare(b.author || '');
-
-      case 'rating-desc':
-        // || 0 treats unrated books as 0 stars so they sort to the bottom
-        return (b.rating || 0) - (a.rating || 0);
-
-      case 'series-asc':
-        return seriesSort(a, b);
-
-      default: // 'added-desc' — newest first
-        return b.id - a.id;
-    }
-  });
-
-  // ── Step 3: Pagination ──────────────────────────────────────────────
+  // ── Step 2: Pagination ──────────────────────────────────────────────
   const grid = document.getElementById('booksGrid');
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-
-  // If the current page no longer exists (e.g. after filtering), clamp it
   if (currentPage > totalPages) currentPage = totalPages;
 
-  // ── Step 4: Empty state ─────────────────────────────────────────────
+  // ── Step 3: Empty state ─────────────────────────────────────────────
   if (!filtered.length) {
+    grid.className = 'books-grid';
     grid.innerHTML = `<div class="empty-state">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
@@ -1017,88 +1150,104 @@ function render() {
     return;
   }
 
-  // ── Step 5: Slice to current page ───────────────────────────────────
-  // e.g. page 2 with PAGE_SIZE=48: slice(48, 96)
+  // ── Step 4: Slice to current page ───────────────────────────────────
   const page = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  // Lookup tables to convert internal keys to display strings/CSS classes
   const fmtLabels = { physical: '📚 Physical', ebook: '📱 E-book', audio: '🎧 Audiobook' };
   const fmtCls    = { physical: 'badge-physical', ebook: 'badge-ebook', audio: 'badge-audio' };
   const stCls     = { read: 'badge-read', reading: 'badge-reading', want: 'badge-want' };
   const stLabel   = { read: 'Read', reading: 'Reading', want: 'Want to read' };
 
-  // ── Step 6: Build card HTML ─────────────────────────────────────────
-  /*
-    We build an array of HTML strings (one per book) then join them at
-    the end. This is faster than concatenating strings in a loop because
-    JavaScript engines optimize Array.join better than repeated += on strings.
-  */
-  const html = page.map(b => {
-    // One colored badge per format (a book can have multiple)
-    const fmtBadges = b.formats
-      .map(f => `<span class="badge ${fmtCls[f]}">${fmtLabels[f]}</span>`)
-      .join('');
+  // ── Step 5: Build HTML by view mode ────────────────────────────────
+  let html;
+  if (viewMode === 'list') {
+    const fmtIcon = { physical: '📚', ebook: '📱', audio: '🎧' };
+    html = page.map(b => {
+      const firstLetter = esc((b.title || '?')[0].toUpperCase());
+      const cachedCover = b.coverUrl || _coverCache[b.id];
+      const hasValidCover = cachedCover && cachedCover !== 'none' && cachedCover !== 'pending';
+      const thumbHtml = hasValidCover
+        ? `<img class="book-row-thumb" src="${esc(cachedCover)}" alt="" loading="lazy">`
+        : `<div class="book-row-initial" data-book-id="${b.id}">${firstLetter}</div>`;
+      const fmtBadges = b.formats.map(f =>
+        `<span class="badge ${fmtCls[f]}" title="${f}">${fmtIcon[f]}</span>`
+      ).join('');
+      return `<div class="book-row">
+        ${thumbHtml}
+        <div class="book-row-title" title="${esc(b.title)}">${esc(b.title)}</div>
+        <div class="book-row-author" title="${esc(b.author || '')}">${esc(b.author || '')}</div>
+        <div class="book-row-badges">${fmtBadges}<span class="badge ${stCls[b.status]}">${stLabel[b.status]}</span></div>
+        <div class="book-row-actions">
+          <button class="btn btn-sm" onclick="openEditModal(${b.id})" title="Edit">✏</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteBook(${b.id})" title="Delete">🗑</button>
+        </div>
+      </div>`;
+    });
+  } else {
+    html = page.map(b => {
+      const fmtBadges = b.formats.map(f =>
+        `<span class="badge ${fmtCls[f]}">${fmtLabels[f]}</span>`).join('');
+      const tagBadges = (b.tags || []).map(t =>
+        `<span class="badge badge-tag">${esc(t)}</span>`).join('');
+      const stars = b.rating
+        ? '★'.repeat(b.rating) + `<span class="empty">${'★'.repeat(5 - b.rating)}</span>`
+        : '';
 
-    // One small blue badge per tag
-    const tagBadges = (b.tags || [])
-      .map(t => `<span class="badge badge-tag">${esc(t)}</span>`)
-      .join('');
+      const firstLetter = esc((b.title || '?')[0].toUpperCase());
+      const cachedCover = b.coverUrl || _coverCache[b.id];
+      const hasValidCover = cachedCover && cachedCover !== 'none' && cachedCover !== 'pending';
+      const coverHtml = hasValidCover
+        ? `<img class="book-card-cover" src="${esc(cachedCover)}" alt="" loading="lazy">`
+        : `<div class="book-card-initial" data-book-id="${b.id}">${firstLetter}</div>`;
 
-    // Star display: filled stars + empty stars in a dimmer color
-    const stars = b.rating
-      ? '★'.repeat(b.rating) + `<span class="empty">${'★'.repeat(5 - b.rating)}</span>`
-      : ''; // no stars if unrated
+      return `<div class="book-card">
+        ${coverHtml}
+        <div class="book-title">${esc(b.title)}</div>
+        ${b.author ? `<div class="book-author">${esc(b.author)}</div>` : ''}
+        ${b.series ? `<div class="book-series">📖 ${esc(b.series)}</div>` : ''}
+        <div class="book-meta">
+          ${fmtBadges}
+          <span class="badge ${stCls[b.status]}">${stLabel[b.status]}</span>
+          ${stars ? `<span class="stars">${stars}</span>` : ''}
+        </div>
+        ${tagBadges ? `<div class="book-tags">${tagBadges}</div>` : ''}
+        ${b.notes ? `<div class="book-notes">${esc(b.notes)}</div>` : ''}
+        <div class="book-actions">
+          <button class="btn btn-sm" onclick="openEditModal(${b.id})">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Edit
+          </button>
+          <button class="btn btn-sm btn-danger" onclick="deleteBook(${b.id})">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6"/><path d="M14 11v6"/>
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+            Delete
+          </button>
+        </div>
+      </div>`;
+    });
+  }
 
-    // Template literal produces the full card HTML.
-    // esc() sanitizes user-entered text to prevent XSS (see esc function below).
-    // The conditional template `${condition ? html : ''}` omits optional fields.
-    return `<div class="book-card">
-      <div class="book-title">${esc(b.title)}</div>
-      ${b.author ? `<div class="book-author">${esc(b.author)}</div>` : ''}
-      ${b.series ? `<div class="book-series">📖 ${esc(b.series)}</div>` : ''}
-      <div class="book-meta">
-        ${fmtBadges}
-        <span class="badge ${stCls[b.status]}">${stLabel[b.status]}</span>
-        ${stars ? `<span class="stars">${stars}</span>` : ''}
-      </div>
-      ${tagBadges ? `<div class="book-tags">${tagBadges}</div>` : ''}
-      ${b.notes ? `<div class="book-notes">${esc(b.notes)}</div>` : ''}
-      <div class="book-actions">
-        <button class="btn btn-sm" onclick="openEditModal(${b.id})">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-          Edit
-        </button>
-        <button class="btn btn-sm btn-danger" onclick="deleteBook(${b.id})">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="3 6 5 6 21 6"/>
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-            <path d="M10 11v6"/><path d="M14 11v6"/>
-            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-          </svg>
-          Delete
-        </button>
-      </div>
-    </div>`;
-  });
-
-  // ── Step 7: Single DOM update ────────────────────────────────────────
-  /*
-    Instead of setting innerHTML directly (which causes one big reflow),
-    we use a DocumentFragment as a staging area. We build the DOM nodes
-    off-screen, then move them into the live document in one operation.
-    This is measurably faster for large card counts.
-  */
+  // ── Step 6: Single DOM update ────────────────────────────────────────
+  grid.className = viewMode === 'list' ? 'books-list' : 'books-grid';
   const frag = document.createDocumentFragment();
   const tmp  = document.createElement('div');
-  tmp.innerHTML = html.join(''); // parse all HTML at once
-  while (tmp.firstChild) frag.appendChild(tmp.firstChild); // move nodes to fragment
-  grid.innerHTML = ''; // clear old cards
-  grid.appendChild(frag); // one DOM insertion
+  tmp.innerHTML = html.join('');
+  while (tmp.firstChild) frag.appendChild(tmp.firstChild);
+  grid.innerHTML = '';
+  grid.appendChild(frag);
 
-  // ── Step 8: Pagination ───────────────────────────────────────────────
+  // Attach IntersectionObserver to cover placeholder elements for lazy fetch
+  const obs = getCoverObserver();
+  grid.querySelectorAll('[data-book-id]').forEach(el => obs.observe(el));
+
+  // ── Step 7: Pagination ───────────────────────────────────────────────
   renderPagination(filtered.length, totalPages);
 }
 
@@ -1262,13 +1411,18 @@ function populateDataLists() {
   document.getElementById('dl-authors').innerHTML =
     authors.map(a => `<option value="${esc(a)}">`).join('');
 
-  // Collect unique series names (including the full "Series #N" strings)
-  const seriesSet = new Set();
-  books.forEach(b => { if (b.series) seriesSet.add(b.series); });
-  const seriesList = [...seriesSet].sort();
+  // Collect unique series names with the "#N" index stripped out,
+  // so autocomplete suggests "The Expanse" not "The Expanse #1", "#2", "#3"…
+  const seriesNames = [...new Set(
+    books.map(b => {
+      if (!b.series) return null;
+      const m = b.series.match(/^(.+?)[\s#]+\d+(?:\.\d+)?$/);
+      return m ? m[1].trim() : b.series;
+    }).filter(Boolean)
+  )].sort();
 
   document.getElementById('dl-series').innerHTML =
-    seriesList.map(s => `<option value="${esc(s)}">`).join('');
+    seriesNames.map(s => `<option value="${esc(s)}">`).join('');
 }
 
 
@@ -1379,7 +1533,7 @@ function openAddModal() {
   document.getElementById('modalTitle').textContent = 'Add a book';
 
   // Clear all text fields in one loop
-  ['f-title', 'f-author', 'f-series', 'f-tags', 'f-notes'].forEach(id =>
+  ['f-title', 'f-author', 'f-series', 'f-seriesIndex', 'f-tags', 'f-notes', 'f-coverUrl'].forEach(id =>
     document.getElementById(id).value = ''
   );
 
@@ -1403,10 +1557,14 @@ function openEditModal(id) {
   document.getElementById('modalTitle').textContent = 'Edit book';
   document.getElementById('f-title').value  = b.title;
   document.getElementById('f-author').value = b.author || '';
-  document.getElementById('f-series').value = b.series || '';
+  // Split stored "Name #N" into the two series fields
+  const sm = (b.series || '').match(/^(.+?)[\s#]+(\d+(?:\.\d+)?)$/);
+  document.getElementById('f-series').value      = sm ? sm[1].trim() : (b.series || '');
+  document.getElementById('f-seriesIndex').value = sm ? sm[2] : '';
   // Convert tags array back to comma-separated string for the input
   document.getElementById('f-tags').value   = (b.tags || []).join(', ');
   document.getElementById('f-notes').value  = b.notes || '';
+  document.getElementById('f-coverUrl').value = b.coverUrl || '';
 
   setFormats(b.formats || ['physical']);
   setRadio('status', b.status);
@@ -1450,8 +1608,11 @@ function saveBook() {
   const title = document.getElementById('f-title').value.trim();
   if (!title) { document.getElementById('f-title').focus(); return; } // title is required
 
-  const author  = document.getElementById('f-author').value.trim();
-  const series  = document.getElementById('f-series').value.trim();
+  const author     = document.getElementById('f-author').value.trim();
+  const seriesName = document.getElementById('f-series').value.trim();
+  const seriesIdx  = document.getElementById('f-seriesIndex').value.trim();
+  const series     = seriesName && seriesIdx ? `${seriesName} #${seriesIdx}` : seriesName;
+  const coverUrl   = document.getElementById('f-coverUrl').value.trim();
 
   // Split comma-separated tags, trim whitespace, remove empty strings
   const tags = document.getElementById('f-tags').value
@@ -1473,16 +1634,14 @@ function saveBook() {
   const notes  = document.getElementById('f-notes').value.trim();
 
   if (editingId !== null) {
-    // Edit mode: find the book in the array and replace it
-    // Spread ...books[i] preserves any fields we don't edit (like original id)
+    // Edit mode: find the book in the array and replace it, rebuilding _searchStr
     const i = books.findIndex(b => b.id === editingId);
     if (i !== -1) {
-      books[i] = { ...books[i], title, author, series, tags, formats, status, notes, rating: currentRating };
+      books[i] = normalizeBook({ ...books[i], title, author, series, tags, formats, status, notes, rating: currentRating, coverUrl });
     }
   } else {
     // Add mode: create a new book object with a timestamp ID
-    // Date.now() gives milliseconds since epoch — unique enough for our purposes
-    books.push({ id: Date.now(), title, author, series, tags, formats, status, notes, rating: currentRating });
+    books.push(normalizeBook({ id: Date.now(), title, author, series, tags, formats, status, notes, rating: currentRating, coverUrl }));
   }
 
   save();      // persist to localStorage
