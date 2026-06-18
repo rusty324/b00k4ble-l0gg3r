@@ -161,6 +161,18 @@ function switchTab(tab) {
   };
   document.getElementById('addBtnLabel').textContent = labels[tab] || 'Add';
 
+  // Update export/import button labels to reflect active tab
+  const ioLabels = {
+    books:    { exp: '⬇ Export library',     imp: '⬆ Import library' },
+    media:    { exp: '⬇ Export movies & TV', imp: '⬆ Import movies & TV' },
+    wishlist: { exp: '⬇ Export wishlist',    imp: '⬆ Import wishlist' },
+  };
+  const io = ioLabels[tab] || ioLabels.books;
+  const expEl = document.getElementById('settingsExportBtn');
+  const impEl = document.getElementById('settingsImportBtn');
+  if (expEl) expEl.textContent = io.exp;
+  if (impEl) impEl.textContent = io.imp;
+
   const booksSection = document.getElementById('booksSection');
   const altContent   = document.getElementById('altContent');
   if (booksSection) booksSection.style.display = tab === 'books' ? '' : 'none';
@@ -438,12 +450,16 @@ function render() {
       ).join('');
       return `<div class="book-row">
         ${thumbHtml}
-        <div class="book-row-title">${esc(b.title)}</div>
-        <div class="book-row-author">${esc(b.author || '')}</div>
-        <div class="book-row-badges">${fmtBadges}<span class="badge ${stCls[b.status]}">${stLabel[b.status]}</span></div>
-        <div class="book-row-actions">
-          <button class="btn btn-sm" onclick="openEditModal(${b.id})" title="Edit">✏</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteBook(${b.id})" title="Delete">🗑</button>
+        <div class="book-row-content">
+          <div class="book-row-title">${esc(b.title)}</div>
+          <div class="book-row-meta">
+            <div class="book-row-author">${esc(b.author || '')}</div>
+            <div class="book-row-badges">${fmtBadges}<span class="badge ${stCls[b.status]}">${stLabel[b.status]}</span></div>
+            <div class="book-row-actions">
+              <button class="btn btn-sm" onclick="openEditModal(${b.id})" title="Edit">✏</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteBook(${b.id})" title="Delete">🗑</button>
+            </div>
+          </div>
         </div>
       </div>`;
     });
@@ -589,16 +605,19 @@ function renderMedia() {
         : '';
       return `<div class="book-row">
         <div class="book-row-initial" style="font-size:18px;background:none;color:var(--text)">${icon}</div>
-        <div class="book-row-title">${esc(m.title)}</div>
-        <div class="book-row-author">${m.year ? esc(String(m.year)) : ''}</div>
-        <div class="book-row-badges">
-          ${stars}
-          <span class="badge ${stCls[m.status] || 'badge-want'}">${stLabel[m.status] || m.status}</span>
-          ${formats ? `<span class="badge badge-media">${formats}</span>` : ''}
-        </div>
-        <div class="book-row-actions">
-          <button class="btn btn-sm" onclick="openMediaModal(${m.id})" title="Edit">✏</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteMediaItem(${m.id})" title="Delete">🗑</button>
+        <div class="book-row-content">
+          <div class="book-row-title">${esc(m.title)}</div>
+          <div class="book-row-meta">
+            <div class="book-row-author">${m.year ? esc(String(m.year)) : ''}</div>
+            <div class="book-row-badges">
+              <span class="badge ${stCls[m.status] || 'badge-want'}">${stLabel[m.status] || m.status}</span>
+              ${formats ? `<span class="badge badge-media">${formats}</span>` : ''}
+            </div>
+            <div class="book-row-actions">
+              <button class="btn btn-sm" onclick="openMediaModal(${m.id})" title="Edit">✏</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteMediaItem(${m.id})" title="Delete">🗑</button>
+            </div>
+          </div>
         </div>
       </div>`;
     }).join('');
@@ -720,12 +739,15 @@ function renderWishlist() {
     const icon = typeIcon[item.type] || '📚';
     return `<div class="book-row">
       <div class="book-row-initial" style="font-size:18px;background:none;color:var(--text)">${icon}</div>
-      <div class="book-row-title">${esc(item.title)}</div>
-      <div class="book-row-author">${esc(item.creator || '')}</div>
-      <div class="book-row-badges"></div>
-      <div class="book-row-actions">
-        <button class="btn btn-sm" onclick="openWishlistModal(${item.id})" title="Edit">✏</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteWishlistItem(${item.id})" title="Delete">🗑</button>
+      <div class="book-row-content">
+        <div class="book-row-title">${esc(item.title)}</div>
+        <div class="book-row-meta">
+          <div class="book-row-author">${esc(item.creator || '')}</div>
+          <div class="book-row-actions">
+            <button class="btn btn-sm" onclick="openWishlistModal(${item.id})" title="Edit">✏</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteWishlistItem(${item.id})" title="Delete">🗑</button>
+          </div>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -1205,10 +1227,18 @@ function deleteMediaItem(id) {
 
 // ─── IMPORT / EXPORT ─────────────────────────────────────────────────
 function exportData() {
-  const blob = new Blob([JSON.stringify(books, null, 2)], { type: 'application/json' });
+  let data, filename;
+  if (activeTab === 'media') {
+    data = mediaLibrary; filename = 'my-media-library.json';
+  } else if (activeTab === 'wishlist') {
+    data = bookWishlist; filename = 'my-wishlist.json';
+  } else {
+    data = books; filename = 'my-library.json';
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'my-library.json';
+  a.download = filename;
   a.click();
 }
 
@@ -1221,17 +1251,38 @@ function importData(e) {
     try {
       const data = JSON.parse(ev.target.result);
       if (!Array.isArray(data)) throw new Error('Expected a JSON array');
-      if (!confirm(`Import ${data.length} books? Duplicates (by ID) will be skipped.`)) return;
 
-      const existingIds = new Set(books.map(b => b.id));
-      const newBooks = data
-        .filter(b => !existingIds.has(b.id))
-        .map(normalizeBook);
-
-      books = [...books, ...newBooks];
-      save();
-      renderPage();
-      alert(`Imported ${newBooks.length} new books (${data.length - newBooks.length} duplicates skipped).`);
+      if (activeTab === 'media') {
+        if (!confirm(`Import ${data.length} media items? Duplicates (by ID) will be skipped.`)) return;
+        const existingIds = new Set(mediaLibrary.map(m => m.id));
+        const newItems = data
+          .filter(m => !existingIds.has(m.id))
+          .map(m => ({ ...m, status: m.status === 'watching' ? 'watched' : (m.status || 'want') }));
+        mediaLibrary = [...mediaLibrary, ...newItems];
+        saveMedia();
+        renderPage();
+        alert(`Imported ${newItems.length} new titles (${data.length - newItems.length} duplicates skipped).`);
+      } else if (activeTab === 'wishlist') {
+        if (!confirm(`Import ${data.length} wishlist items? Duplicates (by ID) will be skipped.`)) return;
+        const existingIds = new Set(bookWishlist.map(w => w.id));
+        const newItems = data
+          .filter(w => !existingIds.has(w.id))
+          .map(normalizeWishlistItem);
+        bookWishlist = [...bookWishlist, ...newItems];
+        saveWishlist();
+        renderPage();
+        alert(`Imported ${newItems.length} new items (${data.length - newItems.length} duplicates skipped).`);
+      } else {
+        if (!confirm(`Import ${data.length} books? Duplicates (by ID) will be skipped.`)) return;
+        const existingIds = new Set(books.map(b => b.id));
+        const newBooks = data
+          .filter(b => !existingIds.has(b.id))
+          .map(normalizeBook);
+        books = [...books, ...newBooks];
+        save();
+        renderPage();
+        alert(`Imported ${newBooks.length} new books (${data.length - newBooks.length} duplicates skipped).`);
+      }
 
     } catch (err) {
       alert('Failed to import: ' + err.message);

@@ -237,7 +237,7 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
 .books-list { display: flex; flex-direction: column; }
 .book-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--border);
@@ -256,10 +256,12 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
   font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 600;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.book-row-title { font-weight: 500; color: var(--amber-900); font-size: 14px; flex: 1; min-width: 0; word-break: break-word; }
-.book-row-author { font-size: 13px; color: var(--text-muted); flex: 0 0 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.book-row-badges { display: flex; gap: 0.3rem; flex-shrink: 0; }
-.book-row-actions { display: flex; gap: 0.35rem; flex-shrink: 0; opacity: 0; transition: opacity 0.15s; }
+.book-row-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.2rem; }
+.book-row-title { font-weight: 500; color: var(--amber-900); font-size: 14px; word-break: break-word; }
+.book-row-meta { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.book-row-author { font-size: 13px; color: var(--text-muted); }
+.book-row-badges { display: flex; gap: 0.3rem; flex-shrink: 0; flex-wrap: wrap; }
+.book-row-actions { display: flex; gap: 0.35rem; flex-shrink: 0; opacity: 0; transition: opacity 0.15s; margin-left: auto; }
 .book-row:hover .book-row-actions { opacity: 1; }
 @media (hover: none) { .book-row-actions { opacity: 1; } }
 
