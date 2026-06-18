@@ -256,7 +256,7 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
   font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 600;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.book-row-title { font-weight: 500; color: var(--amber-900); font-size: 14px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.book-row-title { font-weight: 500; color: var(--amber-900); font-size: 14px; flex: 1; min-width: 0; word-break: break-word; }
 .book-row-author { font-size: 13px; color: var(--text-muted); flex: 0 0 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .book-row-badges { display: flex; gap: 0.3rem; flex-shrink: 0; }
 .book-row-actions { display: flex; gap: 0.35rem; flex-shrink: 0; opacity: 0; transition: opacity 0.15s; }
@@ -274,6 +274,14 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
   font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 600;
   display: flex; align-items: center; justify-content: center;
   margin-bottom: 0.15rem; opacity: 0.65;
+}
+.media-card-placeholder {
+  width: 100%; height: 110px; border-radius: 6px;
+  background: var(--gray-50); color: var(--text-muted);
+  font-size: 2.2rem;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 0.15rem;
+  border: 1px solid var(--border);
 }
 
 .book-card {

@@ -1,7 +1,6 @@
 /*
   ═══════════════════════════════════════════════════════════════════════
   My Library — app.js
-  All JavaScript: state, rendering, CRUD, import/export, tabs, modals.
   ═══════════════════════════════════════════════════════════════════════
 */
 
@@ -36,6 +35,15 @@ function normalizeBook(b) {
   return { ...b, author, status, formats, tags, _searchStr };
 }
 
+// Normalize wishlist items — adds 'type' (default 'book') and unifies author/creator field
+function normalizeWishlistItem(item) {
+  return {
+    ...item,
+    type: item.type || 'book',
+    creator: item.creator || item.author || '',
+  };
+}
+
 
 // ─── APPLICATION STATE ────────────────────────────────────────────────
 
@@ -58,15 +66,23 @@ const _coverCache = {};
 
 // Tab state
 let activeTab = localStorage.getItem('activeTab') || 'books';
+// Migrate old tab IDs that no longer exist
+if (!['books', 'media', 'wishlist'].includes(activeTab)) activeTab = 'books';
 
-// Book wishlist (separate scratch-pad)
-let bookWishlist = JSON.parse(localStorage.getItem('bookWishlist') || '[]');
+// Book wishlist (combined: books, movies, TV — lightweight scratch-pad)
+let bookWishlist = JSON.parse(localStorage.getItem('bookWishlist') || '[]')
+  .map(normalizeWishlistItem);
 let wishlistEditingId = null;
+let wishlistFilters = { type: 'all' };
+let wishlistSort = 'title-asc';
 
-// Media library (movies + TV)
-let mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary') || '[]');
+// Media library (movies + TV — all statuses)
+let mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary') || '[]')
+  .map(m => ({ ...m, status: m.status === 'watching' ? 'watched' : (m.status || 'want') }));
 let mediaEditingId = null;
 let mediaRating = 0;
+let mediaFilters = { type: 'all', status: 'all' };
+let mediaSort = 'added-desc';
 
 
 // ─── PERSISTENCE ──────────────────────────────────────────────────────
@@ -102,7 +118,7 @@ function toggleView() {
   viewMode = viewMode === 'card' ? 'list' : 'card';
   localStorage.setItem('viewMode', viewMode);
   document.getElementById('viewToggleBtn').textContent = viewMode === 'card' ? '⊞' : '☰';
-  render();
+  renderPage();
 }
 
 
@@ -134,20 +150,17 @@ function switchTab(tab) {
     b.classList.toggle('active', b.dataset.tab === tab);
   });
 
-  // View toggle only makes sense on the books tab
-  document.getElementById('viewToggleBtn').style.display = tab === 'books' ? '' : 'none';
+  // View toggle visible on books and media tabs
+  document.getElementById('viewToggleBtn').style.display =
+    (tab === 'books' || tab === 'media') ? '' : 'none';
 
-  // Update the Add button label
   const labels = {
-    'books': 'Add book',
-    'wishlist': 'Add to wishlist',
-    'movie-want': 'Add movie',
-    'tv-want': 'Add TV show',
-    'media-library': 'Add title'
+    'books':    'Add book',
+    'media':    'Add title',
+    'wishlist': 'Add to wishlist'
   };
   document.getElementById('addBtnLabel').textContent = labels[tab] || 'Add';
 
-  // Show/hide appropriate content area
   const booksSection = document.getElementById('booksSection');
   const altContent   = document.getElementById('altContent');
   if (booksSection) booksSection.style.display = tab === 'books' ? '' : 'none';
@@ -157,23 +170,21 @@ function switchTab(tab) {
 }
 
 function handleAddClick() {
-  if (activeTab === 'books') openAddModal();
+  if (activeTab === 'books')        openAddModal();
+  else if (activeTab === 'media')   openMediaModal(null);
   else if (activeTab === 'wishlist') openWishlistModal(null);
-  else openMediaModal(null, activeTab);
 }
 
 function renderPage() {
   switch (activeTab) {
-    case 'books':         render();                         break;
-    case 'wishlist':      renderWishlist();                  break;
-    case 'movie-want':    renderMedia('movie', 'want');      break;
-    case 'tv-want':       renderMedia('tv', 'want');         break;
-    case 'media-library': renderMedia('all', 'seen');        break;
+    case 'books':    render();          break;
+    case 'media':    renderMedia();     break;
+    case 'wishlist': renderWishlist();  break;
   }
 }
 
 
-// ─── COVER IMAGE FETCH ────────────────────────────────────────────────
+// ─── COVER IMAGE FETCH (books only) ───────────────────────────────────
 async function fetchCover(book) {
   if (_coverCache[book.id] !== undefined) return _coverCache[book.id];
   _coverCache[book.id] = 'pending';
@@ -264,7 +275,7 @@ async function fetchRepoBooks() {
 }
 
 
-// ─── FILTERS ──────────────────────────────────────────────────────────
+// ─── FILTERS (books tab) ──────────────────────────────────────────────
 function setFilter(type, val, el) {
   filters[type] = val;
   const groupId = { format: 'formatPills', status: 'statusPills', tag: 'tagPills' }[type];
@@ -427,8 +438,8 @@ function render() {
       ).join('');
       return `<div class="book-row">
         ${thumbHtml}
-        <div class="book-row-title" title="${esc(b.title)}">${esc(b.title)}</div>
-        <div class="book-row-author" title="${esc(b.author || '')}">${esc(b.author || '')}</div>
+        <div class="book-row-title">${esc(b.title)}</div>
+        <div class="book-row-author">${esc(b.author || '')}</div>
         <div class="book-row-badges">${fmtBadges}<span class="badge ${stCls[b.status]}">${stLabel[b.status]}</span></div>
         <div class="book-row-actions">
           <button class="btn btn-sm" onclick="openEditModal(${b.id})" title="Edit">✏</button>
@@ -502,27 +513,215 @@ function render() {
 }
 
 
-// ─── WISHLIST RENDERING ───────────────────────────────────────────────
-function renderWishlist() {
+// ─── MEDIA RENDERING (Movies & TV tab) ────────────────────────────────
+function renderMedia() {
   const alt = document.getElementById('altContent');
-  if (!bookWishlist.length) {
-    alt.innerHTML = `<div class="empty-state">
+
+  // Apply filters
+  let items = mediaLibrary;
+  if (mediaFilters.type !== 'all') items = items.filter(m => m.type === mediaFilters.type);
+  if (mediaFilters.status !== 'all') items = items.filter(m => m.status === mediaFilters.status);
+
+  // Sort
+  items = [...items].sort((a, b) => {
+    switch (mediaSort) {
+      case 'title-asc':   return (a.title || '').localeCompare(b.title || '');
+      case 'title-desc':  return (b.title || '').localeCompare(a.title || '');
+      case 'rating-desc': return (b.rating || 0) - (a.rating || 0);
+      case 'added-asc':   return a.id - b.id;
+      default:            return b.id - a.id; // added-desc
+    }
+  });
+
+  const typeIcon  = { movie: '🎬', tv: '📺' };
+  const stCls     = { want: 'badge-want', watched: 'badge-watched', watching: 'badge-watching' };
+  const stLabel   = { want: 'Want to Watch', watched: 'Watched', watching: 'Watching' };
+  const fmtIcons  = { bluray: '📀', dvd: '💿', digital: '💻', streaming: '📡' };
+
+  // Filter toolbar
+  const typePills = [['all','All'],['movie','🎬 Movies'],['tv','📺 TV Shows']].map(([v,l]) =>
+    `<button class="pill${mediaFilters.type===v?' active':''}" onclick="setMediaFilter('type','${v}')">${l}</button>`
+  ).join('');
+  const statusPills = [['all','All'],['want','Want to Watch'],['watched','Watched']].map(([v,l]) =>
+    `<button class="pill${mediaFilters.status===v?' active':''}" onclick="setMediaFilter('status','${v}')">${l}</button>`
+  ).join('');
+  const sortSelect = `<select class="sort-select" onchange="setMediaSort(this.value)">
+    <option value="added-desc"${mediaSort==='added-desc'?' selected':''}>Newest added</option>
+    <option value="added-asc"${mediaSort==='added-asc'?' selected':''}>Oldest added</option>
+    <option value="title-asc"${mediaSort==='title-asc'?' selected':''}>Title A–Z</option>
+    <option value="title-desc"${mediaSort==='title-desc'?' selected':''}>Title Z–A</option>
+    <option value="rating-desc"${mediaSort==='rating-desc'?' selected':''}>Rating ↓</option>
+  </select>`;
+
+  const toolbar = `<div style="margin-bottom:1rem">
+    <div class="filter-row">
+      <span class="filter-label">Type</span>
+      <div class="pill-group">${typePills}</div>
+    </div>
+    <div class="filter-row">
+      <span class="filter-label">Status</span>
+      <div class="pill-group">${statusPills}</div>
+    </div>
+    <div class="filter-row">
+      <span class="filter-label">Sort</span>
+      ${sortSelect}
+    </div>
+  </div>`;
+
+  if (!items.length) {
+    alt.innerHTML = toolbar + `<div class="empty-state">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        <rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 3l-4 4-4-4"/>
       </svg>
-      <h3>Your wishlist is empty</h3>
-      <p style="font-size:14px">Click "Add to wishlist" to track books you want to read.</p>
+      <h3>Nothing here yet</h3>
+      <p style="font-size:14px">Click "Add title" to track movies and TV shows.</p>
     </div>`;
     return;
   }
 
-  const rows = bookWishlist.map(item => {
-    const initial = esc((item.title || '?')[0].toUpperCase());
+  let contentHtml;
+  if (viewMode === 'list') {
+    const rows = items.map(m => {
+      const icon    = typeIcon[m.type] || '🎬';
+      const formats = (m.formats || []).map(f => fmtIcons[f] || '').join(' ');
+      const stars   = m.rating
+        ? `<span class="stars">${'★'.repeat(m.rating)}<span class="empty">${'★'.repeat(5-m.rating)}</span></span>`
+        : '';
+      return `<div class="book-row">
+        <div class="book-row-initial" style="font-size:18px;background:none;color:var(--text)">${icon}</div>
+        <div class="book-row-title">${esc(m.title)}</div>
+        <div class="book-row-author">${m.year ? esc(String(m.year)) : ''}</div>
+        <div class="book-row-badges">
+          ${stars}
+          <span class="badge ${stCls[m.status] || 'badge-want'}">${stLabel[m.status] || m.status}</span>
+          ${formats ? `<span class="badge badge-media">${formats}</span>` : ''}
+        </div>
+        <div class="book-row-actions">
+          <button class="btn btn-sm" onclick="openMediaModal(${m.id})" title="Edit">✏</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteMediaItem(${m.id})" title="Delete">🗑</button>
+        </div>
+      </div>`;
+    }).join('');
+    contentHtml = `<div class="books-list">${rows}</div>`;
+  } else {
+    const cards = items.map(m => {
+      const icon      = typeIcon[m.type] || '🎬';
+      const genreTags = (m.genre || []).map(g =>
+        `<span class="badge badge-tag">${esc(g)}</span>`).join('');
+      const fmtBadges = (m.formats || []).map(f =>
+        `<span class="badge badge-media" title="${f}">${fmtIcons[f] || f}</span>`).join('');
+      const stars = m.rating
+        ? `<span class="stars">${'★'.repeat(m.rating)}<span class="empty">${'★'.repeat(5-m.rating)}</span></span>`
+        : '';
+      return `<div class="book-card">
+        <div class="media-card-placeholder">${icon}</div>
+        <div class="book-title">${esc(m.title)}</div>
+        ${m.year ? `<div class="book-author">${esc(String(m.year))}</div>` : ''}
+        <div class="book-meta">
+          <span class="badge ${stCls[m.status] || 'badge-want'}">${stLabel[m.status] || m.status}</span>
+          ${fmtBadges}
+          ${stars}
+        </div>
+        ${genreTags ? `<div class="book-tags">${genreTags}</div>` : ''}
+        ${m.notes ? `<div class="book-notes">${esc(m.notes)}</div>` : ''}
+        <div class="book-actions">
+          <button class="btn btn-sm" onclick="openMediaModal(${m.id})">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Edit
+          </button>
+          <button class="btn btn-sm btn-danger" onclick="deleteMediaItem(${m.id})">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6"/><path d="M14 11v6"/>
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+            Delete
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+    contentHtml = `<div class="books-grid">${cards}</div>`;
+  }
+
+  alt.innerHTML = toolbar + contentHtml;
+}
+
+function setMediaFilter(key, val) {
+  mediaFilters[key] = val;
+  renderMedia();
+}
+
+function setMediaSort(val) {
+  mediaSort = val;
+  renderMedia();
+}
+
+
+// ─── WISHLIST RENDERING ───────────────────────────────────────────────
+function renderWishlist() {
+  const alt = document.getElementById('altContent');
+  const typeIcon = { book: '📚', movie: '🎬', tv: '📺' };
+
+  // Apply filters
+  let items = bookWishlist;
+  if (wishlistFilters.type !== 'all') items = items.filter(w => w.type === wishlistFilters.type);
+
+  // Sort
+  items = [...items].sort((a, b) => {
+    switch (wishlistSort) {
+      case 'title-desc':  return (b.title || '').localeCompare(a.title || '');
+      case 'added-desc':  return b.id - a.id;
+      case 'added-asc':   return a.id - b.id;
+      default:            return (a.title || '').localeCompare(b.title || ''); // title-asc
+    }
+  });
+
+  // Filter toolbar
+  const typePills = [['all','All'],['book','📚 Books'],['movie','🎬 Movies'],['tv','📺 TV Shows']].map(([v,l]) =>
+    `<button class="pill${wishlistFilters.type===v?' active':''}" onclick="setWishlistFilter('type','${v}')">${l}</button>`
+  ).join('');
+  const sortSelect = `<select class="sort-select" onchange="setWishlistSort(this.value)">
+    <option value="title-asc"${wishlistSort==='title-asc'?' selected':''}>Title A–Z</option>
+    <option value="title-desc"${wishlistSort==='title-desc'?' selected':''}>Title Z–A</option>
+    <option value="added-desc"${wishlistSort==='added-desc'?' selected':''}>Newest added</option>
+    <option value="added-asc"${wishlistSort==='added-asc'?' selected':''}>Oldest added</option>
+  </select>`;
+
+  const toolbar = `<div style="margin-bottom:1rem">
+    <div class="filter-row">
+      <span class="filter-label">Type</span>
+      <div class="pill-group">${typePills}</div>
+    </div>
+    <div class="filter-row">
+      <span class="filter-label">Sort</span>
+      ${sortSelect}
+    </div>
+  </div>`;
+
+  if (!items.length) {
+    const typeLabel = { book: 'books', movie: 'movies', tv: 'TV shows' }[wishlistFilters.type] || 'items';
+    const heading = wishlistFilters.type === 'all' ? 'Your wishlist is empty' : `No ${typeLabel} in your wishlist`;
+    alt.innerHTML = toolbar + `<div class="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+      </svg>
+      <h3>${heading}</h3>
+      <p style="font-size:14px">Click "Add to wishlist" to track things you want to read or watch.</p>
+    </div>`;
+    return;
+  }
+
+  const rows = items.map(item => {
+    const icon = typeIcon[item.type] || '📚';
     return `<div class="book-row">
-      <div class="book-row-initial">${initial}</div>
-      <div class="book-row-title" title="${esc(item.title)}">${esc(item.title)}</div>
-      <div class="book-row-author">${esc(item.author || '')}</div>
+      <div class="book-row-initial" style="font-size:18px;background:none;color:var(--text)">${icon}</div>
+      <div class="book-row-title">${esc(item.title)}</div>
+      <div class="book-row-author">${esc(item.creator || '')}</div>
       <div class="book-row-badges"></div>
       <div class="book-row-actions">
         <button class="btn btn-sm" onclick="openWishlistModal(${item.id})" title="Edit">✏</button>
@@ -531,68 +730,17 @@ function renderWishlist() {
     </div>`;
   }).join('');
 
-  alt.innerHTML = `<div class="books-list">${rows}</div>`;
+  alt.innerHTML = toolbar + `<div class="books-list">${rows}</div>`;
 }
 
+function setWishlistFilter(key, val) {
+  wishlistFilters[key] = val;
+  renderWishlist();
+}
 
-// ─── MEDIA RENDERING ─────────────────────────────────────────────────
-function renderMedia(type, status) {
-  const alt = document.getElementById('altContent');
-
-  let items = mediaLibrary;
-  if (type !== 'all') items = items.filter(m => m.type === type);
-  if (status === 'want') {
-    items = items.filter(m => m.status === 'want');
-  } else if (status === 'seen') {
-    items = items.filter(m => m.status === 'watching' || m.status === 'watched');
-  }
-
-  const typeIcon  = { movie: '🎬', tv: '📺' };
-  const stCls     = { want: 'badge-want', watching: 'badge-watching', watched: 'badge-watched' };
-  const stLabel   = { want: 'Want', watching: 'Watching', watched: 'Watched' };
-  const fmtIcons  = { bluray: '📀', dvd: '💿', digital: '💻', streaming: '📡' };
-
-  if (!items.length) {
-    const emptyMessages = {
-      'want-movie':    ['No movies in your watchlist', 'Click "Add movie" to start your watchlist.'],
-      'want-tv':       ['No TV shows in your watchlist', 'Click "Add TV show" to start your watchlist.'],
-      'seen-all':      ['Nothing in your library yet', 'Add something you\'ve watched or are watching.'],
-    };
-    const key = `${status}-${type}`;
-    const [heading, sub] = emptyMessages[key] || ['Nothing here yet', 'Use the Add button to get started.'];
-    alt.innerHTML = `<div class="empty-state">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 3l-4 4-4-4"/>
-      </svg>
-      <h3>${heading}</h3>
-      <p style="font-size:14px">${sub}</p>
-    </div>`;
-    return;
-  }
-
-  const rows = items.map(m => {
-    const icon = typeIcon[m.type] || '🎬';
-    const formats = (m.formats || []).map(f => fmtIcons[f] || f).join(' ');
-    const stars = m.rating
-      ? `<span class="stars">${'★'.repeat(m.rating)}<span class="empty">${'★'.repeat(5 - m.rating)}</span></span>`
-      : '';
-    return `<div class="book-row">
-      <div class="book-row-initial" style="font-size:18px;background:none;color:var(--text)">${icon}</div>
-      <div class="book-row-title" title="${esc(m.title)}">${esc(m.title)}</div>
-      <div class="book-row-author">${m.year ? esc(String(m.year)) : ''}</div>
-      <div class="book-row-badges">
-        ${stars}
-        <span class="badge ${stCls[m.status] || 'badge-want'}">${stLabel[m.status] || m.status}</span>
-        ${formats ? `<span class="badge badge-media" title="Format">${formats}</span>` : ''}
-      </div>
-      <div class="book-row-actions">
-        <button class="btn btn-sm" onclick="openMediaModal(${m.id})" title="Edit">✏</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteMediaItem(${m.id})" title="Delete">🗑</button>
-      </div>
-    </div>`;
-  }).join('');
-
-  alt.innerHTML = `<div class="books-list">${rows}</div>`;
+function setWishlistSort(val) {
+  wishlistSort = val;
+  renderWishlist();
 }
 
 
@@ -659,7 +807,7 @@ function esc(str) {
 }
 
 
-// ─── MODAL HELPERS (shared) ────────────────────────────────────────────
+// ─── MODAL HELPERS ────────────────────────────────────────────────────
 function setFormats(vals) {
   document.querySelectorAll('#f-format-group input[type="checkbox"]').forEach(cb => {
     cb.checked = vals.includes(cb.value);
@@ -674,7 +822,7 @@ function setRadio(name, val) {
   });
 }
 
-// Sync radio active class on change (covers book modal + media modal)
+// Sync radio active class on change — covers all modals
 document.querySelectorAll('.radio-btn input[type="radio"]').forEach(r => {
   r.addEventListener('change', function() {
     this.closest('.radio-group').querySelectorAll('.radio-btn').forEach(l => l.classList.remove('active'));
@@ -913,13 +1061,17 @@ function openWishlistModal(id) {
     if (!item) return;
     wishlistEditingId = id;
     document.getElementById('wishlistModalTitle').textContent = 'Edit wishlist item';
-    document.getElementById('wl-title').value  = item.title || '';
-    document.getElementById('wl-author').value = item.author || '';
-    document.getElementById('wl-notes').value  = item.notes || '';
+    document.getElementById('wl-title').value  = item.title   || '';
+    document.getElementById('wl-author').value = item.creator || '';
+    document.getElementById('wl-notes').value  = item.notes   || '';
+    setRadio('wl-type', item.type || 'book');
   } else {
     wishlistEditingId = null;
     document.getElementById('wishlistModalTitle').textContent = 'Add to wishlist';
     ['wl-title', 'wl-author', 'wl-notes'].forEach(fid => document.getElementById(fid).value = '');
+    // Pre-select type based on active filter (if not 'all')
+    const defaultType = (wishlistFilters.type !== 'all') ? wishlistFilters.type : 'book';
+    setRadio('wl-type', defaultType);
   }
   document.getElementById('wishlistModal').classList.add('open');
   document.getElementById('wl-title').focus();
@@ -937,14 +1089,15 @@ function saveWishlistItem() {
   const title = document.getElementById('wl-title').value.trim();
   if (!title) { document.getElementById('wl-title').focus(); return; }
 
-  const author = document.getElementById('wl-author').value.trim();
-  const notes  = document.getElementById('wl-notes').value.trim();
+  const type    = document.querySelector('input[name="wl-type"]:checked')?.value || 'book';
+  const creator = document.getElementById('wl-author').value.trim();
+  const notes   = document.getElementById('wl-notes').value.trim();
 
   if (wishlistEditingId !== null) {
     const i = bookWishlist.findIndex(x => x.id === wishlistEditingId);
-    if (i !== -1) bookWishlist[i] = { ...bookWishlist[i], title, author, notes };
+    if (i !== -1) bookWishlist[i] = { ...bookWishlist[i], type, title, creator, notes };
   } else {
-    bookWishlist.push({ id: Date.now(), title, author, notes });
+    bookWishlist.push({ id: Date.now(), type, title, creator, notes });
   }
 
   saveWishlist();
@@ -977,7 +1130,7 @@ function setMediaFormats(vals) {
   });
 }
 
-function openMediaModal(id, tab) {
+function openMediaModal(id) {
   if (id !== null && id !== undefined) {
     const m = mediaLibrary.find(x => x.id === id);
     if (!m) return;
@@ -999,17 +1152,8 @@ function openMediaModal(id, tab) {
     ['m-title', 'm-year', 'm-genre', 'm-notes'].forEach(fid => document.getElementById(fid).value = '');
     setMediaFormats([]);
     updateMediaStars(0);
-    // Pre-select based on which tab opened the modal
-    if (tab === 'movie-want') {
-      setMediaRadio('m-type', 'movie');
-      setMediaRadio('m-status', 'want');
-    } else if (tab === 'tv-want') {
-      setMediaRadio('m-type', 'tv');
-      setMediaRadio('m-status', 'want');
-    } else {
-      setMediaRadio('m-type', 'movie');
-      setMediaRadio('m-status', 'watching');
-    }
+    setMediaRadio('m-type',   'movie');
+    setMediaRadio('m-status', 'want');
   }
   document.getElementById('mediaModal').classList.add('open');
   document.getElementById('m-title').focus();
@@ -1027,11 +1171,11 @@ function saveMediaItem() {
   const title = document.getElementById('m-title').value.trim();
   if (!title) { document.getElementById('m-title').focus(); return; }
 
-  const year   = document.getElementById('m-year').value.trim();
-  const genre  = document.getElementById('m-genre').value.split(',').map(g => g.trim()).filter(Boolean);
-  const notes  = document.getElementById('m-notes').value.trim();
-  const type   = document.querySelector('input[name="m-type"]:checked')?.value || 'movie';
-  const status = document.querySelector('input[name="m-status"]:checked')?.value || 'want';
+  const year    = document.getElementById('m-year').value.trim();
+  const genre   = document.getElementById('m-genre').value.split(',').map(g => g.trim()).filter(Boolean);
+  const notes   = document.getElementById('m-notes').value.trim();
+  const type    = document.querySelector('input[name="m-type"]:checked')?.value   || 'movie';
+  const status  = document.querySelector('input[name="m-status"]:checked')?.value || 'want';
   const formats = [...document.querySelectorAll('#m-format-group input[type="checkbox"]:checked')]
     .map(cb => cb.value);
 
