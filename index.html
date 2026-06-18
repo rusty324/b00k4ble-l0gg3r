@@ -23,7 +23,7 @@
         <button class="btn btn-sm" id="settingsBtn" onclick="toggleSettingsMenu()" title="Settings">⋯</button>
         <div id="settingsMenu" class="settings-menu" style="display:none">
           <button class="settings-item" onclick="toggleTheme(); closeSettingsMenu()">
-            <span id="settingsThemeIcon">🌙</span> Dark mode
+            <span id="settingsThemeIcon">🌙</span> <span id="settingsThemeLabel">Dark mode</span>
           </button>
           <button class="settings-item" id="settingsExportBtn" onclick="exportData(); closeSettingsMenu()">⬇ Export library</button>
           <button class="settings-item" id="settingsImportBtn" onclick="document.getElementById('importFile').click(); closeSettingsMenu()">⬆ Import library</button>

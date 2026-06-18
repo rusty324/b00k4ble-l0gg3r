@@ -5,7 +5,9 @@
 */
 
 // ─── CONFIGURATION ────────────────────────────────────────────────────
-const REPO_JSON_URL = 'data/books.json';
+const REPO_JSON_URL          = 'data/books.json';
+const REPO_MEDIA_JSON_URL    = 'data/media.json';
+const REPO_WISHLIST_JSON_URL = 'data/wishlist.json';
 const PAGE_SIZE = 48;
 
 
@@ -103,9 +105,12 @@ function saveMedia() {
 // ─── THEME ────────────────────────────────────────────────────────────
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
-  const icon = theme === 'dark' ? '☀️' : '🌙';
-  const themeIconEl = document.getElementById('settingsThemeIcon');
-  if (themeIconEl) themeIconEl.textContent = icon;
+  const icon  = theme === 'dark' ? '☀️' : '🌙';
+  const label = theme === 'dark' ? 'Light mode' : 'Dark mode';
+  const themeIconEl  = document.getElementById('settingsThemeIcon');
+  const themeLabelEl = document.getElementById('settingsThemeLabel');
+  if (themeIconEl)  themeIconEl.textContent  = icon;
+  if (themeLabelEl) themeLabelEl.textContent = label;
   localStorage.setItem('theme', theme);
 }
 
@@ -254,33 +259,63 @@ function getCoverObserver() {
 
 
 // ─── REPO JSON SYNC ───────────────────────────────────────────────────
-async function fetchRepoBooks() {
+async function _syncBooks() {
+  const res = await fetch(REPO_JSON_URL + '?t=' + Date.now());
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  const existingIds = new Set(books.map(b => b.id));
+  const newItems = data.map(normalizeBook).filter(b => !existingIds.has(b.id));
+  if (newItems.length) { books = [...books, ...newItems]; save(); }
+  return { added: newItems.length, total: books.length, noun: 'book' };
+}
+
+async function _syncMedia() {
+  const res = await fetch(REPO_MEDIA_JSON_URL + '?t=' + Date.now());
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  const existingIds = new Set(mediaLibrary.map(m => m.id));
+  const newItems = data
+    .map(m => ({ ...m, status: m.status === 'watching' ? 'watched' : (m.status || 'want') }))
+    .filter(m => !existingIds.has(m.id));
+  if (newItems.length) { mediaLibrary = [...mediaLibrary, ...newItems]; saveMedia(); }
+  return { added: newItems.length, total: mediaLibrary.length, noun: 'title' };
+}
+
+async function _syncWishlist() {
+  const res = await fetch(REPO_WISHLIST_JSON_URL + '?t=' + Date.now());
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  const existingIds = new Set(bookWishlist.map(w => w.id));
+  const newItems = data.map(normalizeWishlistItem).filter(w => !existingIds.has(w.id));
+  if (newItems.length) { bookWishlist = [...bookWishlist, ...newItems]; saveWishlist(); }
+  return { added: newItems.length, total: bookWishlist.length, noun: 'wishlist item' };
+}
+
+async function fetchRepoData() {
   const banner = document.getElementById('statusBanner');
-  try {
-    const res = await fetch(REPO_JSON_URL + '?t=' + Date.now());
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const results = await Promise.allSettled([_syncBooks(), _syncMedia(), _syncWishlist()]);
 
-    const data = await res.json();
-    const normalized = data.map(normalizeBook);
-    const existingIds = new Set(books.map(b => b.id));
-    const newBooks = normalized.filter(b => !existingIds.has(b.id));
+  const synced = results
+    .filter(r => r.status === 'fulfilled' && r.value.added > 0)
+    .map(r => `${r.value.added} new ${r.value.noun}${r.value.added !== 1 ? 's' : ''}`);
 
-    if (newBooks.length) {
-      books = [...books, ...newBooks];
-      save();
-      banner.textContent = `✓ Synced ${newBooks.length} new book${newBooks.length > 1 ? 's' : ''} from repo.`;
-    } else {
-      banner.textContent = `✓ Library up to date (${books.length} books).`;
-    }
+  const succeeded = results.filter(r => r.status === 'fulfilled').length;
+  const isEmpty   = books.length === 0 && mediaLibrary.length === 0 && bookWishlist.length === 0;
 
+  if (synced.length) {
+    banner.textContent = `✓ Synced ${synced.join(', ')} from repo.`;
     banner.classList.add('visible');
     setTimeout(() => banner.classList.remove('visible'), 4000);
-
-  } catch (e) {
-    if (books.length === 0) {
-      banner.textContent = 'Could not reach data/books.json — add books manually or import a JSON file.';
-      banner.classList.add('visible');
-    }
+  } else if (succeeded > 0) {
+    const total = results
+      .filter(r => r.status === 'fulfilled')
+      .reduce((s, r) => s + r.value.total, 0);
+    banner.textContent = `✓ All libraries up to date (${total} item${total !== 1 ? 's' : ''}).`;
+    banner.classList.add('visible');
+    setTimeout(() => banner.classList.remove('visible'), 4000);
+  } else if (isEmpty) {
+    banner.textContent = 'Could not reach data files — add items manually or import JSON files.';
+    banner.classList.add('visible');
   }
 
   renderPage();
@@ -1298,4 +1333,4 @@ function importData(e) {
 applyTheme(localStorage.getItem('theme') || 'light');
 document.getElementById('viewToggleBtn').textContent = viewMode === 'card' ? '⊞' : '☰';
 switchTab(activeTab);
-fetchRepoBooks();
+fetchRepoData();
