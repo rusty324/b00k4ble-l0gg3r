@@ -1,1 +1,73 @@
-[]
+[
+  {
+    "id": 1781751943193,
+    "title": "Schitts Creek",
+    "type": "tv",
+    "year": "",
+    "genre": [
+      "Comedy"
+    ],
+    "formats": [
+      "dvd"
+    ],
+    "status": "watched",
+    "notes": "",
+    "rating": 5
+  },
+  {
+    "id": 1781756118075,
+    "title": "Big Bang Theory",
+    "type": "tv",
+    "year": "",
+    "genre": [],
+    "formats": [
+      "dvd"
+    ],
+    "status": "watched",
+    "notes": "",
+    "rating": 5
+  },
+  {
+    "id": 1781789020504,
+    "title": "Loki, Season 1",
+    "type": "tv",
+    "year": "",
+    "genre": [],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "",
+    "rating": 5
+  },
+  {
+    "id": 1781789086096,
+    "title": "Agatha All Along, Season 1",
+    "type": "tv",
+    "year": "",
+    "genre": [
+      "Marvel"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "",
+    "rating": 5
+  },
+  {
+    "id": 1781809600847,
+    "title": "Deadpool",
+    "type": "movie",
+    "year": "",
+    "genre": [
+      "Marvel"
+    ],
+    "formats": [
+      "dvd"
+    ],
+    "status": "watched",
+    "notes": "",
+    "rating": 5
+  }
+]
