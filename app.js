@@ -105,9 +105,12 @@ function saveMedia() {
 // ─── THEME ────────────────────────────────────────────────────────────
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
-  const icon = theme === 'dark' ? '☀️' : '🌙';
-  const themeIconEl = document.getElementById('settingsThemeIcon');
-  if (themeIconEl) themeIconEl.textContent = icon;
+  const icon  = theme === 'dark' ? '☀️' : '🌙';
+  const label = theme === 'dark' ? 'Light mode' : 'Dark mode';
+  const themeIconEl  = document.getElementById('settingsThemeIcon');
+  const themeLabelEl = document.getElementById('settingsThemeLabel');
+  if (themeIconEl)  themeIconEl.textContent  = icon;
+  if (themeLabelEl) themeLabelEl.textContent = label;
   localStorage.setItem('theme', theme);
 }
 
