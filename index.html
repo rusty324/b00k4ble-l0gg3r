@@ -43,11 +43,9 @@
 
   <!-- Tab navigation -->
   <div class="tab-bar">
-    <button class="tab active" data-tab="books" onclick="switchTab('books')">📚 Books</button>
-    <button class="tab" data-tab="wishlist" onclick="switchTab('wishlist')">📖 Wishlist</button>
-    <button class="tab" data-tab="movie-want" onclick="switchTab('movie-want')">🎬 Movies</button>
-    <button class="tab" data-tab="tv-want" onclick="switchTab('tv-want')">📺 TV Shows</button>
-    <button class="tab" data-tab="media-library" onclick="switchTab('media-library')">🎥 Seen It</button>
+    <button class="tab active" data-tab="books"    onclick="switchTab('books')">📚 Books</button>
+    <button class="tab"        data-tab="media"    onclick="switchTab('media')">🎬 Movies & TV</button>
+    <button class="tab"        data-tab="wishlist" onclick="switchTab('wishlist')">📋 Wishlist</button>
   </div>
 </header>
 
@@ -213,13 +211,22 @@
     <div class="modal-title" id="wishlistModalTitle">Add to wishlist</div>
 
     <div class="form-group">
-      <label>Title</label>
-      <input type="text" class="plain" id="wl-title" placeholder="Book title">
+      <label>Type</label>
+      <div class="radio-group" id="wl-type-group">
+        <label class="radio-btn active" for="wl-type-book">📚 Book<input type="radio" name="wl-type" id="wl-type-book" value="book" checked></label>
+        <label class="radio-btn" for="wl-type-movie">🎬 Movie<input type="radio" name="wl-type" id="wl-type-movie" value="movie"></label>
+        <label class="radio-btn" for="wl-type-tv">📺 TV Show<input type="radio" name="wl-type" id="wl-type-tv" value="tv"></label>
+      </div>
     </div>
 
     <div class="form-group">
-      <label>Author <span class="opt">(optional)</span></label>
-      <input type="text" class="plain" id="wl-author" placeholder="Author name">
+      <label>Title</label>
+      <input type="text" class="plain" id="wl-title" placeholder="Title">
+    </div>
+
+    <div class="form-group">
+      <label>Author / Creator <span class="opt">(optional)</span></label>
+      <input type="text" class="plain" id="wl-author" placeholder="Author or creator name">
     </div>
 
     <div class="form-group">
@@ -280,8 +287,7 @@
     <div class="form-group">
       <label>Status</label>
       <div class="radio-group">
-        <label class="radio-btn active" for="m-st-want">Want<input type="radio" name="m-status" id="m-st-want" value="want" checked></label>
-        <label class="radio-btn" for="m-st-watching">Watching<input type="radio" name="m-status" id="m-st-watching" value="watching"></label>
+        <label class="radio-btn active" for="m-st-want">Want to Watch<input type="radio" name="m-status" id="m-st-want" value="want" checked></label>
         <label class="radio-btn" for="m-st-watched">Watched<input type="radio" name="m-status" id="m-st-watched" value="watched"></label>
       </div>
     </div>
