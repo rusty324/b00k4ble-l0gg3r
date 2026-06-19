@@ -132,8 +132,29 @@ function toggleView() {
   viewMode = viewMode === 'card' ? 'list' : 'card';
   localStorage.setItem('viewMode', viewMode);
   document.getElementById('viewToggleBtn').textContent = viewMode === 'card' ? '⊞' : '☰';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Capture the index of the topmost partially-visible item so we can restore
+  // the reading position after the layout changes.
+  const headerH = document.querySelector('header')?.offsetHeight || 0;
+  let topIndex = 0;
+  const gridSelector = activeTab === 'books'
+    ? () => document.getElementById('booksGrid')
+    : () => document.getElementById('altContent')?.querySelector('.books-grid, .books-list');
+  const gridBefore = gridSelector();
+  if (gridBefore) {
+    const kids = [...gridBefore.children];
+    for (let i = 0; i < kids.length; i++) {
+      if (kids[i].getBoundingClientRect().bottom > headerH) { topIndex = i; break; }
+    }
+  }
+
   renderPage();
+
+  // Scroll so the same-indexed item in the new layout sits at the top edge.
+  const target = gridSelector()?.children[topIndex];
+  if (target) {
+    window.scrollBy({ top: target.getBoundingClientRect().top - headerH, behavior: 'instant' });
+  }
 }
 
 
