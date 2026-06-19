@@ -32,7 +32,7 @@ function normalizeBook(b) {
       ? b.tags.split(',').map(t => t.trim()).filter(Boolean)
     : [];
 
-  const title = b.title || '';
+  const title = b.title != null ? String(b.title) : '';
   const _searchStr = [title, author, b.series || '', ...tags].join(' ').toLowerCase();
 
   // Clamp rating to 0–5; out-of-range values (e.g. from imported JSON) cause
