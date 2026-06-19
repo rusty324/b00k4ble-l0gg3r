@@ -32,13 +32,14 @@ function normalizeBook(b) {
       ? b.tags.split(',').map(t => t.trim()).filter(Boolean)
     : [];
 
-  const _searchStr = [b.title || '', author, b.series || '', ...tags].join(' ').toLowerCase();
+  const title = b.title || '';
+  const _searchStr = [title, author, b.series || '', ...tags].join(' ').toLowerCase();
 
   // Clamp rating to 0–5; out-of-range values (e.g. from imported JSON) cause
   // '★'.repeat(5 - rating) to throw a RangeError with a negative count.
   const rating = Number.isFinite(+b.rating) ? Math.max(0, Math.min(5, Math.round(+b.rating))) : 0;
 
-  return { ...b, author, status, formats, tags, rating, _searchStr };
+  return { ...b, title, author, status, formats, tags, rating, _searchStr };
 }
 
 // Normalize wishlist items — adds 'type' (default 'book') and unifies author/creator field
@@ -131,8 +132,29 @@ function toggleView() {
   viewMode = viewMode === 'card' ? 'list' : 'card';
   localStorage.setItem('viewMode', viewMode);
   document.getElementById('viewToggleBtn').textContent = viewMode === 'card' ? '⊞' : '☰';
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  // Capture the index of the topmost partially-visible item so we can restore
+  // the reading position after the layout changes.
+  const headerH = document.querySelector('header')?.offsetHeight || 0;
+  let topIndex = 0;
+  const gridSelector = activeTab === 'books'
+    ? () => document.getElementById('booksGrid')
+    : () => document.getElementById('altContent')?.querySelector('.books-grid, .books-list');
+  const gridBefore = gridSelector();
+  if (gridBefore) {
+    const kids = [...gridBefore.children];
+    for (let i = 0; i < kids.length; i++) {
+      if (kids[i].getBoundingClientRect().bottom > headerH) { topIndex = i; break; }
+    }
+  }
+
   renderPage();
+
+  // Scroll so the same-indexed item in the new layout sits at the top edge.
+  const target = gridSelector()?.children[topIndex];
+  if (target) {
+    window.scrollBy({ top: target.getBoundingClientRect().top - headerH, behavior: 'instant' });
+  }
 }
 
 
@@ -440,8 +462,8 @@ function render() {
     fresh.sort((a, b) => {
       switch (sort) {
         case 'added-asc':  return a.id - b.id;
-        case 'title-asc':  return a.title.localeCompare(b.title);
-        case 'title-desc': return b.title.localeCompare(a.title);
+        case 'title-asc':  return (a.title || '').localeCompare(b.title || '');
+        case 'title-desc': return (b.title || '').localeCompare(a.title || '');
         case 'author-asc': return (a.author || '').localeCompare(b.author || '');
         case 'rating-desc': return (b.rating || 0) - (a.rating || 0);
         case 'series-asc': return seriesSort(a, b);
