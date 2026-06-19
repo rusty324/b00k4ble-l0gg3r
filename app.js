@@ -32,13 +32,14 @@ function normalizeBook(b) {
       ? b.tags.split(',').map(t => t.trim()).filter(Boolean)
     : [];
 
-  const _searchStr = [b.title || '', author, b.series || '', ...tags].join(' ').toLowerCase();
+  const title = b.title || '';
+  const _searchStr = [title, author, b.series || '', ...tags].join(' ').toLowerCase();
 
   // Clamp rating to 0–5; out-of-range values (e.g. from imported JSON) cause
   // '★'.repeat(5 - rating) to throw a RangeError with a negative count.
   const rating = Number.isFinite(+b.rating) ? Math.max(0, Math.min(5, Math.round(+b.rating))) : 0;
 
-  return { ...b, author, status, formats, tags, rating, _searchStr };
+  return { ...b, title, author, status, formats, tags, rating, _searchStr };
 }
 
 // Normalize wishlist items — adds 'type' (default 'book') and unifies author/creator field
@@ -440,8 +441,8 @@ function render() {
     fresh.sort((a, b) => {
       switch (sort) {
         case 'added-asc':  return a.id - b.id;
-        case 'title-asc':  return a.title.localeCompare(b.title);
-        case 'title-desc': return b.title.localeCompare(a.title);
+        case 'title-asc':  return (a.title || '').localeCompare(b.title || '');
+        case 'title-desc': return (b.title || '').localeCompare(a.title || '');
         case 'author-asc': return (a.author || '').localeCompare(b.author || '');
         case 'rating-desc': return (b.rating || 0) - (a.rating || 0);
         case 'series-asc': return seriesSort(a, b);
