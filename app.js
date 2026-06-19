@@ -34,7 +34,11 @@ function normalizeBook(b) {
 
   const _searchStr = [b.title || '', author, b.series || '', ...tags].join(' ').toLowerCase();
 
-  return { ...b, author, status, formats, tags, _searchStr };
+  // Clamp rating to 0–5; out-of-range values (e.g. from imported JSON) cause
+  // '★'.repeat(5 - rating) to throw a RangeError with a negative count.
+  const rating = Number.isFinite(+b.rating) ? Math.max(0, Math.min(5, Math.round(+b.rating))) : 0;
+
+  return { ...b, author, status, formats, tags, rating, _searchStr };
 }
 
 // Normalize wishlist items — adds 'type' (default 'book') and unifies author/creator field
@@ -80,7 +84,11 @@ let wishlistSort = 'title-asc';
 
 // Media library (movies + TV — all statuses)
 let mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary') || '[]')
-  .map(m => ({ ...m, status: m.status === 'watching' ? 'watched' : (m.status || 'want') }));
+  .map(m => ({
+    ...m,
+    status: m.status === 'watching' ? 'watched' : (m.status || 'want'),
+    rating: Number.isFinite(+m.rating) ? Math.max(0, Math.min(5, Math.round(+m.rating))) : 0,
+  }));
 let mediaEditingId = null;
 let mediaRating = 0;
 let mediaFilters = { type: 'all', status: 'all' };
@@ -123,6 +131,7 @@ function toggleView() {
   viewMode = viewMode === 'card' ? 'list' : 'card';
   localStorage.setItem('viewMode', viewMode);
   document.getElementById('viewToggleBtn').textContent = viewMode === 'card' ? '⊞' : '☰';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
   renderPage();
 }
 
@@ -504,8 +513,9 @@ function render() {
         `<span class="badge ${fmtCls[f]}">${fmtLabels[f]}</span>`).join('');
       const tagBadges = (b.tags || []).map(t =>
         `<span class="badge badge-tag">${esc(t)}</span>`).join('');
-      const stars = b.rating
-        ? '★'.repeat(b.rating) + `<span class="empty">${'★'.repeat(5 - b.rating)}</span>`
+      const r = Math.max(0, Math.min(5, b.rating || 0));
+      const stars = r > 0
+        ? '★'.repeat(r) + `<span class="empty">${'★'.repeat(5 - r)}</span>`
         : '';
 
       const firstLetter = esc((b.title || '?')[0].toUpperCase());
@@ -635,9 +645,6 @@ function renderMedia() {
     const rows = items.map(m => {
       const icon    = typeIcon[m.type] || '🎬';
       const formats = (m.formats || []).map(f => fmtIcons[f] || '').join(' ');
-      const stars   = m.rating
-        ? `<span class="stars">${'★'.repeat(m.rating)}<span class="empty">${'★'.repeat(5-m.rating)}</span></span>`
-        : '';
       return `<div class="book-row">
         <div class="book-row-initial" style="font-size:18px;background:none;color:var(--text)">${icon}</div>
         <div class="book-row-content">
@@ -664,8 +671,9 @@ function renderMedia() {
         `<span class="badge badge-tag">${esc(g)}</span>`).join('');
       const fmtBadges = (m.formats || []).map(f =>
         `<span class="badge badge-media" title="${f}">${fmtIcons[f] || f}</span>`).join('');
-      const stars = m.rating
-        ? `<span class="stars">${'★'.repeat(m.rating)}<span class="empty">${'★'.repeat(5-m.rating)}</span></span>`
+      const mr = Math.max(0, Math.min(5, m.rating || 0));
+      const stars = mr > 0
+        ? `<span class="stars">${'★'.repeat(mr)}<span class="empty">${'★'.repeat(5-mr)}</span></span>`
         : '';
       return `<div class="book-card">
         <div class="media-card-placeholder">${icon}</div>
@@ -1327,6 +1335,13 @@ function importData(e) {
   reader.readAsText(file);
   e.target.value = '';
 }
+
+
+// ─── SCROLL TO TOP BUTTON ─────────────────────────────────────────────
+window.addEventListener('scroll', () => {
+  const btn = document.getElementById('scrollTopBtn');
+  if (btn) btn.classList.toggle('visible', window.scrollY > 300);
+}, { passive: true });
 
 
 // ─── INIT ─────────────────────────────────────────────────────────────
