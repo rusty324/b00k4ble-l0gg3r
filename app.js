@@ -123,6 +123,7 @@ function toggleView() {
   viewMode = viewMode === 'card' ? 'list' : 'card';
   localStorage.setItem('viewMode', viewMode);
   document.getElementById('viewToggleBtn').textContent = viewMode === 'card' ? '⊞' : '☰';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
   renderPage();
 }
 
@@ -1327,6 +1328,13 @@ function importData(e) {
   reader.readAsText(file);
   e.target.value = '';
 }
+
+
+// ─── SCROLL TO TOP BUTTON ─────────────────────────────────────────────
+window.addEventListener('scroll', () => {
+  const btn = document.getElementById('scrollTopBtn');
+  if (btn) btn.classList.toggle('visible', window.scrollY > 300);
+}, { passive: true });
 
 
 // ─── INIT ─────────────────────────────────────────────────────────────

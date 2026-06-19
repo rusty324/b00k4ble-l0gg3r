@@ -404,6 +404,31 @@ input[type="radio"], input[type="checkbox"] { display: none; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--gray-100); border-radius: 3px; }
 
+/* ─── SCROLL TO TOP ──────────────────────────────────────────────── */
+.scroll-top-btn {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--amber-900);
+  color: var(--amber-50);
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.15s, opacity 0.2s;
+  z-index: 150;
+  opacity: 0;
+}
+.scroll-top-btn.visible { display: flex; opacity: 1; }
+.scroll-top-btn:hover { background: var(--amber-800); transform: translateY(-2px); }
+
 /* ─── RESPONSIVE: TABLET ─────────────────────────────────────────── */
 @media (max-width: 768px) {
   .books-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
