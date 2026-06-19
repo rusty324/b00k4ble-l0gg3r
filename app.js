@@ -306,7 +306,11 @@ async function _syncMedia() {
   const data = await res.json();
   const existingIds = new Set(mediaLibrary.map(m => m.id));
   const newItems = data
-    .map(m => ({ ...m, status: m.status === 'watching' ? 'watched' : (m.status || 'want') }))
+    .map(m => ({
+      ...m,
+      status: m.status === 'watching' ? 'watched' : (m.status || 'want'),
+      rating: Number.isFinite(+m.rating) ? Math.max(0, Math.min(5, Math.round(+m.rating))) : 0,
+    }))
     .filter(m => !existingIds.has(m.id));
   if (newItems.length) { mediaLibrary = [...mediaLibrary, ...newItems]; saveMedia(); }
   return { added: newItems.length, total: mediaLibrary.length, noun: 'title' };
@@ -520,7 +524,7 @@ function render() {
           <div class="book-row-title">${esc(b.title)}</div>
           <div class="book-row-meta">
             <div class="book-row-author">${esc(b.author || '')}</div>
-            <div class="book-row-badges">${fmtBadges}<span class="badge ${stCls[b.status]}">${stLabel[b.status]}</span></div>
+            <div class="book-row-badges">${fmtBadges}<span class="badge ${stCls[b.status] || 'badge-want'}">${stLabel[b.status] || b.status}</span></div>
             <div class="book-row-actions">
               <button class="btn btn-sm" onclick="openEditModal(${b.id})" title="Edit">✏</button>
               <button class="btn btn-sm btn-danger" onclick="deleteBook(${b.id})" title="Delete">🗑</button>
@@ -554,7 +558,7 @@ function render() {
         ${b.series ? `<div class="book-series">📖 ${esc(b.series)}</div>` : ''}
         <div class="book-meta">
           ${fmtBadges}
-          <span class="badge ${stCls[b.status]}">${stLabel[b.status]}</span>
+          <span class="badge ${stCls[b.status] || 'badge-want'}">${stLabel[b.status] || b.status}</span>
           ${stars ? `<span class="stars">${stars}</span>` : ''}
         </div>
         ${tagBadges ? `<div class="book-tags">${tagBadges}</div>` : ''}
@@ -1322,7 +1326,11 @@ function importData(e) {
         const existingIds = new Set(mediaLibrary.map(m => m.id));
         const newItems = data
           .filter(m => !existingIds.has(m.id))
-          .map(m => ({ ...m, status: m.status === 'watching' ? 'watched' : (m.status || 'want') }));
+          .map(m => ({
+            ...m,
+            status: m.status === 'watching' ? 'watched' : (m.status || 'want'),
+            rating: Number.isFinite(+m.rating) ? Math.max(0, Math.min(5, Math.round(+m.rating))) : 0,
+          }));
         mediaLibrary = [...mediaLibrary, ...newItems];
         saveMedia();
         renderPage();
@@ -1367,7 +1375,7 @@ window.addEventListener('scroll', () => {
 
 
 // ─── INIT ─────────────────────────────────────────────────────────────
-applyTheme(localStorage.getItem('theme') || 'light');
+applyTheme(localStorage.getItem('theme') || 'dark');
 document.getElementById('viewToggleBtn').textContent = viewMode === 'card' ? '⊞' : '☰';
 switchTab(activeTab);
 fetchRepoData();

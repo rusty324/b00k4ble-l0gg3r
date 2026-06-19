@@ -511,7 +511,8 @@
     "author": "Lee Child",
     "series": "Jack Reacher #2",
     "formats": [
-      "physical"
+      "physical",
+      "ebook"
     ],
     "tags": [
       "Thriller"
@@ -591,7 +592,7 @@
   {
     "status": "read",
     "id": 11098703145,
-    "title": "The Allow of Law",
+    "title": "The Alloy of Law",
     "author": "Brandon Sanderson",
     "series": "Mistborn: Wax and Wayne #1",
     "formats": [
@@ -1001,20 +1002,6 @@
     "_searchStr": "the gunslinger stephen king the dark tower #1 fantasy"
   },
   {
-    "status": "read",
-    "id": 11103263145,
-    "title": "Storm Front",
-    "author": "Jim Butcher",
-    "series": "The Dresden Files #1",
-    "formats": [
-      "physical"
-    ],
-    "tags": [
-      "Fiction"
-    ],
-    "_searchStr": "storm front jim butcher the dresden files #1 fiction"
-  },
-  {
     "status": "want",
     "id": 11119103145,
     "title": "Fourth Wing",
@@ -1089,42 +1076,13 @@
   },
   {
     "status": "read",
-    "id": 11132783145,
-    "title": "Caliban's War",
-    "author": "James S. A. Corey",
-    "series": "The Expanse #2",
-    "formats": [
-      "physical"
-    ],
-    "tags": [
-      "Science Fiction"
-    ],
-    "_searchStr": "caliban's war james s. a. corey the expanse #2 science fiction",
-    "coverUrl": "https://covers.openlibrary.org/b/id/7314238-M.jpg"
-  },
-  {
-    "status": "read",
-    "id": 11133023145,
-    "title": "Abaddon's Gate",
-    "author": "James S. A. Corey",
-    "series": "The Expanse #3",
-    "formats": [
-      "physical"
-    ],
-    "tags": [
-      "Science Fiction"
-    ],
-    "_searchStr": "abaddon's gate james s. a. corey the expanse #3 science fiction",
-    "coverUrl": "https://covers.openlibrary.org/b/id/8624248-M.jpg"
-  },
-  {
-    "status": "read",
     "id": 11096783145,
     "title": "Royal Assassin",
     "author": "Robin Hobb",
     "series": "The Farseer Trilogy #2",
     "formats": [
-      "physical"
+      "physical",
+      "ebook"
     ],
     "tags": [
       "Fantasy"
@@ -1256,34 +1214,6 @@
       "Fiction"
     ],
     "_searchStr": "staked kevin hearne the iron druid chronicles #8 fiction"
-  },
-  {
-    "status": "read",
-    "id": 11091023145,
-    "title": "The Name of the Wind",
-    "author": "Patrick Rothfuss",
-    "series": "The Kingkiller Chronicles #1",
-    "formats": [
-      "physical"
-    ],
-    "tags": [
-      "Fantasy"
-    ],
-    "_searchStr": "the name of the wind patrick rothfuss the kingkiller chronicles #1 fantasy"
-  },
-  {
-    "status": "read",
-    "id": 11130863145,
-    "title": "The Wise Man's Fear",
-    "author": "Patric Rothfuss",
-    "series": "The Kingkiller Chronicles #2",
-    "formats": [
-      "physical"
-    ],
-    "tags": [
-      "Fantasy"
-    ],
-    "_searchStr": "the wise man's fear patric rothfuss the kingkiller chronicles #2 fantasy"
   },
   {
     "status": "want",
@@ -1531,20 +1461,6 @@
       "Fantasy"
     ],
     "_searchStr": "the eye of the world: the graphic novel volume 1 robert jordan the wheel of time graphic novels #1 graphic novels & comic books fantasy"
-  },
-  {
-    "status": "read",
-    "id": 11091263145,
-    "title": "The Eye of the World",
-    "author": "Robert Jordan",
-    "series": "The Wheel of Time Graphic Novels #1",
-    "formats": [
-      "physical"
-    ],
-    "tags": [
-      "Fantasy"
-    ],
-    "_searchStr": "the eye of the world robert jordan the wheel of time graphic novels #1 fantasy"
   },
   {
     "status": "want",
@@ -2183,7 +2099,7 @@
   {
     "status": "read",
     "id": 11090783145,
-    "title": 14,
+    "title": "14",
     "author": "Peter Clines",
     "series": "",
     "formats": [
@@ -2197,7 +2113,7 @@
   {
     "status": "want",
     "id": 11092703145,
-    "title": "Angles & Demons",
+    "title": "Angels & Demons",
     "author": "Dan Brown",
     "series": "",
     "formats": [
@@ -2452,7 +2368,7 @@
   {
     "status": "want",
     "id": 11109983145,
-    "title": 2312,
+    "title": "2312",
     "author": "Kim Stanley Robinson",
     "series": "",
     "formats": [
@@ -2521,20 +2437,6 @@
     "notes": "",
     "rating": 0,
     "_searchStr": "project hail mary andy weir  science fiction"
-  },
-  {
-    "status": "want",
-    "id": 11111903145,
-    "title": "Seveneves",
-    "author": "Neal Stephenson",
-    "series": "",
-    "formats": [
-      "physical"
-    ],
-    "tags": [
-      "Science Fiction"
-    ],
-    "_searchStr": "seveneves neal stephenson  science fiction"
   },
   {
     "status": "want",
@@ -2767,20 +2669,6 @@
     "_searchStr": "the mercies kiran millwood hargrave  historical fiction"
   },
   {
-    "status": "read",
-    "id": 11122223145,
-    "title": "Good Omens",
-    "author": "Terry Pratchett, Neil Gaiman",
-    "series": "",
-    "formats": [
-      "physical"
-    ],
-    "tags": [
-      "Fiction"
-    ],
-    "_searchStr": "good omens terry pratchett, neil gaiman  fiction"
-  },
-  {
     "status": "want",
     "id": 11122943145,
     "title": "The Priory of the Orange Tree",
@@ -2907,20 +2795,6 @@
     "_searchStr": "headstrong rachel swaby  historical non-fiction"
   },
   {
-    "status": "want",
-    "id": 11126303145,
-    "title": "Hidden Figures",
-    "author": "Margot Lee Shetterly",
-    "series": "",
-    "formats": [
-      "physical"
-    ],
-    "tags": [
-      "Historical Non-Fiction"
-    ],
-    "_searchStr": "hidden figures margot lee shetterly  historical non-fiction"
-  },
-  {
     "status": "read",
     "id": 11126543145,
     "title": "Yes Man",
@@ -2933,20 +2807,6 @@
       "Memoir"
     ],
     "_searchStr": "yes man danny wallace  memoir"
-  },
-  {
-    "status": "read",
-    "id": 11126783145,
-    "title": "Desert Solitaire",
-    "author": "Edward Abbey",
-    "series": "",
-    "formats": [
-      "physical"
-    ],
-    "tags": [
-      "Memoir"
-    ],
-    "_searchStr": "desert solitaire edward abbey  memoir"
   },
   {
     "status": "read",
@@ -4070,6 +3930,7 @@
     "author": "Robert Jordan",
     "series": "The Wheel of Time #1",
     "formats": [
+      "physical",
       "ebook",
       "audio"
     ],
@@ -5310,19 +5171,6 @@
     "status": "want",
     "_searchStr": "assassin's apprentice robin hobb the farseer trilogy #1",
     "coverUrl": "https://covers.openlibrary.org/b/id/4915230-M.jpg"
-  },
-  {
-    "id": 647,
-    "title": "Royal Assassin",
-    "author": "Robin Hobb",
-    "series": "The Farseer Trilogy #2",
-    "formats": [
-      "ebook"
-    ],
-    "tags": [],
-    "status": "want",
-    "_searchStr": "royal assassin robin hobb the farseer trilogy #2",
-    "coverUrl": "https://covers.openlibrary.org/b/id/2177291-M.jpg"
   },
   {
     "id": 646,
@@ -12468,7 +12316,7 @@
     "id": 1230,
     "title": "The Name of the Wind",
     "author": "Patrick Rothfuss",
-    "series": "Kingkiller Chronicle #1",
+    "series": "The Kingkiller Chronicles #1",
     "formats": [
       "physical",
       "ebook",
@@ -12487,7 +12335,7 @@
     "id": 780,
     "title": "The Wise Man's Fear",
     "author": "Patrick Rothfuss",
-    "series": "Kingkiller Chronicle #2",
+    "series": "The Kingkiller Chronicles #2",
     "formats": [
       "physical",
       "ebook",
@@ -12771,19 +12619,6 @@
     "tags": [],
     "status": "want",
     "_searchStr": "no middle name: the complete collected jack reacher short stories lee child jack reacher #26"
-  },
-  {
-    "id": 559,
-    "title": "Die Trying",
-    "author": "Lee Child",
-    "series": "Jack Reacher #2",
-    "formats": [
-      "ebook"
-    ],
-    "tags": [],
-    "status": "want",
-    "_searchStr": "die trying lee child jack reacher #2",
-    "coverUrl": "https://covers.openlibrary.org/b/id/14424757-M.jpg"
   },
   {
     "id": 558,
@@ -14517,19 +14352,6 @@
     "status": "want",
     "_searchStr": "ex-patriots peter clines ex-heroes #2",
     "coverUrl": "https://covers.openlibrary.org/b/id/7841940-M.jpg"
-  },
-  {
-    "id": 753,
-    "title": "Ex-Heroes",
-    "author": "Peter Clines",
-    "series": "Ex-Heroes #1",
-    "formats": [
-      "ebook"
-    ],
-    "tags": [],
-    "status": "want",
-    "_searchStr": "ex-heroes peter clines ex-heroes #1",
-    "coverUrl": "https://covers.openlibrary.org/b/id/7704430-M.jpg"
   },
   {
     "id": 234,
@@ -16311,6 +16133,7 @@
     "author": "Margot Lee Shetterly",
     "series": "",
     "formats": [
+      "physical",
       "ebook"
     ],
     "tags": [],
