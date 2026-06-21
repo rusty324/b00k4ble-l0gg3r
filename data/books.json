@@ -77,7 +77,7 @@
   {
     "status": "want",
     "id": 11091503145,
-    "title": "The Complete Guide to Outdoor Wood Projects",
+    "title": "Black & Decker: The Complete Guide to Outdoor Wood Projects",
     "author": "Black & Decker",
     "series": "Black & Decker Complete Guides",
     "formats": [
@@ -3187,11 +3187,13 @@
     "id": 1120,
     "title": "Origins of The Wheel of Time",
     "author": "Michael Livingston, Harriet McDougal, Robert Jordan",
-    "series": "Wheel of Time #0",
+    "series": "The Wheel of Time #0",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "origins of the wheel of time michael livingston, harriet mcdougal, robert jordan wheel of time #0"
   },
@@ -3808,7 +3810,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "the wheel of time companion robert jordan, harriet mcdougal, alan romanczuk, maria simons the wheel of time #0"
   },
@@ -3820,7 +3824,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "the fires of heaven robert jordan the wheel of time #5",
     "coverUrl": "https://covers.openlibrary.org/b/id/603821-M.jpg"
@@ -3833,7 +3839,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "a crown of swords robert jordan the wheel of time #7",
     "coverUrl": "https://covers.openlibrary.org/b/id/10293497-M.jpg"
@@ -3846,7 +3854,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "a memory of light robert jordan, brandon sanderson the wheel of time #14"
   },
@@ -3858,7 +3868,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "crossroads of twilight robert jordan the wheel of time #10"
   },
@@ -3870,7 +3882,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "winter's heart robert jordan the wheel of time #9"
   },
@@ -3894,7 +3908,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "the path of daggers robert jordan the wheel of time #8"
   },
@@ -3906,7 +3922,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "the shadow rising robert jordan the wheel of time #4",
     "coverUrl": "https://covers.openlibrary.org/b/id/603240-M.jpg"
@@ -3919,7 +3937,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "the dragon reborn robert jordan the wheel of time #3",
     "coverUrl": "https://covers.openlibrary.org/b/id/603239-M.jpg"
@@ -3963,7 +3983,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "lord of chaos robert jordan the wheel of time #6",
     "coverUrl": "https://covers.openlibrary.org/b/id/182398-M.jpg"
@@ -3976,7 +3998,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "knife of dreams robert jordan the wheel of time #11"
   },
@@ -3988,7 +4012,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "the gathering storm robert jordan, brandon sanderson the wheel of time #12"
   },
@@ -4000,7 +4026,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "the great hunt robert jordan the wheel of time #2",
     "coverUrl": "https://covers.openlibrary.org/b/id/182352-M.jpg"
@@ -4013,7 +4041,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "towers of midnight robert jordan, brandon sanderson the wheel of time #13"
   },
@@ -6007,7 +6037,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction"
+    ],
     "status": "want",
     "_searchStr": "the olympian affair jim butcher the cinder spires #2",
     "coverUrl": "https://covers.openlibrary.org/b/id/14242378-M.jpg"
@@ -6020,7 +6052,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction"
+    ],
     "status": "want",
     "_searchStr": "livesuit james s. a. corey the captive's war #1.5",
     "coverUrl": "https://covers.openlibrary.org/b/id/14827571-M.jpg"
@@ -6033,7 +6067,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction"
+    ],
     "status": "want",
     "_searchStr": "the mercy of gods james s.a. corey the captive's war #1",
     "coverUrl": "https://covers.openlibrary.org/b/id/14649358-M.jpg"
@@ -6123,7 +6159,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "the obelisk gate n. k. jemisin the broken earth #2",
     "coverUrl": "https://covers.openlibrary.org/b/id/8138324-M.jpg"
@@ -6136,7 +6174,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "the stone sky n. k. jemisin the broken earth #3",
     "coverUrl": "https://covers.openlibrary.org/b/id/8191910-M.jpg"
@@ -6695,7 +6735,8 @@
       "ebook"
     ],
     "tags": [
-      "Graphic Novels & Comic Books"
+      "Graphic Novels & Comic Books",
+      "DC Comics"
     ],
     "status": "want",
     "_searchStr": "the batman who laughs scott snyder, james tynion the batman who laughs (2018-2019) #1 graphic novels & comic books"
@@ -7051,7 +7092,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "rogue squadron i: rogue squadron michael a. stackpole star wars: x-wing #1"
   },
@@ -7063,7 +7107,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "wraith squadron ii: iron fist aaron allston star wars: x-wing #6"
   },
@@ -7075,7 +7122,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "rogue squadron iii: the krytos trap michael a. stackpole star wars: x-wing #3"
   },
@@ -7087,7 +7137,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "wraith squadron iii: solo command aaron allston star wars: x-wing #7"
   },
@@ -7099,7 +7152,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "rogue squadron ii: wedge's gamble michael a. stackpole star wars: x-wing #2"
   },
@@ -7111,7 +7167,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "wraith squadron iv: starfighters of adumar aaron allston star wars: x-wing #9"
   },
@@ -7123,7 +7182,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "rogue squadron v: isard's revenge michael a. stackpole star wars: x-wing #8"
   },
@@ -7135,7 +7197,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "wraith squadron i: wraith squadron aaron allston star wars: x-wing #5"
   },
@@ -7147,7 +7212,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "rogue squadron iv: the bacta war michael a. stackpole star wars: x-wing #4"
   },
@@ -7159,7 +7227,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "star wars visions: ronin: a visions novel emma mieko candon star wars: visions #1"
   },
@@ -7171,7 +7242,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "thrawn: alliances timothy zahn star wars: thrawn #2",
     "coverUrl": "https://covers.openlibrary.org/b/id/8570853-M.jpg"
@@ -7184,7 +7258,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "thrawn: treason timothy zahn star wars: thrawn #3",
     "coverUrl": "https://covers.openlibrary.org/b/id/8745611-M.jpg"
@@ -7197,7 +7274,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "thrawn timothy zahn star wars: thrawn #1",
     "coverUrl": "https://covers.openlibrary.org/b/id/11107659-M.jpg"
@@ -7210,7 +7290,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the thrawn trilogy i: heir to the empire timothy zahn star wars: the thrawn trilogy #1"
   },
@@ -7222,7 +7305,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the thrawn trilogy ii: dark force rising timothy zahn star wars: the thrawn trilogy #2"
   },
@@ -7234,7 +7320,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the thrawn trilogy iii: the last command timothy zahn star wars: the thrawn trilogy #3"
   },
@@ -7246,7 +7335,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "annihilation drew karpyshyn star wars: the old republic #2",
     "coverUrl": "https://covers.openlibrary.org/b/id/10147174-M.jpg"
@@ -7259,7 +7351,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "revan drew karpyshyn star wars: the old republic #1",
     "coverUrl": "https://covers.openlibrary.org/b/id/12181360-M.jpg"
@@ -7272,7 +7367,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "vector prime r. a. salvatore star wars: the new jedi order #1"
   },
@@ -7284,7 +7382,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "agents of chaos ii: jedi eclipse james luceno star wars: the new jedi order #5"
   },
@@ -7296,7 +7397,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the unifying force james luceno star wars: the new jedi order #19",
     "coverUrl": "https://covers.openlibrary.org/b/id/11171125-M.jpg"
@@ -7309,7 +7413,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "agents of chaos i: hero's trial james luceno star wars: the new jedi order #4"
   },
@@ -7321,7 +7428,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "dark tide i: onslaught michael a. stackpole star wars: the new jedi order #2"
   },
@@ -7357,7 +7467,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "destiny's way walter jon williams star wars: the new jedi order #14",
     "coverUrl": "https://covers.openlibrary.org/b/id/11171108-M.jpg"
@@ -7370,7 +7483,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "enemy lines i: rebel dream aaron allston star wars: the new jedi order #11"
   },
@@ -7382,7 +7498,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "edge of victory i: conquest greg keyes star wars: the new jedi order #7"
   },
@@ -7394,7 +7513,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "force heretic iii: reunion sean williams, shane dix star wars: the new jedi order #17"
   },
@@ -7406,7 +7528,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the final prophecy greg keyes star wars: the new jedi order #18",
     "coverUrl": "https://covers.openlibrary.org/b/id/209493-M.jpg"
@@ -7419,7 +7544,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "dark journey elaine cunningham star wars: the new jedi order #10"
   },
@@ -7431,7 +7559,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "enemy lines ii: rebel stand aaron allston star wars: the new jedi order #12",
     "coverUrl": "https://covers.openlibrary.org/b/id/209483-M.jpg"
@@ -7444,7 +7575,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "force heretic i: remnant sean williams, shane dix star wars: the new jedi order #15",
     "coverUrl": "https://covers.openlibrary.org/b/id/11171114-M.jpg"
@@ -7457,7 +7591,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "balance point kathy tyers star wars: the new jedi order #6"
   },
@@ -7469,7 +7606,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "dark tide ii: ruin michael a. stackpole star wars: the new jedi order #3"
   },
@@ -7481,7 +7621,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "force heretic ii: refugee sean williams, shane dix star wars: the new jedi order #16",
     "coverUrl": "https://covers.openlibrary.org/b/id/11171118-M.jpg"
@@ -7494,7 +7637,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "traitor matthew stover star wars: the new jedi order #13",
     "coverUrl": "https://covers.openlibrary.org/b/id/11171102-M.jpg"
@@ -7507,7 +7653,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "star by star troy denning star wars: the new jedi order #9"
   },
@@ -7519,7 +7668,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "edge of victory ii: rebirth greg keyes star wars: the new jedi order #8"
   },
@@ -7531,7 +7683,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "champions of the force kevin anderson star wars: the jedi academy trilogy #3"
   },
@@ -7543,7 +7698,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "dark apprentice kevin anderson star wars: the jedi academy trilogy #2"
   },
@@ -7555,7 +7713,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "jedi search kevin anderson star wars: the jedi academy trilogy #1"
   },
@@ -7567,7 +7728,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the hand of thrawn 1: specter of the past timothy zahn star wars: the hand of thrawn duology #1"
   },
@@ -7579,7 +7743,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the hand of thrawn 2: vision of the future timothy zahn star wars: the hand of thrawn duology #2"
   },
@@ -7645,7 +7812,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the force unleashed ii sean williams star wars: the force unleashed #2"
   },
@@ -7657,7 +7827,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the force unleashed sean williams star wars: the force unleashed #1",
     "coverUrl": "https://covers.openlibrary.org/b/id/11046303-M.jpg"
@@ -7670,7 +7843,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "ambush at corellia roger macbride allen star wars: the corellian trilogy #1",
     "coverUrl": "https://covers.openlibrary.org/b/id/11153181-M.jpg"
@@ -7683,7 +7859,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "assault at selonia roger macbride allen star wars: the corellian trilogy #2",
     "coverUrl": "https://covers.openlibrary.org/b/id/11153191-M.jpg"
@@ -7696,7 +7875,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "showdown at centerpoint roger macbride allen star wars: the corellian trilogy #3",
     "coverUrl": "https://covers.openlibrary.org/b/id/6861962-M.jpg"
@@ -7709,7 +7891,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "no prisoners karen traviss star wars: the clone wars #2",
     "coverUrl": "https://covers.openlibrary.org/b/id/6301467-M.jpg"
@@ -7722,7 +7907,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "wild space karen miller star wars: the clone wars #1",
     "coverUrl": "https://covers.openlibrary.org/b/id/11286335-M.jpg"
@@ -7735,7 +7923,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the bounty hunter wars ii: slave ship k. w. jeter star wars: the bounty hunter wars #2"
   },
@@ -7747,7 +7938,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the bounty hunter wars i: the mandalorian armor k. w. jeter star wars: the bounty hunter wars #1"
   },
@@ -7759,7 +7953,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the bounty hunter wars iii: hard merchandise k. w. jeter star wars: the bounty hunter wars #3"
   },
@@ -7771,7 +7968,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "shield of lies michael p. kube-mcdowell star wars: the black fleet crisis #2",
     "coverUrl": "https://covers.openlibrary.org/b/id/11153060-M.jpg"
@@ -7784,7 +7984,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "tyrant's test michael p. kube-mcdowell star wars: the black fleet crisis #3",
     "coverUrl": "https://covers.openlibrary.org/b/id/11152541-M.jpg"
@@ -7797,7 +8000,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the black fleet crisis i: before the storm michael p. kube-mcdowell star wars: the black fleet crisis #1"
   },
@@ -7809,7 +8015,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "thrawn ascendancy ii: greater good timothy zahn star wars: the ascendancy trilogy #2"
   },
@@ -7821,7 +8030,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "thrawn ascendancy i: chaos rising timothy zahn star wars: the ascendancy trilogy #1"
   },
@@ -7833,7 +8045,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "thrawn ascendancy iii: lesser evil timothy zahn star wars: the ascendancy trilogy #3"
   },
@@ -7845,7 +8060,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "empire's end chuck wendig star wars: the aftermath trilogy #3",
     "coverUrl": "https://covers.openlibrary.org/b/id/8722039-M.jpg"
@@ -7858,7 +8076,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "aftermath chuck wendig star wars: the aftermath trilogy #1",
     "coverUrl": "https://covers.openlibrary.org/b/id/8776682-M.jpg"
@@ -7871,7 +8092,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "life debt chuck wendig star wars: the aftermath trilogy #2",
     "coverUrl": "https://covers.openlibrary.org/b/id/8776682-M.jpg"
@@ -7884,7 +8108,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "republic commando ii: triple zero karen traviss star wars: republic commando #2"
   },
@@ -7896,7 +8123,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "republic commando iii: true colors karen traviss star wars: republic commando #3"
   },
@@ -7908,7 +8138,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "republic commando i: hard contact karen traviss star wars: republic commando #1"
   },
@@ -7920,7 +8153,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "imperial commando i: 501st karen traviss star wars: republic commando #5"
   },
@@ -7932,7 +8168,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "republic commando iv: order 66 karen traviss star wars: republic commando #4"
   },
@@ -7944,7 +8183,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "medstar ii: jedi healer michael reaves, steve perry star wars: medstar #2",
     "coverUrl": "https://covers.openlibrary.org/b/id/10941645-M.jpg"
@@ -7957,7 +8199,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "medstar i: battle surgeons michael reaves star wars: medstar #1"
   },
@@ -7969,7 +8214,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "legacy of the force ix: invincible troy denning star wars: legacy of the force #9"
   },
@@ -7981,7 +8229,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "legacy of the force iv: exile aaron allston star wars: legacy of the force #4"
   },
@@ -7993,7 +8244,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "legacy of the force i: betrayal aaron allston star wars: legacy of the force #1"
   },
@@ -8005,7 +8259,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "legacy of the force v: sacrifice karen traviss star wars: legacy of the force #5"
   },
@@ -8017,7 +8274,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "legacy of the force vii: fury aaron allston star wars: legacy of the force #7"
   },
@@ -8029,7 +8289,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "legacy of the force vi: inferno troy denning star wars: legacy of the force #6"
   },
@@ -8041,7 +8304,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "legacy of the force viii: revelation karen traviss star wars: legacy of the force #8"
   },
@@ -8053,7 +8319,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "legacy of the force iii: tempest troy denning star wars: legacy of the force #3"
   },
@@ -8065,7 +8334,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "legacy of the force ii: bloodlines karen traviss star wars: legacy of the force #2"
   },
@@ -8094,7 +8366,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "from a certain point of view: the empire strikes back s. a. chakraborty, catherynne m. valente, mark oshiro, alexander freed, gary whitta, kiersten white, jim zubkavich, tom angleberger, mackenzi lee, sarwat chadda, adam christopher, rob hart, jason fry, amy ratcliffe, cavan scott, zoraida córdova, daniel josé older, john jackson miller, hank green, c. b. lee, tracy deonn, django wexler, beth revis, michael moreci, emily skrutskie, delilah s. dawson, katie cook, michael kogge, anne toole, lydia kang, mike chen, christie golden, karen strong, lilliam rivera, charles yu, seth dickinson, martha wells, austin walker star wars: from a certain point of view #2"
   },
@@ -8106,7 +8381,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "apocalypse troy denning star wars: fate of the jedi #9"
   },
@@ -8118,7 +8396,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "fate of the jedi iv: backlash aaron allston star wars: fate of the jedi #4"
   },
@@ -8130,7 +8411,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "fate of the jedi v: allies christie golden star wars: fate of the jedi #5"
   },
@@ -8142,7 +8426,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "fate of the jedi vi: vortex troy denning star wars: fate of the jedi #6"
   },
@@ -8154,7 +8441,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "fate of the jedi vii: conviction aaron allston star wars: fate of the jedi #7"
   },
@@ -8166,7 +8456,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "fate of the jedi i: outcast aaron allston star wars: fate of the jedi #1"
   },
@@ -8178,7 +8471,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "fate of the jedi iii: abyss troy denning star wars: fate of the jedi #3"
   },
@@ -8190,7 +8486,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "fate of the jedi ii: omen christie golden star wars: fate of the jedi #2"
   },
@@ -8202,7 +8501,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "fate of the jedi viii: ascension christie golden star wars: fate of the jedi #8"
   },
@@ -8226,7 +8528,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "death troopers joe schreiber star wars: death troopers #1"
   },
@@ -8238,7 +8543,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "shadow hunter michael reaves star wars: darth maul #1"
   },
@@ -8262,7 +8570,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "dark nest iii: the swarm war troy denning star wars: dark nest #3"
   },
@@ -8274,7 +8585,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "dark nest ii: the unseen queen troy denning star wars: dark nest #2"
   },
@@ -8286,7 +8600,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "dark nest i: the joiner king troy denning star wars: dark nest #1"
   },
@@ -8298,7 +8615,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "patterns of force michael reaves star wars: coruscant nights #3",
     "coverUrl": "https://covers.openlibrary.org/b/id/10958595-M.jpg"
@@ -8311,7 +8631,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "street of shadows michael reaves star wars: coruscant nights #2",
     "coverUrl": "https://covers.openlibrary.org/b/id/10958493-M.jpg"
@@ -8324,7 +8647,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "jedi twilight michael reaves star wars: coruscant nights #1",
     "coverUrl": "https://covers.openlibrary.org/b/id/10950081-M.jpg"
@@ -8337,7 +8663,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "stealth karen miller star wars: clone wars gambit #1",
     "coverUrl": "https://covers.openlibrary.org/b/id/10935816-M.jpg"
@@ -8350,7 +8679,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "siege karen miller star wars: clone wars gambit #2"
   },
@@ -8362,7 +8694,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "catalyst james luceno star wars #1",
     "coverUrl": "https://covers.openlibrary.org/b/id/8084626-M.jpg"
@@ -8375,7 +8710,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "tarkin: star wars james luceno star wars #1",
     "coverUrl": "https://covers.openlibrary.org/b/id/9041814-M.jpg"
@@ -15288,7 +15626,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "black & decker: advanced home wiring updated 6th edition editors of cool springs press black+decker: the complete guide #0"
   },
@@ -15300,43 +15640,51 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "black & decker: ultimate guide to basements, attics & garages, 3rd revised edition editors of creative homeowner black+decker: the complete guide #0"
   },
   {
     "id": 1076,
     "title": "Black & Decker: The Book of Home Improvement: The Most Popular Remodeling Projects Shown in Full Detail",
-    "author": "Black+Decker",
+    "author": "Black & Decker",
     "series": "Black+Decker: The Complete Guide #0",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "black & decker: the book of home improvement: the most popular remodeling projects shown in full detail black+decker black+decker: the complete guide #0"
   },
   {
     "id": 1075,
     "title": "Black & Decker: Here's How: Windows",
-    "author": "Black+Decker",
+    "author": "Black & Decker",
     "series": "Black+Decker: The Complete Guide #0",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "black & decker: here's how: windows black+decker black+decker: the complete guide #0"
   },
   {
     "id": 1072,
     "title": "Black & Decker: The Complete Guide to Finishing Basements",
-    "author": "Black+Decker",
+    "author": "Black & Decker",
     "series": "Black+Decker: The Complete Guide #0",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "black & decker: the complete guide to finishing basements black+decker black+decker: the complete guide #0"
   },
@@ -15348,7 +15696,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "black & decker: 24 weekend projects for pets david griffin black+decker: the complete guide #0"
   },
@@ -15360,7 +15710,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "black & decker: the complete guide: build your kids a treehouse: build your kids a treehouse charlie self black+decker: the complete guide #0"
   },
@@ -15372,7 +15724,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "black & decker: the complete guide to contemporary sheds philip schmidt black+decker: the complete guide #0"
   },
@@ -15384,7 +15738,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "black & decker: the complete guide to a clutter-free home: organized storage solutions & projects philip schmidt black+decker: the complete guide #0"
   },
@@ -15396,7 +15752,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "black & decker: the complete guide to wiring, updated 9th edition: current with 2023-2026 electrical codes editors of cool springs press black+decker: the complete guide #0"
   },
@@ -15408,7 +15766,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "black & decker: the complete guide to treehouses philip schmidt black+decker: the complete guide #0"
   },
@@ -15420,7 +15780,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "black & decker: the complete guide to decks chris marshall black+decker: the complete guide #0"
   },
@@ -15432,7 +15794,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "black & decker: the complete guide to carpentry for homeowners chris marshall black+decker: the complete guide #0"
   },
@@ -15444,7 +15808,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "black & decker: the complete guide to outdoor carpentry editors of creative publishing black+decker: the complete guide #0"
   },
@@ -15457,7 +15823,8 @@
       "ebook"
     ],
     "tags": [
-      "Graphic Novels & Comic Books"
+      "Graphic Novels & Comic Books",
+      "DC Comics"
     ],
     "status": "want",
     "_searchStr": "the court of owls scott snyder batman (2011-2016) #1 graphic novels & comic books",
@@ -15472,7 +15839,8 @@
       "ebook"
     ],
     "tags": [
-      "Graphic Novels & Comic Books"
+      "Graphic Novels & Comic Books",
+      "DC Comics"
     ],
     "status": "want",
     "_searchStr": "the city of owls scott snyder batman (2011-2016) #2 graphic novels & comic books"
@@ -15486,7 +15854,8 @@
       "ebook"
     ],
     "tags": [
-      "Graphic Novels & Comic Books"
+      "Graphic Novels & Comic Books",
+      "DC Comics"
     ],
     "status": "want",
     "_searchStr": "death of the family scott snyder batman (2011-2016) #3 graphic novels & comic books"
@@ -15500,7 +15869,8 @@
       "ebook"
     ],
     "tags": [
-      "Graphic Novels & Comic Books"
+      "Graphic Novels & Comic Books",
+      "DC Comics"
     ],
     "status": "want",
     "_searchStr": "zero year – secret city scott snyder batman (2011-2016) #4 graphic novels & comic books"
@@ -15514,7 +15884,8 @@
       "ebook"
     ],
     "tags": [
-      "Graphic Novels & Comic Books"
+      "Graphic Novels & Comic Books",
+      "DC Comics"
     ],
     "status": "want",
     "_searchStr": "zero year – dark city scott snyder batman (2011-2016) #5 graphic novels & comic books"
@@ -15528,7 +15899,8 @@
       "ebook"
     ],
     "tags": [
-      "Graphic Novels & Comic Books"
+      "Graphic Novels & Comic Books",
+      "DC Comics"
     ],
     "status": "want",
     "_searchStr": "graveyard shift scott snyder, james tynion batman (2011-2016) #6 graphic novels & comic books"
@@ -15542,7 +15914,8 @@
       "ebook"
     ],
     "tags": [
-      "Graphic Novels & Comic Books"
+      "Graphic Novels & Comic Books",
+      "DC Comics"
     ],
     "status": "want",
     "_searchStr": "endgame scott snyder batman (2011-2016) #7 graphic novels & comic books",
@@ -15557,7 +15930,8 @@
       "ebook"
     ],
     "tags": [
-      "Graphic Novels & Comic Books"
+      "Graphic Novels & Comic Books",
+      "DC Comics"
     ],
     "status": "want",
     "_searchStr": "batman: the complete hush jeph loeb batman (1940-2011) #1 graphic novels & comic books"
@@ -15808,7 +16182,9 @@
       "ebook",
       "audio"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "read",
     "_searchStr": "flex ferrett steinmetz 'mancer #1",
     "coverUrl": "https://covers.openlibrary.org/b/id/9912899-M.jpg",
@@ -16087,7 +16463,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction"
+    ],
     "status": "want",
     "_searchStr": "slow gods claire north "
   },
@@ -16111,7 +16489,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Memoir",
+      "Historical Non-Fiction"
+    ],
     "status": "want",
     "_searchStr": "endurance: a year in space, a lifetime of discovery scott kelly "
   },
@@ -16136,7 +16517,10 @@
       "physical",
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Biography",
+      "Historical Non-Fiction"
+    ],
     "status": "want",
     "_searchStr": "hidden figures margot lee shetterly ",
     "coverUrl": "https://covers.openlibrary.org/b/id/10661694-M.jpg"
@@ -16222,7 +16606,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction"
+    ],
     "status": "want",
     "_searchStr": "operation bounce house matt dinniman ",
     "coverUrl": "https://covers.openlibrary.org/b/id/15177830-M.jpg"
@@ -16235,7 +16621,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want",
     "_searchStr": "analytical mechanics of space systems, 4th edition hanspeter schaub, john l. junkins "
   },
@@ -16253,7 +16641,7 @@
   },
   {
     "id": 1246,
-    "title": "How to Live Safely in a Science Fictional Universe: A Novel",
+    "title": "How to Live Safely in a Science Fictional Universe",
     "author": "Charles Yu",
     "series": "",
     "formats": [
@@ -16309,7 +16697,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Non-Fiction"
+    ],
     "status": "want",
     "_searchStr": "abundance ezra klein, derek thompson ",
     "coverUrl": "https://covers.openlibrary.org/b/id/15038381-M.jpg"
@@ -16334,7 +16724,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Historical Non-Fiction"
+    ],
     "status": "want",
     "_searchStr": "truth, lies, and o-rings: inside the space shuttle challenger disaster allan j. mcdonald, james r. hansen "
   },
@@ -16346,7 +16738,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Non-Fiction"
+    ],
     "status": "want",
     "_searchStr": "the traditional bowyer's bible jim hamm ",
     "coverUrl": "https://covers.openlibrary.org/b/id/851547-M.jpg"
@@ -16377,7 +16771,7 @@
   },
   {
     "id": 1202,
-    "title": "Sea of Tranquility: A novel",
+    "title": "Sea of Tranquility",
     "author": "Emily St. John Mandel",
     "series": "",
     "formats": [
@@ -16407,7 +16801,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Non-Fiction"
+    ],
     "status": "want",
     "_searchStr": "how stella learned to talk christina hunger ",
     "coverUrl": "https://covers.openlibrary.org/b/id/11007314-M.jpg"
@@ -16437,7 +16833,8 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Graphic Novels & Comic Books"],
     "status": "want",
     "_searchStr": "gantz 351-383 hiroya oku "
   },
@@ -16449,7 +16846,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Graphic Novels & Comic Books"
+    ],
     "status": "want",
     "_searchStr": "gantz 251-300 hiroya oku "
   },
@@ -16461,7 +16860,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Graphic Novels & Comic Books"
+    ],
     "status": "want",
     "_searchStr": "gantz 200-250 hiroya oku "
   },
@@ -16473,7 +16874,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Historical Non-Fiction"
+    ],
     "status": "want",
     "_searchStr": "the flying mathematicians of world war i tony royle "
   },
@@ -16497,7 +16900,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Destiny"
+    ],
     "status": "want",
     "_searchStr": "destiny grimoire anthology, volume iv: the royal will bungie "
   },
@@ -16509,7 +16915,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Destiny"
+    ],
     "status": "want",
     "_searchStr": "destiny grimoire anthology, volume ii: fallen kingdoms bungie "
   },
@@ -16539,7 +16948,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Halo"
+    ],
     "status": "want",
     "_searchStr": "halo: the cole protocol tobias s. buckell "
   },
@@ -16551,7 +16963,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Halo"
+    ],
     "status": "want",
     "_searchStr": "halo: contact harvest joseph staten "
   },
@@ -16563,7 +16978,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Halo"
+    ],
     "status": "want",
     "_searchStr": "halo: last light troy denning "
   },
@@ -16575,7 +16993,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Halo"
+    ],
     "status": "want",
     "_searchStr": "halo: evolutions volume i: essential tales of the halo universe various authors "
   },
@@ -16587,7 +17008,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Halo"
+    ],
     "status": "want",
     "_searchStr": "halo: evolutions volume ii: essential tales of the halo universe various authors "
   },
@@ -16599,7 +17023,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Halo"
+    ],
     "status": "want",
     "_searchStr": "halo: ghosts of onyx eric nylund "
   },
@@ -16607,11 +17034,14 @@
     "id": 1156,
     "title": "Halo: Oblivion",
     "author": "Troy Denning",
-    "series": "",
+    "series": "Halo",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Halo"
+    ],
     "status": "want",
     "_searchStr": "halo: oblivion troy denning "
   },
@@ -16619,11 +17049,14 @@
     "id": 1155,
     "title": "HALO: New Blood",
     "author": "Matt Forbeck",
-    "series": "",
+    "series": "Halo",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Halo"
+    ],
     "status": "want",
     "_searchStr": "halo: new blood matt forbeck "
   },
@@ -16635,7 +17068,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fitness & Health"
+    ],
     "status": "want",
     "_searchStr": "ruck fit kayla girgen "
   },
@@ -16671,7 +17106,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want",
     "_searchStr": "advances in guidance, navigation and control: proceedings of 2020 international conference on guidance, navigation and control, icgnc 2020, tianjin, c liang yan, haibin duan, xiang yu "
   },
@@ -16683,7 +17120,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction"
+    ],
     "status": "want",
     "_searchStr": "the salmon of doubt douglas adams "
   },
@@ -16695,7 +17134,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "cloak of deception james luceno "
   },
@@ -16707,7 +17149,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "rebel rising beth revis "
   },
@@ -16719,7 +17164,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "darth plagueis james luceno ",
     "coverUrl": "https://covers.openlibrary.org/b/id/7488930-M.jpg"
@@ -16732,7 +17180,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the cestus deception steven barnes ",
     "coverUrl": "https://covers.openlibrary.org/b/id/10940997-M.jpg"
@@ -16745,7 +17196,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "yoda sean stewart "
   },
@@ -16757,7 +17211,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "rogue one: a star wars story alexander freed "
   },
@@ -16765,11 +17222,14 @@
     "id": 1106,
     "title": "Dynasty of Evil: A Novel of the Old Republic",
     "author": "Drew Karpyshyn",
-    "series": "",
+    "series": "Star Wars",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "dynasty of evil: a novel of the old republic drew karpyshyn "
   },
@@ -16777,11 +17237,14 @@
     "id": 1105,
     "title": "Path of Destruction: A Novel of the Old Republic",
     "author": "Drew Karpyshyn",
-    "series": "",
+    "series": "Star Wars",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "path of destruction: a novel of the old republic drew karpyshyn "
   },
@@ -16789,11 +17252,14 @@
     "id": 1104,
     "title": "Dark Lord: The Rise of Darth Vader: The Rise of Darth Vader",
     "author": "James Luceno",
-    "series": "",
+    "series": "Star Wars",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "dark lord: the rise of darth vader: the rise of darth vader james luceno ",
     "coverUrl": "https://covers.openlibrary.org/b/id/10950059-M.jpg"
@@ -16802,11 +17268,14 @@
     "id": 1103,
     "title": "A New Hope",
     "author": "George Lucas",
-    "series": "",
+    "series": "Star Wars",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "a new hope george lucas "
   },
@@ -16814,11 +17283,14 @@
     "id": 1102,
     "title": "Labyrinth of Evil",
     "author": "James Luceno",
-    "series": "",
+    "series": "Star Wars: ",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "labyrinth of evil james luceno ",
     "coverUrl": "https://covers.openlibrary.org/b/id/10941879-M.jpg"
@@ -16827,11 +17299,14 @@
     "id": 1101,
     "title": "Return of the Jedi",
     "author": "James Kahn",
-    "series": "",
+    "series": "Star Wars: Episode 6",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "return of the jedi james kahn ",
     "coverUrl": "https://covers.openlibrary.org/b/id/6558101-M.jpg"
@@ -16840,11 +17315,14 @@
     "id": 1100,
     "title": "The Empire Strikes Back",
     "author": "Donald F. Glut",
-    "series": "",
+    "series": "Star Wars: Episode 5",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the empire strikes back donald f. glut ",
     "coverUrl": "https://covers.openlibrary.org/b/id/9806770-M.jpg"
@@ -16866,11 +17344,14 @@
     "id": 1098,
     "title": "The Clone Wars",
     "author": "Karen Traviss",
-    "series": "",
+    "series": "Star Wars: ",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the clone wars karen traviss ",
     "coverUrl": "https://covers.openlibrary.org/b/id/10404016-M.jpg"
@@ -16879,11 +17360,14 @@
     "id": 1097,
     "title": "Rule of Two",
     "author": "Drew Karpyshyn",
-    "series": "",
+    "series": "Star Wars: ",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "rule of two drew karpyshyn ",
     "coverUrl": "https://covers.openlibrary.org/b/id/7127927-M.jpg"
@@ -16946,7 +17430,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "making things move diy mechanisms for inventors, hobbyists, and artists dustyn roberts "
   },
@@ -16958,7 +17444,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "the arduino inventor's guide: learn electronics by making 10 awesome projects brian huang, derek runberg "
   },
@@ -16995,7 +17483,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want",
     "_searchStr": "novel radar techniques and applications: waveform diversity and cognitive radar and target tracking and data fusion richard klemm, hugh griffiths, wolfgang koch "
   },
@@ -17007,7 +17497,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want",
     "_searchStr": "non-cooperative target tracking, fusion and control: algorithms and advances zhongliang jing, han pan, yuankai li, peng dong "
   },
@@ -17019,7 +17511,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want",
     "_searchStr": "modern inertial technology: navigation, guidance, and control anthony lawrence "
   },
@@ -17031,7 +17525,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want",
     "_searchStr": "bayesian multiple target track 2nd ed lawrence d. stone, roy streit, thomas l. corwin, kristine bell "
   },
@@ -17043,7 +17539,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want",
     "_searchStr": "a real-time path-planning algorithm based on receding horizon techniques m. murillo, g. sánchez, l. genzelis, l. giovanini "
   },
@@ -17055,7 +17553,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want",
     "_searchStr": "time and angle constraint guidance law applicable to -- ye chen; zhengyu guo; yunze cai -- 9789811581540 -- e05f36f23f538dde19062073f0598f88 unknown "
   },
@@ -17067,7 +17567,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want",
     "_searchStr": "global path-planning for constrained and optimal visual servoing-- anna’s archive unknown "
   },
@@ -17079,7 +17581,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want",
     "_searchStr": "open access proceedings journal of physics: conference series rizwan "
   },
@@ -17091,7 +17595,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want",
     "_searchStr": "cooperative manipulation for a mobile dual-arm robot using sequences of dynamic movement primitives ting zhao, mingdi deng, zhijun li, yingbai hu "
   },
@@ -17103,7 +17609,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want",
     "_searchStr": "navigation & path planning using reinforcement learning for a roomba unknown "
   },
@@ -17132,7 +17640,11 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Memoir",
+      "Non-Fiction",
+      "World War II"
+    ],
     "status": "want",
     "_searchStr": "thirty seconds over tokyo ted w. lawson "
   },
@@ -17144,7 +17656,11 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Memoir",
+      "Non-Fiction",
+      "Vietnam"
+    ],
     "status": "want",
     "_searchStr": "flying through midnight: a pilot's dramatic story of his secret missions over laos during the vietnam war john t. halliday "
   },
@@ -17211,7 +17727,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fitness & Health"
+    ],
     "status": "want",
     "_searchStr": "build your running body: a total-body fitness plan for all distance runners, from milers to ultramarathoners - run farther, faster, and injury-free melissa breyer, pete magill, thomas schwartz "
   },
@@ -17223,7 +17741,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fitness & Health"
+    ],
     "status": "want",
     "_searchStr": "the slow af run club: the ultimate guide for anyone who wants to run martinus evans "
   },
@@ -17247,7 +17767,11 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Trek",
+      "Memoir"
+    ],
     "status": "want",
     "_searchStr": "making it so: a memoir patrick stewart "
   },
@@ -17259,7 +17783,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Trek",
+      "Biography"],
     "status": "want",
     "_searchStr": "the autobiography of jean luc picard david a. goodman "
   },
@@ -17271,7 +17798,11 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Trek",
+      "Memoir"
+    ],
     "status": "want",
     "_searchStr": "i, q peter david, john de lancie "
   },
@@ -17283,7 +17814,11 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Trek",
+      "Biography"
+    ],
     "status": "want",
     "_searchStr": "the autobiography of kathryn janeway: a star trek novel una mccormack "
   },
@@ -17319,7 +17854,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction"
+    ],
     "status": "want",
     "_searchStr": "service model adrian tchaikovsky "
   },
@@ -17331,7 +17868,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "beginning programming with python for dummies john paul mueller "
   },
@@ -17355,7 +17894,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Memoir"
+    ],
     "status": "want",
     "_searchStr": "burn book: a tech love story kara swisher "
   },
@@ -17367,7 +17908,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "beyond the basic stuff with python: best practices for writing clean code al sweigart "
   },
@@ -17379,7 +17922,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "the big book of small python projects: 81 easy practice programs al sweigart "
   },
@@ -17404,7 +17949,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "make python talk: build apps with voice control and speech recognition mark liu "
   },
@@ -17494,7 +18041,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "projectile science matthew brenden wood ",
     "coverUrl": "https://covers.openlibrary.org/b/id/8816856-M.jpg"
@@ -17507,7 +18056,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "industrial design carla mooney ",
     "coverUrl": "https://covers.openlibrary.org/b/id/8816868-M.jpg"
@@ -17520,7 +18071,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "folding tech: using origami and nature to revolutionize technology karen latchana kenney "
   },
@@ -17532,7 +18085,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "family handyman diy trade secrets: expert advice behind the repairs every homeowner should know family handyman "
   },
@@ -17544,7 +18099,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "tatooine ghost troy denning ",
     "coverUrl": "https://covers.openlibrary.org/b/id/11152391-M.jpg"
@@ -17582,7 +18140,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "the big book of makerspace projects: inspiring makers to experiment, create, and learn colleen graves, aaron graves "
   },
@@ -17594,7 +18154,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Historical Non-Fiction"
+    ],
     "status": "want",
     "_searchStr": "the path between the seas: the creation of the panama canal, 1870-1914 david mccullough "
   },
@@ -17606,7 +18168,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "electronics for dummies cathleen shamieh ",
     "coverUrl": "https://covers.openlibrary.org/b/id/10719651-M.jpg"
@@ -17619,7 +18183,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "the legend of sigurd and gudrún j.r.r. tolkien ",
     "coverUrl": "https://covers.openlibrary.org/b/id/10587128-M.jpg"
@@ -17632,7 +18198,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "the children of húrin j.r.r. tolkien ",
     "coverUrl": "https://covers.openlibrary.org/b/id/8220298-M.jpg"
@@ -17645,7 +18213,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "engineering in plain sight: an illustrated field guide to the constructed environment grady hillhouse "
   },
@@ -17657,7 +18227,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "the practical workshop: a woodworker's guide to workbenches, layout & tools christopher schwarz, popular woodworking "
   },
@@ -17669,7 +18241,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "launchers, lobbers, and rockets engineer: make 20 awesome ballistic blasters with ordinary stuff lance akiyama "
   },
@@ -17681,7 +18255,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "diy drones for the evil genius: design, build, and customize your own drones ian cinnamon, romi kadri, fitz tepper "
   },
@@ -17741,7 +18317,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the last jedi michael reaves ",
     "coverUrl": "https://covers.openlibrary.org/b/id/7844217-M.jpg"
@@ -17767,7 +18346,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "death star michael reaves ",
     "coverUrl": "https://covers.openlibrary.org/b/id/7019564-M.jpg"
@@ -17794,6 +18376,7 @@
       "ebook"
     ],
     "tags": [
+      "Science Fiction",
       "Star Wars"
     ],
     "status": "want",
@@ -17848,7 +18431,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "tales from the new republic peter schweighofer, craig carey ",
     "coverUrl": "https://covers.openlibrary.org/b/id/372801-M.jpg"
@@ -17861,7 +18447,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "tales from the mos eisley cantina kevin anderson ",
     "coverUrl": "https://covers.openlibrary.org/b/id/372014-M.jpg"
@@ -17874,7 +18463,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "tales from jabba's palace kevin anderson ",
     "coverUrl": "https://covers.openlibrary.org/b/id/6980786-M.jpg"
@@ -17887,7 +18479,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "tales of the bounty hunters kevin anderson ",
     "coverUrl": "https://covers.openlibrary.org/b/id/11116808-M.jpg"
@@ -17900,7 +18495,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the new rebellion kristine kathryn rusch ",
     "coverUrl": "https://covers.openlibrary.org/b/id/11153132-M.jpg"
@@ -17913,7 +18511,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the lando calrissian adventures l. neil smith ",
     "coverUrl": "https://covers.openlibrary.org/b/id/11046293-M.jpg"
@@ -17926,7 +18527,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "crosscurrent paul s. kemp ",
     "coverUrl": "https://covers.openlibrary.org/b/id/6303555-M.jpg"
@@ -17939,7 +18543,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the truce at bakura kathy tyers ",
     "coverUrl": "https://covers.openlibrary.org/b/id/11122540-M.jpg"
@@ -17952,7 +18559,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "luke skywalker and the shadows of mindor matthew stover ",
     "coverUrl": "https://covers.openlibrary.org/b/id/11122907-M.jpg"
@@ -17965,7 +18575,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "darksaber kevin anderson ",
     "coverUrl": "https://covers.openlibrary.org/b/id/11152477-M.jpg"
@@ -17996,7 +18609,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "shadows of the empire steve perry ",
     "coverUrl": "https://covers.openlibrary.org/b/id/372486-M.jpg"
@@ -18009,7 +18625,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "the courtship of princess leia dave wolverton ",
     "coverUrl": "https://covers.openlibrary.org/b/id/6481453-M.jpg"
@@ -18022,7 +18641,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "millennium falcon james luceno "
   },
@@ -18034,7 +18656,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "children of the jedi barbara hambly ",
     "coverUrl": "https://covers.openlibrary.org/b/id/372419-M.jpg"
@@ -18066,7 +18691,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "tales from the empire peter schweighofer ",
     "coverUrl": "https://covers.openlibrary.org/b/id/372797-M.jpg"
@@ -18128,7 +18756,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "allegiance timothy zahn ",
     "coverUrl": "https://covers.openlibrary.org/b/id/6939315-M.jpg"
@@ -18141,7 +18772,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "fool's bargain timothy zahn ",
     "coverUrl": "https://covers.openlibrary.org/b/id/6442192-M.jpg"
@@ -18154,7 +18788,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "backyard projects for today's homestead chris gleason "
   },
@@ -18166,7 +18802,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "plydesign: 73 distinctive diy projects in plywood (and other sheet goods) philip schmidt "
   },
@@ -18178,7 +18816,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "the woodworker's bible: a complete guide to woodworking percy blandford "
   },
@@ -18190,7 +18830,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "easy-to-build outdoor projects: 29 projects for your yard and garden popular woodworking "
   },
@@ -18202,7 +18844,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "_searchStr": "raspberry pi cookbook: software and hardware problems and solutions simon monk "
   },
@@ -18416,7 +19060,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "survivor's quest timothy zahn ",
     "coverUrl": "https://covers.openlibrary.org/b/id/11153234-M.jpg"
@@ -18429,7 +19076,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "outbound flight timothy zahn ",
     "coverUrl": "https://covers.openlibrary.org/b/id/10314580-M.jpg"
@@ -18442,7 +19092,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "choices of one timothy zahn ",
     "coverUrl": "https://covers.openlibrary.org/b/id/11161699-M.jpg"
@@ -18455,7 +19108,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "_searchStr": "boba fett: a practical man karen traviss ",
     "coverUrl": "https://covers.openlibrary.org/b/id/6445017-M.jpg"
@@ -18561,7 +19217,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "white sand brandon sanderson, rik hoskin ",
     "coverUrl": "https://covers.openlibrary.org/b/id/14658405-M.jpg"
@@ -18570,7 +19228,7 @@
     "id": 270,
     "title": "The Amazing Maurice and His Educated Rodents",
     "author": "Terry Pratchett",
-    "series": "",
+    "series": "Discworld",
     "formats": [
       "ebook"
     ],
@@ -18587,7 +19245,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "_searchStr": "warbreaker brandon sanderson ",
     "coverUrl": "https://covers.openlibrary.org/b/id/14658347-M.jpg"
@@ -18600,7 +19260,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fiction"
+    ],
     "status": "want",
     "_searchStr": "moby dick, or, the white whale herman melville "
   },
@@ -18693,7 +19355,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Military Fantasy"
+    ],
     "status": "want",
     "_searchStr": "the sword of kaigen: a theonite war story m. l. wang "
   },
