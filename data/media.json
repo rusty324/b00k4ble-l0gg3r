@@ -5,7 +5,7 @@
     "type": "tv",
     "year": "",
     "genre": [
-      "Comedy"
+      "Sitcom"
     ],
     "formats": [
       "dvd"
@@ -19,9 +19,11 @@
     "title": "Big Bang Theory",
     "type": "tv",
     "year": "",
-    "genre": [],
+    "genre": [
+      "Sitcom"
+    ],
     "formats": [
-      "dvd"
+      "bluray"
     ],
     "status": "watched",
     "notes": "",
@@ -32,7 +34,9 @@
     "title": "Loki, Season 1",
     "type": "tv",
     "year": "",
-    "genre": [],
+    "genre": [
+      "Marvel"
+    ],
     "formats": [
       "bluray"
     ],
@@ -68,6 +72,328 @@
     ],
     "status": "watched",
     "notes": "",
+    "rating": 5
+  },
+  {
+    "id": 1781809600848,
+    "title": "Star Trek 08: First Contact",
+    "type": "movie",
+    "year": "",
+    "genre": [
+      "Star Trek",
+      "Science Fiction"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "Star Trek: The Next Generation Motion Picture 5-Movie Collection",
+    "rating": 5
+  },
+  {
+    "id": 1781809600849,
+    "title": "Star Trek 07: Generations",
+    "type": "movie",
+    "year": "",
+    "genre": [
+      "Star Trek",
+      "Science Fiction"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "Star Trek: The Next Generation Motion Picture 5-Movie Collection",
+    "rating": 5
+  },
+  {
+    "id": 1781809600850,
+    "title": "Star Trek 09: Insurrection",
+    "type": "movie",
+    "year": "",
+    "genre": [
+      "Star Trek",
+      "Science Fiction"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "Star Trek: The Next Generation Motion Picture 5-Movie Collection",
+    "rating": 5
+  },
+  {
+    "id": 1781809600851,
+    "title": "Star Trek 10: Nemesis",
+    "type": "movie",
+    "year": "",
+    "genre": [
+      "Star Trek",
+      "Science Fiction"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "Star Trek: The Next Generation Motion Picture 5-Movie Collection",
+    "rating": 5
+  },
+  {
+    "id": 1781809600855,
+    "title": "Star Trek: Evolutions",
+    "type": "movie",
+    "year": "",
+    "genre": [
+      "Star Trek",
+      "Science Fiction",
+      "Documentary"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "Star Trek: The Next Generation Motion Picture 5-Movie Collection",
+    "rating": 5
+  },
+  {
+    "id": 1781809600852,
+    "title": "Star Trek: The Next Generation",
+    "type": "tv",
+    "year": "",
+    "genre": [
+      "Star Trek",
+      "Science Fiction"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "",
+    "rating": 5
+  },
+  {
+    "id": 1781809600853,
+    "title": "Star Trek 03: The Search for Spock",
+    "type": "movie",
+    "year": "",
+    "genre": [
+      "Star Trek",
+      "Science Fiction"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "40th Anniversary Steelbook Edition",
+    "rating": 5
+  },
+  {
+    "id": 1781809600854,
+    "title": "Firefly",
+    "type": "tv",
+    "year": "",
+    "genre": [
+      "Science Fiction"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "",
+    "rating": 5
+  },
+  {
+    "id": 1781809600856,
+    "title": "Star Trek 01: The Motion Picture",
+    "type": "movie",
+    "year": "",
+    "genre": [
+      "Star Trek",
+      "Science Fiction"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "Star Trek: Original Motion Picture Collection (Star Trek I, II, III, IV, V, VI + The Captain's Summit Bonus Disc)",
+    "rating": 5
+  },
+  {
+    "id": 1781809600857,
+    "title": "Star Trek 02: The Wrath of Khan",
+    "type": "movie",
+    "year": "",
+    "genre": [
+      "Star Trek",
+      "Science Fiction"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "Star Trek: Original Motion Picture Collection (Star Trek I, II, III, IV, V, VI + The Captain's Summit Bonus Disc)",
+    "rating": 5
+  },
+  {
+    "id": 1781809600858,
+    "title": "Star Trek 03: The Search for Spock",
+    "type": "movie",
+    "year": "",
+    "genre": [
+      "Star Trek",
+      "Science Fiction"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "Star Trek: Original Motion Picture Collection (Star Trek I, II, III, IV, V, VI + The Captain's Summit Bonus Disc)",
+    "rating": 5
+  },
+  {
+    "id": 1781809600859,
+    "title": "Star Trek 04: The Voyage Home",
+    "type": "movie",
+    "year": "",
+    "genre": [
+      "Star Trek",
+      "Science Fiction"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "Star Trek: Original Motion Picture Collection (Star Trek I, II, III, IV, V, VI + The Captain's Summit Bonus Disc)",
+    "rating": 5
+  },
+  {
+    "id": 1781809600860,
+    "title": "Star Trek 05: The Final Frontier",
+    "type": "movie",
+    "year": "",
+    "genre": [
+      "Star Trek",
+      "Science Fiction"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "Star Trek: Original Motion Picture Collection (Star Trek I, II, III, IV, V, VI + The Captain's Summit Bonus Disc)",
+    "rating": 5
+  },
+  {
+    "id": 1781809600861,
+    "title": "Star Trek 06: The Undiscovered Country",
+    "type": "movie",
+    "year": "",
+    "genre": [
+      "Star Trek",
+      "Science Fiction"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "Star Trek: Original Motion Picture Collection (Star Trek I, II, III, IV, V, VI + The Captain's Summit Bonus Disc)",
+    "rating": 5
+  },
+  {
+    "id": 1781809600862,
+    "title": "Star Trek: The Captains' Summit",
+    "type": "movie",
+    "year": "",
+    "genre": [
+      "Star Trek",
+      "Science Fiction",
+      "Documentary"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "Star Trek: Original Motion Picture Collection (Star Trek I, II, III, IV, V, VI + The Captain's Summit Bonus Disc)",
+    "rating": 5
+  },
+  {
+    "id": 1781809600863,
+    "title": "Monty Python and the Holy Grail",
+    "type": "movie",
+    "year": "",
+    "genre": [
+      "Comedy"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "40th Anniversary Blu-ray Edition",
+    "rating": 5
+  },
+  {
+    "id": 1781809600864,
+    "title": "The Fellowship of the Ring",
+    "type": "movie",
+    "year": "",
+    "genre": [
+      "LOTR",
+      "Fantasy",
+      "Lord of the Rings"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "The Lord Of The Rings Trilogy Box Set One Ring Limited Edition [4K UHD + Blu-Ray]",
+    "rating": 5
+  },
+  {
+    "id": 1781809600865,
+    "title": "The Two Towers",
+    "type": "movie",
+    "year": "",
+    "genre": [
+      "LOTR",
+      "Fantasy",
+      "Lord of the Rings"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "The Lord Of The Rings Trilogy Box Set One Ring Limited Edition [4K UHD + Blu-Ray]",
+    "rating": 5
+  },
+  {
+    "id": 1781809600866,
+    "title": "The Return of the King",
+    "type": "movie",
+    "year": "",
+    "genre": [
+      "LOTR",
+      "Fantasy",
+      "Lord of the Rings"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "The Lord Of The Rings Trilogy Box Set One Ring Limited Edition [4K UHD + Blu-Ray]",
+    "rating": 5
+  },
+  {
+    "id": 1781809600867,
+    "title": "That '70s Show - The Complete Series",
+    "type": "tv",
+    "year": "",
+    "genre": [
+      "Sitcom"
+    ],
+    "formats": [
+      "bluray"
+    ],
+    "status": "watched",
+    "notes": "Flashback Edition",
     "rating": 5
   }
 ]
