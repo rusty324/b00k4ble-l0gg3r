@@ -82,6 +82,8 @@ let bookWishlist = JSON.parse(localStorage.getItem('bookWishlist') || '[]')
 let wishlistEditingId = null;
 let wishlistFilters = { type: 'all' };
 let wishlistSort = 'title-asc';
+let wishlistSearch = '';
+let wishlistSearchTimer = null;
 
 // Media library (movies + TV — all statuses)
 let mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary') || '[]')
@@ -94,6 +96,8 @@ let mediaEditingId = null;
 let mediaRating = 0;
 let mediaFilters = { type: 'all', status: 'all' };
 let mediaSort = 'added-desc';
+let mediaSearch = '';
+let mediaSearchTimer = null;
 
 
 // ─── PERSISTENCE ──────────────────────────────────────────────────────
@@ -213,6 +217,10 @@ function switchTab(tab) {
   const altContent   = document.getElementById('altContent');
   if (booksSection) booksSection.style.display = tab === 'books' ? '' : 'none';
   if (altContent)   altContent.style.display   = tab !== 'books' ? '' : 'none';
+
+  // Reset search state when switching tabs
+  mediaSearch = '';
+  wishlistSearch = '';
 
   renderPage();
 }
@@ -608,6 +616,14 @@ function renderMedia() {
   let items = mediaLibrary;
   if (mediaFilters.type !== 'all') items = items.filter(m => m.type === mediaFilters.type);
   if (mediaFilters.status !== 'all') items = items.filter(m => m.status === mediaFilters.status);
+  if (mediaSearch.trim()) {
+    const q = mediaSearch.toLowerCase().trim();
+    items = items.filter(m =>
+      (m.title || '').toLowerCase().includes(q) ||
+      (m.year ? String(m.year) : '').includes(q) ||
+      (m.genre || []).some(g => g.toLowerCase().includes(q))
+    );
+  }
 
   // Sort
   items = [...items].sort((a, b) => {
@@ -641,6 +657,10 @@ function renderMedia() {
   </select>`;
 
   const toolbar = `<div style="margin-bottom:1rem">
+    <div class="search-wrap" style="margin-bottom:0.6rem">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" id="mediaSearchInput" placeholder="Search title, year, or genre…" value="${esc(mediaSearch)}" oninput="debouncedMediaRender(this.value)">
+    </div>
     <div class="filter-row">
       <span class="filter-label">Type</span>
       <div class="pill-group">${typePills}</div>
@@ -656,12 +676,15 @@ function renderMedia() {
   </div>`;
 
   if (!items.length) {
+    const emptyMsg = mediaSearch.trim()
+      ? { h: 'No results', p: 'Try a different search term or clear the search.' }
+      : { h: 'Nothing here yet', p: 'Click "Add title" to track movies and TV shows.' };
     alt.innerHTML = toolbar + `<div class="empty-state">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 3l-4 4-4-4"/>
       </svg>
-      <h3>Nothing here yet</h3>
-      <p style="font-size:14px">Click "Add title" to track movies and TV shows.</p>
+      <h3>${emptyMsg.h}</h3>
+      <p style="font-size:14px">${emptyMsg.p}</p>
     </div>`;
     return;
   }
@@ -748,6 +771,12 @@ function setMediaSort(val) {
   renderMedia();
 }
 
+function debouncedMediaRender(val) {
+  mediaSearch = val;
+  clearTimeout(mediaSearchTimer);
+  mediaSearchTimer = setTimeout(() => renderMedia(), 200);
+}
+
 
 // ─── WISHLIST RENDERING ───────────────────────────────────────────────
 function renderWishlist() {
@@ -757,6 +786,14 @@ function renderWishlist() {
   // Apply filters
   let items = bookWishlist;
   if (wishlistFilters.type !== 'all') items = items.filter(w => w.type === wishlistFilters.type);
+  if (wishlistSearch.trim()) {
+    const q = wishlistSearch.toLowerCase().trim();
+    items = items.filter(w =>
+      (w.title || '').toLowerCase().includes(q) ||
+      (w.creator || '').toLowerCase().includes(q) ||
+      (w.notes || '').toLowerCase().includes(q)
+    );
+  }
 
   // Sort
   items = [...items].sort((a, b) => {
@@ -780,6 +817,10 @@ function renderWishlist() {
   </select>`;
 
   const toolbar = `<div style="margin-bottom:1rem">
+    <div class="search-wrap" style="margin-bottom:0.6rem">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" id="wishlistSearchInput" placeholder="Search title, author, or notes…" value="${esc(wishlistSearch)}" oninput="debouncedWishlistRender(this.value)">
+    </div>
     <div class="filter-row">
       <span class="filter-label">Type</span>
       <div class="pill-group">${typePills}</div>
@@ -791,15 +832,22 @@ function renderWishlist() {
   </div>`;
 
   if (!items.length) {
-    const typeLabel = { book: 'books', movie: 'movies', tv: 'TV shows' }[wishlistFilters.type] || 'items';
-    const heading = wishlistFilters.type === 'all' ? 'Your wishlist is empty' : `No ${typeLabel} in your wishlist`;
+    let heading, subtext;
+    if (wishlistSearch.trim()) {
+      heading = 'No results';
+      subtext = 'Try a different search term or clear the search.';
+    } else {
+      const typeLabel = { book: 'books', movie: 'movies', tv: 'TV shows' }[wishlistFilters.type] || 'items';
+      heading = wishlistFilters.type === 'all' ? 'Your wishlist is empty' : `No ${typeLabel} in your wishlist`;
+      subtext = 'Click "Add to wishlist" to track things you want to read or watch.';
+    }
     alt.innerHTML = toolbar + `<div class="empty-state">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
       </svg>
       <h3>${heading}</h3>
-      <p style="font-size:14px">Click "Add to wishlist" to track things you want to read or watch.</p>
+      <p style="font-size:14px">${subtext}</p>
     </div>`;
     return;
   }
@@ -832,6 +880,12 @@ function setWishlistFilter(key, val) {
 function setWishlistSort(val) {
   wishlistSort = val;
   renderWishlist();
+}
+
+function debouncedWishlistRender(val) {
+  wishlistSearch = val;
+  clearTimeout(wishlistSearchTimer);
+  wishlistSearchTimer = setTimeout(() => renderWishlist(), 200);
 }
 
 
