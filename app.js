@@ -12,6 +12,28 @@ const PAGE_SIZE = 48;
 
 
 // ─── DATA NORMALIZATION ───────────────────────────────────────────────
+
+// Unique numeric id — Date.now() alone can collide when two items are
+// created in the same millisecond (rapid saves, batch normalization).
+let _lastIssuedId = 0;
+function newId() {
+  const id = Math.max(Date.now(), _lastIssuedId + 1);
+  _lastIssuedId = id;
+  return id;
+}
+
+function hasValidId(raw) {
+  return (typeof raw === 'number' && Number.isFinite(raw))
+      || (typeof raw === 'string' && raw.trim() !== '' && Number.isFinite(+raw));
+}
+
+// Ids are interpolated into inline onclick handlers and compared with ===,
+// so they must be finite numbers. Numeric strings are coerced; anything
+// else gets a fresh id.
+function normalizeId(raw) {
+  return hasValidId(raw) ? +raw : newId();
+}
+
 function normalizeBook(b) {
   const author = Array.isArray(b.author)
     ? b.author.join(', ')
@@ -32,22 +54,50 @@ function normalizeBook(b) {
       ? b.tags.split(',').map(t => t.trim()).filter(Boolean)
     : [];
 
-  const title = b.title != null ? String(b.title) : '';
-  const _searchStr = [title, author, b.series || '', ...tags].join(' ').toLowerCase();
+  const title  = b.title  != null ? String(b.title)  : '';
+  const series = b.series ? String(b.series) : '';
+  const _searchStr = [title, author, series, ...tags].join(' ').toLowerCase();
 
   // Clamp rating to 0–5; out-of-range values (e.g. from imported JSON) cause
   // '★'.repeat(5 - rating) to throw a RangeError with a negative count.
   const rating = Number.isFinite(+b.rating) ? Math.max(0, Math.min(5, Math.round(+b.rating))) : 0;
 
-  return { ...b, title, author, status, formats, tags, rating, _searchStr };
+  return { ...b, id: normalizeId(b.id), title, series, author, status, formats, tags, rating, _searchStr };
 }
 
 // Normalize wishlist items — adds 'type' (default 'book') and unifies author/creator field
 function normalizeWishlistItem(item) {
   return {
     ...item,
+    id: normalizeId(item.id),
     type: item.type || 'book',
-    creator: item.creator || item.author || '',
+    title: item.title != null ? String(item.title) : '',
+    creator: String(item.creator || item.author || ''),
+    notes: item.notes != null ? String(item.notes) : '',
+  };
+}
+
+// Normalize media items — coerces every field the render/sort/search paths
+// call string or array methods on, so malformed imports can't freeze the tab
+function normalizeMediaItem(m) {
+  const genre = Array.isArray(m.genre) ? m.genre.map(String)
+    : (m.genre && typeof m.genre === 'string')
+      ? m.genre.split(',').map(g => g.trim()).filter(Boolean)
+    : [];
+
+  const formats = Array.isArray(m.formats) ? m.formats.map(String)
+    : m.formats ? [String(m.formats)]
+    : [];
+
+  return {
+    ...m,
+    id: normalizeId(m.id),
+    title: m.title != null ? String(m.title) : '',
+    type: m.type || 'movie',
+    status: m.status === 'watching' ? 'watched' : (m.status || 'want'),
+    genre,
+    formats,
+    rating: Number.isFinite(+m.rating) ? Math.max(0, Math.min(5, Math.round(+m.rating))) : 0,
   };
 }
 
@@ -69,6 +119,7 @@ let viewMode = localStorage.getItem('viewMode') || 'card';
 let _filteredCache = null;
 let _filteredCacheKey = '';
 let _booksMutation = 0;
+let _statsRenderedAt = -1;   // _booksMutation value at last stats/tag-filter render
 const _coverCache = {};
 
 // Tab state
@@ -87,11 +138,7 @@ let wishlistSearchTimer = null;
 
 // Media library (movies + TV — all statuses)
 let mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary') || '[]')
-  .map(m => ({
-    ...m,
-    status: m.status === 'watching' ? 'watched' : (m.status || 'want'),
-    rating: Number.isFinite(+m.rating) ? Math.max(0, Math.min(5, Math.round(+m.rating))) : 0,
-  }));
+  .map(normalizeMediaItem);
 let mediaEditingId = null;
 let mediaRating = 0;
 let mediaFilters = { type: 'all', status: 'all' };
@@ -101,9 +148,23 @@ let mediaSearchTimer = null;
 
 
 // ─── PERSISTENCE ──────────────────────────────────────────────────────
+
+// _searchStr is recomputed by normalizeBook() on every load; persisting it
+// adds ~25% to every localStorage write and export for no benefit.
+const stripSearchStr = (k, v) => k === '_searchStr' ? undefined : v;
+
 function save() {
   _booksMutation++;
-  localStorage.setItem('myLibrary', JSON.stringify(books));
+  localStorage.setItem('myLibrary', JSON.stringify(books, stripSearchStr));
+}
+
+// Debounced save for background cover discovery — each save() serializes the
+// whole library, so coalesce the burst of writes while scrolling a page of
+// uncached covers into one.
+let _coverSaveTimer = null;
+function saveSoon() {
+  clearTimeout(_coverSaveTimer);
+  _coverSaveTimer = setTimeout(save, 1000);
 }
 
 function saveWishlist() {
@@ -259,7 +320,7 @@ async function fetchCover(book) {
       const i = books.findIndex(b => b.id === book.id);
       if (i !== -1 && !books[i].coverUrl) {
         books[i].coverUrl = url;
-        save();
+        saveSoon();
       }
       return url;
     }
@@ -298,10 +359,21 @@ function getCoverObserver() {
 
 
 // ─── REPO JSON SYNC ───────────────────────────────────────────────────
-async function _syncBooks() {
-  const res = await fetch(REPO_JSON_URL + '?t=' + Date.now());
+
+// 'no-cache' revalidates with the server (If-None-Match / If-Modified-Since)
+// instead of bypassing HTTP caching entirely — a ?t=Date.now() cache-buster
+// forced a full re-download of books.json (~350 KB) on every page load.
+async function _fetchRepoJson(url) {
+  const res = await fetch(url, { cache: 'no-cache' });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
+  // Items without a stable id can't be deduped across visits — normalizing
+  // would mint a fresh id each load and re-add them forever, so skip them.
+  return data.filter(x => hasValidId(x.id));
+}
+
+async function _syncBooks() {
+  const data = await _fetchRepoJson(REPO_JSON_URL);
   const existingIds = new Set(books.map(b => b.id));
   const newItems = data.map(normalizeBook).filter(b => !existingIds.has(b.id));
   if (newItems.length) { books = [...books, ...newItems]; save(); }
@@ -309,25 +381,15 @@ async function _syncBooks() {
 }
 
 async function _syncMedia() {
-  const res = await fetch(REPO_MEDIA_JSON_URL + '?t=' + Date.now());
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
+  const data = await _fetchRepoJson(REPO_MEDIA_JSON_URL);
   const existingIds = new Set(mediaLibrary.map(m => m.id));
-  const newItems = data
-    .map(m => ({
-      ...m,
-      status: m.status === 'watching' ? 'watched' : (m.status || 'want'),
-      rating: Number.isFinite(+m.rating) ? Math.max(0, Math.min(5, Math.round(+m.rating))) : 0,
-    }))
-    .filter(m => !existingIds.has(m.id));
+  const newItems = data.map(normalizeMediaItem).filter(m => !existingIds.has(m.id));
   if (newItems.length) { mediaLibrary = [...mediaLibrary, ...newItems]; saveMedia(); }
   return { added: newItems.length, total: mediaLibrary.length, noun: 'title' };
 }
 
 async function _syncWishlist() {
-  const res = await fetch(REPO_WISHLIST_JSON_URL + '?t=' + Date.now());
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
+  const data = await _fetchRepoJson(REPO_WISHLIST_JSON_URL);
   const existingIds = new Set(bookWishlist.map(w => w.id));
   const newItems = data.map(normalizeWishlistItem).filter(w => !existingIds.has(w.id));
   if (newItems.length) { bookWishlist = [...bookWishlist, ...newItems]; saveWishlist(); }
@@ -361,7 +423,9 @@ async function fetchRepoData() {
     banner.classList.add('visible');
   }
 
-  renderPage();
+  // switchTab() already rendered at startup — only re-render if a sync
+  // actually added items.
+  if (synced.length) renderPage();
 }
 
 
@@ -405,7 +469,7 @@ function renderTagFilter() {
   container.innerHTML = [
     `<button class="pill tag-pill ${current === 'all' ? 'active' : ''}" onclick="setFilter('tag','all',this)">All</button>`,
     ...tags.map(t =>
-      `<button class="pill tag-pill ${current === t ? 'active' : ''}" onclick="setFilter('tag',${JSON.stringify(t)},this)">${esc(t)}</button>`
+      `<button class="pill tag-pill ${current === t ? 'active' : ''}" data-tag="${esc(t)}" onclick="setFilter('tag',this.dataset.tag,this)">${esc(t)}</button>`
     )
   ].join('');
 }
@@ -455,8 +519,13 @@ function renderStats() {
 
 // ─── MAIN RENDER (books tab) ──────────────────────────────────────────
 function render() {
-  renderStats();
-  renderTagFilter();
+  // Stats and tag pills only depend on the books array, not on search/
+  // filter/page state — skip the six full-library passes unless it changed.
+  if (_statsRenderedAt !== _booksMutation) {
+    renderStats();
+    renderTagFilter();
+    _statsRenderedAt = _booksMutation;
+  }
 
   const query = document.getElementById('searchInput').value.toLowerCase().trim();
   const sort  = document.getElementById('sortSelect').value;
@@ -524,7 +593,7 @@ function render() {
         ? `<img class="book-row-thumb" src="${esc(cachedCover)}" alt="" loading="lazy">`
         : `<div class="book-row-initial" data-book-id="${b.id}">${firstLetter}</div>`;
       const fmtBadges = b.formats.map(f =>
-        `<span class="badge ${fmtCls[f]}" title="${f}">${fmtIcon[f]}</span>`
+        `<span class="badge ${fmtCls[f] || ''}" title="${esc(f)}">${fmtIcon[f] || esc(f)}</span>`
       ).join('');
       return `<div class="book-row">
         ${thumbHtml}
@@ -532,7 +601,7 @@ function render() {
           <div class="book-row-title">${esc(b.title)}</div>
           <div class="book-row-meta">
             <div class="book-row-author">${esc(b.author || '')}</div>
-            <div class="book-row-badges">${fmtBadges}<span class="badge ${stCls[b.status] || 'badge-want'}">${stLabel[b.status] || b.status}</span></div>
+            <div class="book-row-badges">${fmtBadges}<span class="badge ${stCls[b.status] || 'badge-want'}">${stLabel[b.status] || esc(b.status)}</span></div>
             <div class="book-row-actions">
               <button class="btn btn-sm" onclick="openEditModal(${b.id})" title="Edit">✏</button>
               <button class="btn btn-sm btn-danger" onclick="deleteBook(${b.id})" title="Delete">🗑</button>
@@ -544,7 +613,7 @@ function render() {
   } else {
     html = page.map(b => {
       const fmtBadges = b.formats.map(f =>
-        `<span class="badge ${fmtCls[f]}">${fmtLabels[f]}</span>`).join('');
+        `<span class="badge ${fmtCls[f] || ''}">${fmtLabels[f] || esc(f)}</span>`).join('');
       const tagBadges = (b.tags || []).map(t =>
         `<span class="badge badge-tag">${esc(t)}</span>`).join('');
       const r = Math.max(0, Math.min(5, b.rating || 0));
@@ -566,7 +635,7 @@ function render() {
         ${b.series ? `<div class="book-series">📖 ${esc(b.series)}</div>` : ''}
         <div class="book-meta">
           ${fmtBadges}
-          <span class="badge ${stCls[b.status] || 'badge-want'}">${stLabel[b.status] || b.status}</span>
+          <span class="badge ${stCls[b.status] || 'badge-want'}">${stLabel[b.status] || esc(b.status)}</span>
           ${stars ? `<span class="stars">${stars}</span>` : ''}
         </div>
         ${tagBadges ? `<div class="book-tags">${tagBadges}</div>` : ''}
@@ -609,7 +678,9 @@ function render() {
 
 
 // ─── MEDIA RENDERING (Movies & TV tab) ────────────────────────────────
-function renderMedia() {
+// listOnly: replace just the results container, leaving the toolbar (and
+// the focused search input inside it) intact — used by the search path.
+function renderMedia(listOnly = false) {
   const alt = document.getElementById('altContent');
 
   // Apply filters
@@ -637,8 +708,8 @@ function renderMedia() {
   });
 
   const typeIcon  = { movie: '🎬', tv: '📺' };
-  const stCls     = { want: 'badge-want', watched: 'badge-watched', watching: 'badge-watching' };
-  const stLabel   = { want: 'Want to Watch', watched: 'Watched', watching: 'Watching' };
+  const stCls     = { want: 'badge-want', watched: 'badge-watched' };
+  const stLabel   = { want: 'Want to Watch', watched: 'Watched' };
   const fmtIcons  = { bluray: '📀', dvd: '💿', digital: '💻', streaming: '📡' };
 
   // Filter toolbar
@@ -648,7 +719,7 @@ function renderMedia() {
   const statusPills = [['all','All'],['want','Want to Watch'],['watched','Watched']].map(([v,l]) =>
     `<button class="pill${mediaFilters.status===v?' active':''}" onclick="setMediaFilter('status','${v}')">${l}</button>`
   ).join('');
-  const sortSelect = `<select class="sort-select" onchange="setMediaSort(this.value)">
+  const sortSelect = `<select class="sort-select" aria-label="Sort movies and TV shows" onchange="setMediaSort(this.value)">
     <option value="added-desc"${mediaSort==='added-desc'?' selected':''}>Newest added</option>
     <option value="added-asc"${mediaSort==='added-asc'?' selected':''}>Oldest added</option>
     <option value="title-asc"${mediaSort==='title-asc'?' selected':''}>Title A–Z</option>
@@ -659,7 +730,7 @@ function renderMedia() {
   const toolbar = `<div style="margin-bottom:1rem">
     <div class="search-wrap" style="margin-bottom:0.6rem">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="search" id="mediaSearchInput" placeholder="Search title, year, or genre…" value="${esc(mediaSearch)}" oninput="debouncedMediaRender(this.value)">
+      <input type="search" id="mediaSearchInput" placeholder="Search title, year, or genre…" aria-label="Search movies and TV shows" value="${esc(mediaSearch)}" oninput="debouncedMediaRender(this.value)">
     </div>
     <div class="filter-row">
       <span class="filter-label">Type</span>
@@ -675,22 +746,19 @@ function renderMedia() {
     </div>
   </div>`;
 
+  let contentHtml;
   if (!items.length) {
     const emptyMsg = mediaSearch.trim()
       ? { h: 'No results', p: 'Try a different search term or clear the search.' }
       : { h: 'Nothing here yet', p: 'Click "Add title" to track movies and TV shows.' };
-    alt.innerHTML = toolbar + `<div class="empty-state">
+    contentHtml = `<div class="empty-state">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 3l-4 4-4-4"/>
       </svg>
       <h3>${emptyMsg.h}</h3>
       <p style="font-size:14px">${emptyMsg.p}</p>
     </div>`;
-    return;
-  }
-
-  let contentHtml;
-  if (viewMode === 'list') {
+  } else if (viewMode === 'list') {
     const rows = items.map(m => {
       const icon    = typeIcon[m.type] || '🎬';
       const formats = (m.formats || []).map(f => fmtIcons[f] || '').join(' ');
@@ -701,7 +769,7 @@ function renderMedia() {
           <div class="book-row-meta">
             <div class="book-row-author">${m.year ? esc(String(m.year)) : ''}</div>
             <div class="book-row-badges">
-              <span class="badge ${stCls[m.status] || 'badge-want'}">${stLabel[m.status] || m.status}</span>
+              <span class="badge ${stCls[m.status] || 'badge-want'}">${stLabel[m.status] || esc(m.status)}</span>
               ${formats ? `<span class="badge badge-media">${formats}</span>` : ''}
             </div>
             <div class="book-row-actions">
@@ -719,7 +787,7 @@ function renderMedia() {
       const genreTags = (m.genre || []).map(g =>
         `<span class="badge badge-tag">${esc(g)}</span>`).join('');
       const fmtBadges = (m.formats || []).map(f =>
-        `<span class="badge badge-media" title="${f}">${fmtIcons[f] || f}</span>`).join('');
+        `<span class="badge badge-media" title="${esc(f)}">${fmtIcons[f] || esc(f)}</span>`).join('');
       const mr = Math.max(0, Math.min(5, m.rating || 0));
       const stars = mr > 0
         ? `<span class="stars">${'★'.repeat(mr)}<span class="empty">${'★'.repeat(5-mr)}</span></span>`
@@ -729,7 +797,7 @@ function renderMedia() {
         <div class="book-title">${esc(m.title)}</div>
         ${m.year ? `<div class="book-author">${esc(String(m.year))}</div>` : ''}
         <div class="book-meta">
-          <span class="badge ${stCls[m.status] || 'badge-want'}">${stLabel[m.status] || m.status}</span>
+          <span class="badge ${stCls[m.status] || 'badge-want'}">${stLabel[m.status] || esc(m.status)}</span>
           ${fmtBadges}
           ${stars}
         </div>
@@ -758,7 +826,12 @@ function renderMedia() {
     contentHtml = `<div class="books-grid">${cards}</div>`;
   }
 
-  alt.innerHTML = toolbar + contentHtml;
+  const wrap = document.getElementById('mediaListWrap');
+  if (listOnly && wrap) {
+    wrap.innerHTML = contentHtml;
+    return;
+  }
+  alt.innerHTML = toolbar + `<div id="mediaListWrap">${contentHtml}</div>`;
 }
 
 function setMediaFilter(key, val) {
@@ -774,12 +847,16 @@ function setMediaSort(val) {
 function debouncedMediaRender(val) {
   mediaSearch = val;
   clearTimeout(mediaSearchTimer);
-  mediaSearchTimer = setTimeout(() => renderMedia(), 200);
+  // Guard on activeTab: a timer firing after a tab switch would otherwise
+  // paint media content into the pane the new tab just rendered.
+  mediaSearchTimer = setTimeout(() => { if (activeTab === 'media') renderMedia(true); }, 200);
 }
 
 
 // ─── WISHLIST RENDERING ───────────────────────────────────────────────
-function renderWishlist() {
+// listOnly: replace just the results container, leaving the toolbar (and
+// the focused search input inside it) intact — used by the search path.
+function renderWishlist(listOnly = false) {
   const alt = document.getElementById('altContent');
   const typeIcon = { book: '📚', movie: '🎬', tv: '📺' };
 
@@ -809,7 +886,7 @@ function renderWishlist() {
   const typePills = [['all','All'],['book','📚 Books'],['movie','🎬 Movies'],['tv','📺 TV Shows']].map(([v,l]) =>
     `<button class="pill${wishlistFilters.type===v?' active':''}" onclick="setWishlistFilter('type','${v}')">${l}</button>`
   ).join('');
-  const sortSelect = `<select class="sort-select" onchange="setWishlistSort(this.value)">
+  const sortSelect = `<select class="sort-select" aria-label="Sort wishlist" onchange="setWishlistSort(this.value)">
     <option value="title-asc"${wishlistSort==='title-asc'?' selected':''}>Title A–Z</option>
     <option value="title-desc"${wishlistSort==='title-desc'?' selected':''}>Title Z–A</option>
     <option value="added-desc"${wishlistSort==='added-desc'?' selected':''}>Newest added</option>
@@ -819,7 +896,7 @@ function renderWishlist() {
   const toolbar = `<div style="margin-bottom:1rem">
     <div class="search-wrap" style="margin-bottom:0.6rem">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="search" id="wishlistSearchInput" placeholder="Search title, author, or notes…" value="${esc(wishlistSearch)}" oninput="debouncedWishlistRender(this.value)">
+      <input type="search" id="wishlistSearchInput" placeholder="Search title, author, or notes…" aria-label="Search wishlist" value="${esc(wishlistSearch)}" oninput="debouncedWishlistRender(this.value)">
     </div>
     <div class="filter-row">
       <span class="filter-label">Type</span>
@@ -831,6 +908,7 @@ function renderWishlist() {
     </div>
   </div>`;
 
+  let contentHtml;
   if (!items.length) {
     let heading, subtext;
     if (wishlistSearch.trim()) {
@@ -841,7 +919,7 @@ function renderWishlist() {
       heading = wishlistFilters.type === 'all' ? 'Your wishlist is empty' : `No ${typeLabel} in your wishlist`;
       subtext = 'Click "Add to wishlist" to track things you want to read or watch.';
     }
-    alt.innerHTML = toolbar + `<div class="empty-state">
+    contentHtml = `<div class="empty-state">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
@@ -849,27 +927,32 @@ function renderWishlist() {
       <h3>${heading}</h3>
       <p style="font-size:14px">${subtext}</p>
     </div>`;
-    return;
-  }
-
-  const rows = items.map(item => {
-    const icon = typeIcon[item.type] || '📚';
-    return `<div class="book-row">
-      <div class="book-row-initial" style="font-size:18px;background:none;color:var(--text)">${icon}</div>
-      <div class="book-row-content">
-        <div class="book-row-title">${esc(item.title)}</div>
-        <div class="book-row-meta">
-          <div class="book-row-author">${esc(item.creator || '')}</div>
-          <div class="book-row-actions">
-            <button class="btn btn-sm" onclick="openWishlistModal(${item.id})" title="Edit">✏</button>
-            <button class="btn btn-sm btn-danger" onclick="deleteWishlistItem(${item.id})" title="Delete">🗑</button>
+  } else {
+    const rows = items.map(item => {
+      const icon = typeIcon[item.type] || '📚';
+      return `<div class="book-row">
+        <div class="book-row-initial" style="font-size:18px;background:none;color:var(--text)">${icon}</div>
+        <div class="book-row-content">
+          <div class="book-row-title">${esc(item.title)}</div>
+          <div class="book-row-meta">
+            <div class="book-row-author">${esc(item.creator || '')}</div>
+            <div class="book-row-actions">
+              <button class="btn btn-sm" onclick="openWishlistModal(${item.id})" title="Edit">✏</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteWishlistItem(${item.id})" title="Delete">🗑</button>
+            </div>
           </div>
         </div>
-      </div>
-    </div>`;
-  }).join('');
+      </div>`;
+    }).join('');
+    contentHtml = `<div class="books-list">${rows}</div>`;
+  }
 
-  alt.innerHTML = toolbar + `<div class="books-list">${rows}</div>`;
+  const wrap = document.getElementById('wishlistListWrap');
+  if (listOnly && wrap) {
+    wrap.innerHTML = contentHtml;
+    return;
+  }
+  alt.innerHTML = toolbar + `<div id="wishlistListWrap">${contentHtml}</div>`;
 }
 
 function setWishlistFilter(key, val) {
@@ -885,7 +968,9 @@ function setWishlistSort(val) {
 function debouncedWishlistRender(val) {
   wishlistSearch = val;
   clearTimeout(wishlistSearchTimer);
-  wishlistSearchTimer = setTimeout(() => renderWishlist(), 200);
+  // Guard on activeTab: a timer firing after a tab switch would otherwise
+  // paint wishlist content into the pane the new tab just rendered.
+  wishlistSearchTimer = setTimeout(() => { if (activeTab === 'wishlist') renderWishlist(true); }, 200);
 }
 
 
@@ -936,7 +1021,7 @@ function renderPagination(total, totalPages) {
 }
 
 function goPage(p) {
-  currentPage = p;
+  currentPage = Math.max(1, p);
   render();
   document.getElementById('booksGrid').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -948,7 +1033,8 @@ function esc(str) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 
@@ -1030,7 +1116,7 @@ function tagsAC() {
 
   tagsACIndex = -1;
   ac.innerHTML = matches
-    .map(t => `<div class="ac-item" data-val="${esc(t)}" onmousedown="pickTag('${esc(t)}')">${esc(t)}</div>`)
+    .map(t => `<div class="ac-item" data-val="${esc(t)}" onmousedown="pickTag(this.dataset.val)">${esc(t)}</div>`)
     .join('');
   ac.style.display = 'block';
 }
@@ -1181,7 +1267,7 @@ function saveBook() {
       books[i] = normalizeBook({ ...books[i], title, author, series, tags, formats, status, notes, rating: currentRating, coverUrl });
     }
   } else {
-    books.push(normalizeBook({ id: Date.now(), title, author, series, tags, formats, status, notes, rating: currentRating, coverUrl }));
+    books.push(normalizeBook({ id: newId(), title, author, series, tags, formats, status, notes, rating: currentRating, coverUrl }));
   }
 
   save();
@@ -1242,7 +1328,7 @@ function saveWishlistItem() {
     const i = bookWishlist.findIndex(x => x.id === wishlistEditingId);
     if (i !== -1) bookWishlist[i] = { ...bookWishlist[i], type, title, creator, notes };
   } else {
-    bookWishlist.push({ id: Date.now(), type, title, creator, notes });
+    bookWishlist.push({ id: newId(), type, title, creator, notes });
   }
 
   saveWishlist();
@@ -1330,7 +1416,7 @@ function saveMediaItem() {
       mediaLibrary[i] = { ...mediaLibrary[i], title, type, year, genre, formats, status, notes, rating: mediaRating };
     }
   } else {
-    mediaLibrary.push({ id: Date.now(), title, type, year, genre, formats, status, notes, rating: mediaRating });
+    mediaLibrary.push({ id: newId(), title, type, year, genre, formats, status, notes, rating: mediaRating });
   }
 
   saveMedia();
@@ -1358,7 +1444,7 @@ function exportData() {
   } else {
     data = books; filename = 'my-library.json';
   }
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(data, stripSearchStr, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = filename;
@@ -1379,12 +1465,8 @@ function importData(e) {
         if (!confirm(`Import ${data.length} media items? Duplicates (by ID) will be skipped.`)) return;
         const existingIds = new Set(mediaLibrary.map(m => m.id));
         const newItems = data
-          .filter(m => !existingIds.has(m.id))
-          .map(m => ({
-            ...m,
-            status: m.status === 'watching' ? 'watched' : (m.status || 'want'),
-            rating: Number.isFinite(+m.rating) ? Math.max(0, Math.min(5, Math.round(+m.rating))) : 0,
-          }));
+          .map(normalizeMediaItem)
+          .filter(m => !existingIds.has(m.id));
         mediaLibrary = [...mediaLibrary, ...newItems];
         saveMedia();
         renderPage();
@@ -1393,8 +1475,8 @@ function importData(e) {
         if (!confirm(`Import ${data.length} wishlist items? Duplicates (by ID) will be skipped.`)) return;
         const existingIds = new Set(bookWishlist.map(w => w.id));
         const newItems = data
-          .filter(w => !existingIds.has(w.id))
-          .map(normalizeWishlistItem);
+          .map(normalizeWishlistItem)
+          .filter(w => !existingIds.has(w.id));
         bookWishlist = [...bookWishlist, ...newItems];
         saveWishlist();
         renderPage();
@@ -1403,8 +1485,8 @@ function importData(e) {
         if (!confirm(`Import ${data.length} books? Duplicates (by ID) will be skipped.`)) return;
         const existingIds = new Set(books.map(b => b.id));
         const newBooks = data
-          .filter(b => !existingIds.has(b.id))
-          .map(normalizeBook);
+          .map(normalizeBook)
+          .filter(b => !existingIds.has(b.id));
         books = [...books, ...newBooks];
         save();
         renderPage();

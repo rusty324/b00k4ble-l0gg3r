@@ -62,9 +62,9 @@
     <div class="toolbar">
       <div class="search-wrap">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="search" id="searchInput" placeholder="Search title, author, series, or tag…" oninput="debouncedRender()">
+        <input type="search" id="searchInput" placeholder="Search title, author, series, or tag…" aria-label="Search books" oninput="debouncedRender()">
       </div>
-      <select class="sort-select" id="sortSelect" onchange="render()">
+      <select class="sort-select" id="sortSelect" aria-label="Sort books" onchange="render()">
         <option value="added-desc">Newest added</option>
         <option value="added-asc">Oldest added</option>
         <option value="title-asc">Title A–Z</option>
@@ -175,11 +175,11 @@
     <div class="form-group">
       <label>Rating</label>
       <div class="star-picker">
-        <button class="star-btn" type="button" data-val="1" onclick="setRating(1)">★</button>
-        <button class="star-btn" type="button" data-val="2" onclick="setRating(2)">★</button>
-        <button class="star-btn" type="button" data-val="3" onclick="setRating(3)">★</button>
-        <button class="star-btn" type="button" data-val="4" onclick="setRating(4)">★</button>
-        <button class="star-btn" type="button" data-val="5" onclick="setRating(5)">★</button>
+        <button class="star-btn" type="button" data-val="1" aria-label="Rate 1 star" onclick="setRating(1)">★</button>
+        <button class="star-btn" type="button" data-val="2" aria-label="Rate 2 stars" onclick="setRating(2)">★</button>
+        <button class="star-btn" type="button" data-val="3" aria-label="Rate 3 stars" onclick="setRating(3)">★</button>
+        <button class="star-btn" type="button" data-val="4" aria-label="Rate 4 stars" onclick="setRating(4)">★</button>
+        <button class="star-btn" type="button" data-val="5" aria-label="Rate 5 stars" onclick="setRating(5)">★</button>
       </div>
     </div>
 
@@ -295,11 +295,11 @@
     <div class="form-group">
       <label>Rating <span class="opt">(optional)</span></label>
       <div class="star-picker">
-        <button class="star-btn" type="button" data-val="1" onclick="setMediaRating(1)">★</button>
-        <button class="star-btn" type="button" data-val="2" onclick="setMediaRating(2)">★</button>
-        <button class="star-btn" type="button" data-val="3" onclick="setMediaRating(3)">★</button>
-        <button class="star-btn" type="button" data-val="4" onclick="setMediaRating(4)">★</button>
-        <button class="star-btn" type="button" data-val="5" onclick="setMediaRating(5)">★</button>
+        <button class="star-btn" type="button" data-val="1" aria-label="Rate 1 star" onclick="setMediaRating(1)">★</button>
+        <button class="star-btn" type="button" data-val="2" aria-label="Rate 2 stars" onclick="setMediaRating(2)">★</button>
+        <button class="star-btn" type="button" data-val="3" aria-label="Rate 3 stars" onclick="setMediaRating(3)">★</button>
+        <button class="star-btn" type="button" data-val="4" aria-label="Rate 4 stars" onclick="setMediaRating(4)">★</button>
+        <button class="star-btn" type="button" data-val="5" aria-label="Rate 5 stars" onclick="setMediaRating(5)">★</button>
       </div>
     </div>
 

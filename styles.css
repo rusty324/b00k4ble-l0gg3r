@@ -224,7 +224,7 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
 .pill { font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 0.3rem 0.75rem; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
 .pill:hover { border-color: var(--amber-100); color: var(--amber-800); }
 .pill.active { background: var(--amber-900); border-color: var(--amber-900); color: var(--amber-50); }
-.pill.tag-pill.active { background: var(--blue-600); border-color: var(--blue-600); color: #fff; }
+.pill.tag-pill.active { background: var(--blue-600); border-color: var(--blue-600); color: var(--blue-50); }
 
 /* ─── PAGINATION ─────────────────────────────────────────────────── */
 .pagination { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; flex-wrap: wrap; }
@@ -315,7 +315,6 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
 .badge-want     { background: var(--gray-50);  color: var(--gray-600);  }
 .badge-tag      { background: var(--blue-50);  color: var(--blue-600);  font-size: 10px; }
 .badge-watched  { background: var(--teal-50);  color: var(--teal-600);  }
-.badge-watching { background: var(--amber-50); color: var(--amber-800); }
 .badge-media    { background: var(--gray-50);  color: var(--gray-600);  }
 
 .stars { color: var(--amber-200); font-size: 13px; letter-spacing: 1px; }
