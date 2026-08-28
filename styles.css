@@ -524,3 +524,29 @@ input[type="radio"], input[type="checkbox"] { display: none; }
 @media (max-width: 480px) {
   .scan-stage { aspect-ratio: 1 / 1; max-height: 40vh; }
 }
+
+/* ─── TMDb SEARCH ────────────────────────────────────────────────── */
+.tmdb-ac {
+  position: absolute; top: 100%; left: 0; right: 0;
+  background: var(--surface); border: 1px solid var(--border-mid);
+  border-radius: 8px; margin-top: 3px; z-index: 300;
+  max-height: 260px; overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.tmdb-ac .ac-item {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.4rem 0.6rem; cursor: pointer;
+  color: var(--text); transition: background 0.1s;
+}
+.tmdb-ac .ac-item:hover, .tmdb-ac .ac-item.ac-active { background: var(--amber-50); color: var(--amber-900); }
+
+.tmdb-thumb {
+  width: 34px; height: 51px; flex-shrink: 0;
+  object-fit: cover; border-radius: 4px; background: var(--gray-50);
+}
+.tmdb-thumb-empty { display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.tmdb-meta { min-width: 0; }
+.tmdb-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tmdb-sub { font-size: 11px; color: var(--text-muted); margin-top: 0.1rem; }
+
+.hint-error { color: var(--coral-600); }

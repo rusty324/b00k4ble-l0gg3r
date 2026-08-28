@@ -33,6 +33,7 @@
           </button>
           <button class="settings-item" id="settingsExportBtn" onclick="exportData(); closeSettingsMenu()">⬇ Export library</button>
           <button class="settings-item" id="settingsImportBtn" onclick="document.getElementById('importFile').click(); closeSettingsMenu()">⬆ Import library</button>
+          <button class="settings-item" id="settingsTmdbBtn" onclick="openTmdbKeyModal(); closeSettingsMenu()">🎬 TMDb API key…</button>
         </div>
       </div>
 
@@ -256,6 +257,20 @@
 
     <div class="modal-title" id="mediaModalTitle">Add title</div>
 
+    <div class="form-group" id="tmdbSearchGroup" style="display:none">
+      <label for="m-tmdb">Search TMDb <span class="opt">(fills in the fields below)</span></label>
+      <div style="position:relative">
+        <input type="text" class="plain" id="m-tmdb" placeholder="Start typing a film or show title…" autocomplete="off"
+               oninput="tmdbAC()" onkeydown="tmdbACKey(event)" onblur="setTimeout(closeTmdbAC,150)">
+        <div id="tmdb-ac" class="tmdb-ac" style="display:none"></div>
+      </div>
+      <div class="hint" id="tmdbHint"></div>
+    </div>
+
+    <div class="hint" id="tmdbNoKey" style="margin-bottom:1rem">
+      Add a TMDb API key under ⋯ → “TMDb API key” to search for titles instead of typing them.
+    </div>
+
     <div class="form-group">
       <label>Title</label>
       <input type="text" class="plain" id="m-title" placeholder="Movie or TV show title">
@@ -317,6 +332,34 @@
     <div class="modal-footer">
       <button class="btn" onclick="closeMediaModal()">Cancel</button>
       <button class="btn btn-primary" onclick="saveMediaItem()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TMDb API KEY MODAL ──────────────────────────────────────────── -->
+<div class="modal-backdrop" id="tmdbKeyModal" onclick="handleTmdbKeyBackdrop(event)">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-title">TMDb API key</div>
+
+    <div class="hint" style="margin-bottom:1rem">
+      Lets you search for films and TV shows by title when adding a disc, filling in
+      the year, type, genres, and poster. Get a free key from
+      <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">themoviedb.org</a>
+      (API Read Access is not needed — use the v3 <strong>API Key</strong>).
+      It is stored only in this browser and never leaves it except to call TMDb.
+    </div>
+
+    <div class="form-group">
+      <label for="tmdbKeyInput">API key (v3)</label>
+      <input type="text" class="plain" id="tmdbKeyInput" autocomplete="off" spellcheck="false"
+             placeholder="e.g. 1a2b3c4d5e6f…">
+      <div class="hint" id="tmdbKeyStatus"></div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-danger" onclick="clearTmdbKey()">Remove</button>
+      <button class="btn" onclick="closeTmdbKeyModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTmdbKey()">Save</button>
     </div>
   </div>
 </div>

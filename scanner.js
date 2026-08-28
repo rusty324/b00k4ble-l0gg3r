@@ -20,6 +20,24 @@ const OPENLIBRARY_ISBN_URL = 'https://openlibrary.org/api/books';
 const GOOGLE_BOOKS_URL     = 'https://www.googleapis.com/books/v1/volumes';
 const UPCITEMDB_URL        = 'https://api.upcitemdb.com/prod/trial/lookup';
 
+// UPCitemdb sends no Access-Control-Allow-Origin, so a direct browser call is
+// blocked and disc auto-fill cannot work unaided. Point this at a proxy that
+// returns UPCitemdb's JSON verbatim to re-enable it; it is called as
+// `${UPC_PROXY_URL}<upc>`. Empty means "try direct, then stop trying".
+const UPC_PROXY_URL   = '';
+const UPC_BLOCKED_KEY = 'upcLookupBlocked';
+const UPC_BLOCKED_TTL = 7 * 24 * 3600 * 1000;   // re-probe weekly
+
+// TMDb cannot look up a barcode — /find accepts IMDb/TVDB/Wikidata ids, not
+// GTINs — so it is used for title search instead, to fill in a scanned disc.
+// The key lives in localStorage, never in this repo: TMDb has no referrer or
+// domain restriction, so a committed key is usable by anyone who finds it.
+const TMDB_API_BASE    = 'https://api.themoviedb.org/3';
+const TMDB_IMG_BASE    = 'https://image.tmdb.org/t/p/w342';
+const TMDB_KEY_STORE   = 'tmdbKey';
+const TMDB_GENRE_STORE = 'tmdbGenres';
+const TMDB_GENRE_TTL   = 30 * 24 * 3600 * 1000;
+
 const SCAN_CACHE_KEY   = 'scanCache';
 const SCAN_HIT_TTL     = 30 * 24 * 3600 * 1000;  // 30 days
 const SCAN_MISS_TTL    =      24 * 3600 * 1000;  // 1 day
@@ -200,14 +218,30 @@ async function lookupISBN(isbn) {
 // retail listing string we parse heuristically. If it is unreachable —
 // CORS, 429, offline — we return null and the caller falls back to manual
 // entry, which is the same place a miss would land anyway.
+// True once a direct call has been shown to be unreachable, so later scans
+// skip a request that cannot succeed instead of repeating it every time.
+function upcLookupUnavailable() {
+  if (UPC_PROXY_URL) return false;
+  try {
+    const t = +localStorage.getItem(UPC_BLOCKED_KEY) || 0;
+    return t > 0 && Date.now() - t < UPC_BLOCKED_TTL;
+  } catch { return false; }
+}
+
 async function lookupUPC(upc) {
   const cached = scanCacheGet(upc);
   if (cached !== undefined) return cached;
+  if (upcLookupUnavailable()) return null;
+
+  const url = UPC_PROXY_URL
+    ? UPC_PROXY_URL + encodeURIComponent(upc)
+    : `${UPCITEMDB_URL}?upc=${upc}`;
 
   try {
-    const res = await fetchWithTimeout(`${UPCITEMDB_URL}?upc=${upc}`);
+    const res = await fetchWithTimeout(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+    try { localStorage.removeItem(UPC_BLOCKED_KEY); } catch { /* ignore */ }
     const item = data.items && data.items[0];
     if (item && item.title) {
       const parsed = parseDiscTitle(item.title);
@@ -219,9 +253,87 @@ async function lookupUPC(upc) {
     }
     scanCacheSet(upc, false, null);   // genuine miss — worth remembering
     return null;
-  } catch {
-    return null;                      // transport failure — do not cache
+  } catch (err) {
+    // A CORS block or dead network rejects with TypeError; latch on that so
+    // the request is not repeated. A timeout (AbortError) may just be a slow
+    // connection, so it is not treated as permanent.
+    if (!err || err.name !== 'AbortError') {
+      try { localStorage.setItem(UPC_BLOCKED_KEY, String(Date.now())); } catch { /* ignore */ }
+    }
+    return null;                      // transport failure — do not cache as a miss
   }
+}
+
+
+// ─── TMDb (title search for discs) ────────────────────────────────────
+function tmdbKey() {
+  try { return (localStorage.getItem(TMDB_KEY_STORE) || '').trim(); } catch { return ''; }
+}
+
+function tmdbEnabled() { return !!tmdbKey(); }
+
+function tmdbUrl(pathname, params) {
+  const q = new URLSearchParams({ api_key: tmdbKey(), ...params });
+  return `${TMDB_API_BASE}${pathname}?${q}`;
+}
+
+// Search results carry genre_ids, not names, so the id→name map is fetched
+// once and cached; it changes very rarely.
+async function tmdbGenreMap() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(TMDB_GENRE_STORE) || 'null');
+    if (raw && Date.now() - raw.t < TMDB_GENRE_TTL) return raw.map;
+  } catch { /* fall through and refetch */ }
+
+  const map = {};
+  try {
+    const [mv, tv] = await Promise.all([
+      fetchWithTimeout(tmdbUrl('/genre/movie/list', {})),
+      fetchWithTimeout(tmdbUrl('/genre/tv/list', {})),
+    ]);
+    for (const res of [mv, tv]) {
+      if (!res.ok) continue;
+      const data = await res.json();
+      (data.genres || []).forEach(g => { map[g.id] = g.name; });
+    }
+    if (Object.keys(map).length) {
+      try { localStorage.setItem(TMDB_GENRE_STORE, JSON.stringify({ t: Date.now(), map })); }
+      catch { /* quota — the map is an optimization */ }
+    }
+  } catch { /* genres are optional; the rest of the result is still useful */ }
+  return map;
+}
+
+async function tmdbSearch(query) {
+  if (!tmdbEnabled() || !query.trim()) return [];
+  const res = await fetchWithTimeout(
+    tmdbUrl('/search/multi', { query: query.trim(), include_adult: 'false' }));
+  if (res.status === 401) throw new Error('That TMDb key was rejected.');
+  if (!res.ok) throw new Error(`TMDb error (HTTP ${res.status})`);
+  const data = await res.json();
+  const genres = await tmdbGenreMap();
+
+  return (data.results || [])
+    .filter(r => r.media_type === 'movie' || r.media_type === 'tv')
+    .slice(0, 8)
+    .map(r => ({
+      tmdbId: r.id,
+      type:  r.media_type === 'tv' ? 'tv' : 'movie',
+      title: r.title || r.name || '',
+      year:  String(r.release_date || r.first_air_date || '').slice(0, 4),
+      posterUrl: r.poster_path ? TMDB_IMG_BASE + r.poster_path : '',
+      genre: (r.genre_ids || []).map(id => genres[id]).filter(Boolean),
+    }))
+    .filter(r => r.title);
+}
+
+// Verifies a key before it is saved, so a typo is caught immediately.
+async function tmdbTestKey(key) {
+  const q = new URLSearchParams({ api_key: key, query: 'inception' });
+  const res = await fetchWithTimeout(`${TMDB_API_BASE}/search/movie?${q}`);
+  if (res.status === 401) throw new Error('Key rejected by TMDb.');
+  if (!res.ok) throw new Error(`TMDb returned HTTP ${res.status}.`);
+  return true;
 }
 
 
@@ -451,6 +563,10 @@ function openPrefilledForm(code, info, isBookPath) {
       if (info.year)   document.getElementById('m-year').value = info.year;
       if (info.format) setMediaFormats([info.format]);
       if (info.type)   setMediaRadio('m-type', info.type);
+      // Seed TMDb with the parsed retail title so the user can confirm a
+      // proper match in one tap instead of retyping it.
+      const tq = document.getElementById('m-tmdb');
+      if (tmdbEnabled() && tq && info.title) { tq.value = info.title; tmdbAC(); }
     }
   } else {
     openWishlistModal(null);
@@ -581,7 +697,9 @@ async function acceptScannedCode(rawCode) {
   if (!info) {
     scanBanner(isBookPath
       ? `No match found for ${storeCode} — enter the details manually.`
-      : `Could not identify ${storeCode} — enter the details manually.`);
+      : tmdbEnabled()
+        ? `Scanned ${storeCode} — search for the title and this disc will be recognised next time.`
+        : `Scanned ${storeCode} — add the title and this disc will be recognised next time.`);
   }
   openPrefilledForm(storeCode, info, isBookPath);
 }
@@ -657,6 +775,179 @@ async function toggleScanTorch() {
 function toggleScanKeepGoing(checked) {
   scanKeepGoing = !!checked;
   localStorage.setItem('scanKeepGoing', scanKeepGoing ? '1' : '0');
+}
+
+
+// ─── TMDb AUTOCOMPLETE (media modal) ──────────────────────────────────
+let _tmdbResults = [];
+let _tmdbIndex   = -1;
+let _tmdbTimer   = null;
+let _tmdbSeq     = 0;          // guards against out-of-order responses
+let pendingTmdb  = null;       // {tmdbId, posterUrl} applied by saveMediaItem
+
+function tmdbHint(msg, isError) {
+  const el = document.getElementById('tmdbHint');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('hint-error', !!isError);
+}
+
+function closeTmdbAC() {
+  const ac = document.getElementById('tmdb-ac');
+  if (ac) ac.style.display = 'none';
+  _tmdbIndex = -1;
+}
+
+function tmdbAC() {
+  const input = document.getElementById('m-tmdb');
+  const query = input.value.trim();
+  clearTimeout(_tmdbTimer);
+  if (query.length < 2) { closeTmdbAC(); tmdbHint(''); return; }
+
+  _tmdbTimer = setTimeout(async () => {
+    const seq = ++_tmdbSeq;
+    tmdbHint('Searching…');
+    try {
+      const results = await tmdbSearch(query);
+      if (seq !== _tmdbSeq) return;         // a newer keystroke already won
+      _tmdbResults = results;
+      renderTmdbAC();
+      tmdbHint(results.length ? '' : 'No matches on TMDb.');
+    } catch (err) {
+      if (seq !== _tmdbSeq) return;
+      closeTmdbAC();
+      tmdbHint(err.message || 'TMDb search failed.', true);
+    }
+  }, 300);
+}
+
+function renderTmdbAC() {
+  const ac = document.getElementById('tmdb-ac');
+  if (!ac) return;
+  if (!_tmdbResults.length) { closeTmdbAC(); return; }
+  _tmdbIndex = -1;
+  ac.innerHTML = _tmdbResults.map((r, i) => `
+    <div class="ac-item tmdb-item" data-i="${i}" onmousedown="tmdbPick(${i})">
+      ${r.posterUrl
+        ? `<img class="tmdb-thumb" src="${esc(r.posterUrl)}" alt="" loading="lazy">`
+        : `<div class="tmdb-thumb tmdb-thumb-empty">${r.type === 'tv' ? '📺' : '🎬'}</div>`}
+      <div class="tmdb-meta">
+        <div class="tmdb-title">${esc(r.title)}</div>
+        <div class="tmdb-sub">${r.type === 'tv' ? '📺 TV' : '🎬 Movie'}${r.year ? ' · ' + esc(r.year) : ''}</div>
+      </div>
+    </div>`).join('');
+  ac.style.display = 'block';
+}
+
+function tmdbACKey(e) {
+  const ac = document.getElementById('tmdb-ac');
+  if (!ac || ac.style.display === 'none') return;
+  const items = [...ac.querySelectorAll('.ac-item')];
+  if (!items.length) return;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    _tmdbIndex = Math.min(_tmdbIndex + 1, items.length - 1);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    _tmdbIndex = Math.max(_tmdbIndex - 1, 0);
+  } else if (e.key === 'Enter' && _tmdbIndex >= 0) {
+    e.preventDefault();
+    tmdbPick(_tmdbIndex);
+    return;
+  } else if (e.key === 'Escape') {
+    closeTmdbAC();
+    return;
+  } else {
+    return;
+  }
+  items.forEach((el, i) => el.classList.toggle('ac-active', i === _tmdbIndex));
+  if (items[_tmdbIndex]) items[_tmdbIndex].scrollIntoView({ block: 'nearest' });
+}
+
+function tmdbPick(i) {
+  const r = _tmdbResults[i];
+  if (!r) return;
+  document.getElementById('m-title').value = r.title;
+  document.getElementById('m-year').value  = r.year || '';
+  if (r.genre && r.genre.length) document.getElementById('m-genre').value = r.genre.join(', ');
+  setMediaRadio('m-type', r.type);
+  // Carried through saveMediaItem, which builds a fresh object on insert.
+  pendingTmdb = { tmdbId: r.tmdbId, posterUrl: r.posterUrl || '' };
+  closeTmdbAC();
+  document.getElementById('m-tmdb').value = '';
+  tmdbHint(`Filled from TMDb: ${r.title}${r.year ? ' (' + r.year + ')' : ''}`);
+}
+
+// Shows the search box only when a key is present, with a pointer to where
+// to add one otherwise.
+function syncTmdbUI() {
+  const wrap = document.getElementById('tmdbSearchGroup');
+  const none = document.getElementById('tmdbNoKey');
+  if (!wrap || !none) return;
+  const on = tmdbEnabled();
+  wrap.style.display = on ? '' : 'none';
+  none.style.display = on ? 'none' : '';
+  closeTmdbAC();
+  tmdbHint('');
+  const input = document.getElementById('m-tmdb');
+  if (input) input.value = '';
+}
+
+
+// ─── TMDb KEY SETTINGS ────────────────────────────────────────────────
+function openTmdbKeyModal() {
+  document.getElementById('tmdbKeyInput').value = tmdbKey();
+  tmdbKeyStatus('');
+  document.getElementById('tmdbKeyModal').classList.add('open');
+  document.getElementById('tmdbKeyInput').focus();
+}
+
+function closeTmdbKeyModal() {
+  document.getElementById('tmdbKeyModal').classList.remove('open');
+}
+
+function handleTmdbKeyBackdrop(e) {
+  if (e.target === document.getElementById('tmdbKeyModal')) closeTmdbKeyModal();
+}
+
+function tmdbKeyStatus(msg, isError) {
+  const el = document.getElementById('tmdbKeyStatus');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('hint-error', !!isError);
+}
+
+async function saveTmdbKey() {
+  const key = document.getElementById('tmdbKeyInput').value.trim();
+  if (!key) { clearTmdbKey(); return; }
+  tmdbKeyStatus('Checking with TMDb…');
+  try {
+    await tmdbTestKey(key);
+  } catch (err) {
+    tmdbKeyStatus(err.message || 'Could not verify the key.', true);
+    return;
+  }
+  try {
+    localStorage.setItem(TMDB_KEY_STORE, key);
+    localStorage.removeItem(TMDB_GENRE_STORE);   // refetch genres under the new key
+  } catch {
+    tmdbKeyStatus('Could not save the key (storage is full or blocked).', true);
+    return;
+  }
+  syncTmdbUI();
+  tmdbKeyStatus('Saved. Disc search is on.');
+  setTimeout(closeTmdbKeyModal, 900);
+}
+
+function clearTmdbKey() {
+  try {
+    localStorage.removeItem(TMDB_KEY_STORE);
+    localStorage.removeItem(TMDB_GENRE_STORE);
+  } catch { /* ignore */ }
+  document.getElementById('tmdbKeyInput').value = '';
+  syncTmdbUI();
+  tmdbKeyStatus('Key removed. Disc search is off.');
 }
 
 
