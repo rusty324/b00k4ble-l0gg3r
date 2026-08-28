@@ -1063,6 +1063,37 @@ function esc(str) {
 }
 
 
+// ─── BODY SCROLL LOCK (while a modal is open) ─────────────────────────
+// Driven by a MutationObserver rather than by each open/close function, so
+// every path is covered — buttons, backdrop clicks, Escape, and the
+// scanner's own teardown — with no call sites to keep in sync.
+let _scrollLockY = 0;
+
+function syncBodyScrollLock() {
+  const anyOpen = !!document.querySelector('.modal-backdrop.open');
+  const locked  = document.body.classList.contains('modal-open');
+  if (anyOpen === locked) return;
+
+  if (anyOpen) {
+    _scrollLockY = window.scrollY || window.pageYOffset || 0;
+    document.body.style.top = `-${_scrollLockY}px`;
+    document.body.classList.add('modal-open');
+  } else {
+    document.body.classList.remove('modal-open');
+    document.body.style.top = '';
+    // Flush layout first: while the body was fixed the document collapsed, and
+    // scrolling before it reflows can clamp short of the saved offset.
+    void document.body.offsetHeight;
+    window.scrollTo(0, _scrollLockY);   // instant, so the page does not jump
+  }
+}
+
+document.querySelectorAll('.modal-backdrop').forEach(el => {
+  new MutationObserver(syncBodyScrollLock)
+    .observe(el, { attributes: true, attributeFilter: ['class'] });
+});
+
+
 // ─── MODAL HELPERS ────────────────────────────────────────────────────
 function setFormats(vals) {
   document.querySelectorAll('#f-format-group input[type="checkbox"]').forEach(cb => {
