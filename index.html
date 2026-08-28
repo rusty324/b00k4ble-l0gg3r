@@ -18,6 +18,9 @@
     <div class="brand">My<span>·</span>Library</div>
     <div class="header-actions">
 
+      <!-- Barcode scanner — label/tooltip updated per tab in switchTab() -->
+      <button class="btn btn-sm" id="scanBtn" onclick="openScanner()" title="Scan a barcode" aria-label="Scan a barcode">&#128247;</button>
+
       <!-- Card / list view toggle (hidden on non-book tabs) -->
       <button class="btn btn-sm" id="viewToggleBtn" onclick="toggleView()" title="Toggle list / card view">⊞</button>
 
@@ -65,9 +68,9 @@
     <div class="toolbar">
       <div class="search-wrap">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="search" id="searchInput" placeholder="Search title, author, series, or tag…" oninput="debouncedRender()">
+        <input type="search" id="searchInput" placeholder="Search title, author, series, or tag…" aria-label="Search books" oninput="debouncedRender()">
       </div>
-      <select class="sort-select" id="sortSelect" onchange="render()">
+      <select class="sort-select" id="sortSelect" aria-label="Sort books" onchange="render()">
         <option value="added-desc">Newest added</option>
         <option value="added-asc">Oldest added</option>
         <option value="title-asc">Title A–Z</option>
@@ -178,11 +181,11 @@
     <div class="form-group">
       <label>Rating</label>
       <div class="star-picker">
-        <button class="star-btn" type="button" data-val="1" onclick="setRating(1)">★</button>
-        <button class="star-btn" type="button" data-val="2" onclick="setRating(2)">★</button>
-        <button class="star-btn" type="button" data-val="3" onclick="setRating(3)">★</button>
-        <button class="star-btn" type="button" data-val="4" onclick="setRating(4)">★</button>
-        <button class="star-btn" type="button" data-val="5" onclick="setRating(5)">★</button>
+        <button class="star-btn" type="button" data-val="1" aria-label="Rate 1 star" onclick="setRating(1)">★</button>
+        <button class="star-btn" type="button" data-val="2" aria-label="Rate 2 stars" onclick="setRating(2)">★</button>
+        <button class="star-btn" type="button" data-val="3" aria-label="Rate 3 stars" onclick="setRating(3)">★</button>
+        <button class="star-btn" type="button" data-val="4" aria-label="Rate 4 stars" onclick="setRating(4)">★</button>
+        <button class="star-btn" type="button" data-val="5" aria-label="Rate 5 stars" onclick="setRating(5)">★</button>
       </div>
     </div>
 
@@ -298,11 +301,11 @@
     <div class="form-group">
       <label>Rating <span class="opt">(optional)</span></label>
       <div class="star-picker">
-        <button class="star-btn" type="button" data-val="1" onclick="setMediaRating(1)">★</button>
-        <button class="star-btn" type="button" data-val="2" onclick="setMediaRating(2)">★</button>
-        <button class="star-btn" type="button" data-val="3" onclick="setMediaRating(3)">★</button>
-        <button class="star-btn" type="button" data-val="4" onclick="setMediaRating(4)">★</button>
-        <button class="star-btn" type="button" data-val="5" onclick="setMediaRating(5)">★</button>
+        <button class="star-btn" type="button" data-val="1" aria-label="Rate 1 star" onclick="setMediaRating(1)">★</button>
+        <button class="star-btn" type="button" data-val="2" aria-label="Rate 2 stars" onclick="setMediaRating(2)">★</button>
+        <button class="star-btn" type="button" data-val="3" aria-label="Rate 3 stars" onclick="setMediaRating(3)">★</button>
+        <button class="star-btn" type="button" data-val="4" aria-label="Rate 4 stars" onclick="setMediaRating(4)">★</button>
+        <button class="star-btn" type="button" data-val="5" aria-label="Rate 5 stars" onclick="setMediaRating(5)">★</button>
       </div>
     </div>
 
@@ -318,8 +321,55 @@
   </div>
 </div>
 
+<!-- ─── SCANNER MODAL ───────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="scanModal" onclick="handleScanBackdrop(event)">
+  <div class="modal scan-modal">
+    <div class="modal-title">Scan a barcode</div>
+
+    <div class="scan-stage">
+      <video id="scanVideo" playsinline autoplay muted></video>
+      <div class="scan-guide"></div>
+      <button class="btn btn-sm scan-torch" id="scanTorchBtn" onclick="toggleScanTorch()"
+              title="Toggle flashlight" aria-label="Toggle flashlight" style="display:none">&#128161;</button>
+    </div>
+
+    <div class="scan-status" id="scanStatus"></div>
+
+    <div class="scan-duplicate" id="scanDuplicate" style="display:none">
+      <div id="scanDuplicateText"></div>
+      <div class="scan-duplicate-actions">
+        <button class="btn btn-sm btn-primary" onclick="editScannedDuplicate()">Open it</button>
+        <button class="btn btn-sm" onclick="dismissScanDuplicate()">Scan another</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="scanManualInput">Or type the barcode <span class="opt">(ISBN or UPC)</span></label>
+      <div style="display:flex;gap:0.5rem;align-items:flex-start">
+        <input type="text" class="plain" id="scanManualInput" inputmode="numeric" autocomplete="off"
+               placeholder="9780140328721" onkeydown="manualBarcodeKey(event)">
+        <button class="btn" onclick="submitManualBarcode()" style="flex-shrink:0">Look up</button>
+      </div>
+    </div>
+
+    <div class="scan-footer">
+      <label class="scan-toggle" for="scanKeepGoing">
+        <input type="checkbox" id="scanKeepGoing" onchange="toggleScanKeepGoing(this.checked)">
+        <span>Keep scanning &mdash; add straight to the library</span>
+      </label>
+      <span class="scan-count" id="scanCount"></span>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="scanUndo" onclick="undoLastScanAdd()" style="display:none">Undo last</button>
+      <button class="btn" onclick="closeScanModal()">Done</button>
+    </div>
+  </div>
+</div>
+
 <button class="scroll-top-btn" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top" aria-label="Scroll to top">↑</button>
 
+<script src="scanner.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
