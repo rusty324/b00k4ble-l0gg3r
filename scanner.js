@@ -29,6 +29,10 @@ const GEMINI_KEY_STORE   = 'geminiKey';
 const GEMINI_MODEL_STORE = 'geminiModel';
 const GEMINI_MAX_EDGE  = 768;   // keeps a photo at exactly 258 image tokens
 const IDENTIFY_MAX_QUERIES = 4; // parallel TMDb verifications per capture
+// Open Library throttles anonymous callers at ~1 req/sec and 429s readily, so
+// book verification runs fewer queries, sequentially.
+const IDENTIFY_MAX_BOOK_QUERIES = 2;
+const OPENLIBRARY_SEARCH_URL = 'https://openlibrary.org/search.json';
 
 // TMDb has no barcode and no image lookup, so it is used for title search:
 // to verify what the vision model reports and to fill in the details.
@@ -788,10 +792,20 @@ function tmdbPick(i) {
 // to add one otherwise.
 function syncIdentifyButtons() {
   const on = geminiEnabled();
-  ['mediaIdentifyBtn', 'wishlistIdentifyBtn'].forEach(id => {
+  ['mediaIdentifyBtn', 'wishlistIdentifyBtn', 'bookIdentifyBtn', 'scanIdentifyBtn'].forEach(id => {
     const b = document.getElementById(id);
     if (b) b.style.display = on ? '' : 'none';
   });
+}
+
+// From the barcode scanner, hand off to cover identification without making
+// the user close and reopen: same camera, different question.
+function switchToIdentify() {
+  const target = activeTab === 'wishlist' ? 'wishlist' : 'books';
+  stopScanCamera();
+  document.getElementById('scanModal').classList.remove('open');
+  document.getElementById('scanDuplicate').style.display = 'none';
+  openIdentify(target);
 }
 
 function syncTmdbUI() {
@@ -873,6 +887,7 @@ function clearTmdbKey() {
 let _identifyResults = [];   // ranked TMDb matches awaiting the user's pick
 let _identifyBusy    = false;
 let _identifyTarget  = 'media';   // which form a pick should fill
+let _identifyKind    = 'screen';  // 'book' | 'screen' — what we are looking at
 
 function geminiKey() {
   try { return (localStorage.getItem(GEMINI_KEY_STORE) || '').trim(); } catch { return ''; }
@@ -1040,12 +1055,18 @@ function captureFrameAsJpeg(video, maxEdge = GEMINI_MAX_EDGE) {
   return { base64: dataUrl.split(',')[1] || '', width: c.width, height: c.height };
 }
 
-const IDENTIFY_PROMPT =
+const IDENTIFY_PROMPT_SCREEN =
   'This photo shows a DVD or Blu-ray case, or a TV title card. Identify the film ' +
   'or TV series it is. Use the artwork as well as any text. Give up to 3 ' +
   'candidates, most likely first, even if you are unsure. Do not name any people.';
 
-const IDENTIFY_SCHEMA = {
+const IDENTIFY_PROMPT_BOOK =
+  'This photo shows the front cover or the spine of a book. Identify the book. ' +
+  'Use the cover artwork and typography as well as any readable text. Give the ' +
+  'title and the author for up to 3 candidates, most likely first, even if you ' +
+  'are unsure.';
+
+const IDENTIFY_SCHEMA_SCREEN = {
   type: 'OBJECT',
   properties: {
     verbatim_text: { type: 'STRING' },
@@ -1066,18 +1087,39 @@ const IDENTIFY_SCHEMA = {
   required: ['verbatim_text', 'candidates'],
 };
 
-async function identifyCover(base64) {
+const IDENTIFY_SCHEMA_BOOK = {
+  type: 'OBJECT',
+  properties: {
+    verbatim_text: { type: 'STRING' },
+    candidates: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          title: { type: 'STRING' },
+          author: { type: 'STRING' },
+          confidence: { type: 'NUMBER' },
+        },
+        required: ['title', 'confidence'],
+      },
+    },
+  },
+  required: ['verbatim_text', 'candidates'],
+};
+
+async function identifyCover(base64, kind) {
   const key = geminiKey();
   if (!key) throw new Error('No image recognition key set.');
+  const isBook = kind === 'book';
 
   const data = await geminiPost(key, {
     contents: [{ parts: [
       { inline_data: { mime_type: 'image/jpeg', data: base64 } },
-      { text: IDENTIFY_PROMPT },
+      { text: isBook ? IDENTIFY_PROMPT_BOOK : IDENTIFY_PROMPT_SCREEN },
     ] }],
     generationConfig: {
       responseMimeType: 'application/json',
-      responseSchema: IDENTIFY_SCHEMA,
+      responseSchema: isBook ? IDENTIFY_SCHEMA_BOOK : IDENTIFY_SCHEMA_SCREEN,
       maxOutputTokens: 512,
     },
   }, 20000);
@@ -1088,15 +1130,22 @@ async function identifyCover(base64) {
   if (!parsed) throw new Error('Could not read the response from Google.');
 
   return {
+    kind: isBook ? 'book' : 'screen',
     verbatim: String(parsed.verbatim_text || ''),
     candidates: (parsed.candidates || [])
       .filter(c => c && c.title)
-      .map(c => ({
-        title: String(c.title),
-        year: c.year ? String(c.year) : '',
-        type: c.type === 'tv' ? 'tv' : 'movie',
-        confidence: Number.isFinite(+c.confidence) ? +c.confidence : 0.5,
-      })),
+      .map(c => isBook
+        ? {
+            title: String(c.title),
+            author: c.author ? String(c.author) : '',
+            confidence: Number.isFinite(+c.confidence) ? +c.confidence : 0.5,
+          }
+        : {
+            title: String(c.title),
+            year: c.year ? String(c.year) : '',
+            type: c.type === 'tv' ? 'tv' : 'movie',
+            confidence: Number.isFinite(+c.confidence) ? +c.confidence : 0.5,
+          }),
   };
 }
 
@@ -1124,6 +1173,71 @@ function titleSimilarity(a, b) {
   const x = norm(a), y = norm(b);
   if (!x || !y) return 0;
   return 1 - levenshtein(x, y) / Math.max(x.length, y.length);
+}
+
+// Open Library search, used to confirm what the model read off a book cover.
+// `fields` is essential — the default response is enormous.
+async function searchOpenLibrary(title, author) {
+  const params = new URLSearchParams({
+    title, limit: '5',
+    fields: 'key,title,author_name,first_publish_year,cover_i,isbn',
+  });
+  if (author) params.set('author', author);
+
+  const res = await fetchWithTimeout(`${OPENLIBRARY_SEARCH_URL}?${params}`);
+  if (!res.ok) throw new Error(`Open Library returned HTTP ${res.status}`);
+  const data = await res.json();
+
+  return (data.docs || []).map(d => ({
+    key: d.key || '',
+    title: String(d.title || ''),
+    author: (d.author_name || [])[0] || '',
+    year: d.first_publish_year ? String(d.first_publish_year) : '',
+    coverUrl: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : '',
+    isbn: (d.isbn || [])[0] || '',
+  })).filter(d => d.title);
+}
+
+async function verifyBookAgainstOpenLibrary(identified) {
+  const queries = [];
+  const seen = new Set();
+  identified.candidates.forEach(c => {
+    const k = `${c.title}|${c.author || ''}`.toLowerCase();
+    if (c.title.trim().length >= 2 && !seen.has(k)) {
+      seen.add(k);
+      queries.push({ title: c.title.trim(), author: (c.author || '').trim(), cand: c });
+    }
+  });
+  if (!queries.length) {
+    const guess = parseDiscTitle(identified.verbatim).title;
+    if (guess) queries.push({ title: guess, author: '', cand: null });
+  }
+
+  // Sequential, not parallel: Open Library throttles anonymous callers at
+  // roughly one request a second and returns 429 readily.
+  const byKey = new Map();
+  for (const q of queries.slice(0, IDENTIFY_MAX_BOOK_QUERIES)) {
+    let hits = [];
+    try { hits = await searchOpenLibrary(q.title, q.author); }
+    catch { continue; }
+    hits.forEach((hit, rank) => {
+      const authorSim = q.author && hit.author ? titleSimilarity(q.author, hit.author) : 0.5;
+      const belief = q.cand ? q.cand.confidence : 0.4;
+      const score =
+        titleSimilarity(q.title, hit.title) * 2 +
+        belief * authorSim * 2 +
+        Math.max(0, 0.5 - rank * 0.1);
+      const id = hit.key || `${hit.title}|${hit.author}`;
+      const prev = byKey.get(id);
+      if (prev) { prev.agree += 1; prev.score = Math.max(prev.score, score); }
+      else byKey.set(id, { ...hit, agree: 1, score });
+    });
+  }
+
+  return [...byKey.values()]
+    .map(r => ({ ...r, score: r.score + 0.25 * (r.agree - 1) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
 }
 
 // TMDb search is phrase/prefix matched, not fuzzy, so several phrasings are
@@ -1186,8 +1300,17 @@ function setIdentifyStatus(msg, isError) {
   el.classList.toggle('scan-status-error', !!isError);
 }
 
+function identifyKindFor(target) {
+  if (target === 'books') return 'book';
+  if (target === 'media') return 'screen';
+  const t = document.querySelector('input[name="wl-type"]:checked');
+  return t && t.value === 'book' ? 'book' : 'screen';
+}
+
 async function openIdentify(target) {
-  _identifyTarget  = target || (activeTab === 'wishlist' ? 'wishlist' : 'media');
+  _identifyTarget  = target
+    || (activeTab === 'books' ? 'books' : activeTab === 'wishlist' ? 'wishlist' : 'media');
+  _identifyKind    = identifyKindFor(_identifyTarget);
   _identifyResults = [];
   _identifyBusy    = false;
 
@@ -1216,7 +1339,9 @@ async function openIdentify(target) {
   if (!modal.classList.contains('open')) { stopScanCamera(); return; }
 
   setIdentifyCaptureEnabled(true);
-  setIdentifyStatus('Fill the frame with the front of the case, then tap Identify.');
+  setIdentifyStatus(_identifyKind === 'book'
+    ? 'Fill the frame with the front cover or spine, then tap Identify.'
+    : 'Fill the frame with the front of the case, then tap Identify.');
 }
 
 function setIdentifyCaptureEnabled(on) {
@@ -1236,7 +1361,7 @@ async function captureAndIdentify() {
 
   let identified = null;
   try {
-    identified = await identifyCover(shot.base64);
+    identified = await identifyCover(shot.base64, _identifyKind);
   } catch (err) {
     _identifyBusy = false;
     setIdentifyCaptureEnabled(true);
@@ -1244,17 +1369,21 @@ async function captureAndIdentify() {
     return;
   }
 
-  if (!tmdbEnabled()) {
-    // Without TMDb there is nothing to verify against — hand over the raw
-    // title and let the form take it.
+  // Books verify against Open Library, which needs no key. Films need TMDb;
+  // without it there is nothing to check against, so hand over the raw title.
+  if (_identifyKind !== 'book' && !tmdbEnabled()) {
     finishIdentify(identified, []);
     return;
   }
 
-  setIdentifyStatus('Checking against TMDb…');
+  setIdentifyStatus(_identifyKind === 'book'
+    ? 'Checking against Open Library…' : 'Checking against TMDb…');
   let matches = [];
-  try { matches = await verifyAgainstTmdb(identified); }
-  catch { matches = []; }
+  try {
+    matches = _identifyKind === 'book'
+      ? await verifyBookAgainstOpenLibrary(identified)
+      : await verifyAgainstTmdb(identified);
+  } catch { matches = []; }
   finishIdentify(identified, matches);
 }
 
@@ -1284,16 +1413,24 @@ function finishIdentify(identified, matches) {
 function renderIdentifyResults() {
   const box = document.getElementById('identifyResults');
   if (!box) return;
-  box.innerHTML = _identifyResults.map((r, i) => `
+  const isBook = _identifyKind === 'book';
+  box.innerHTML = _identifyResults.map((r, i) => {
+    const img = isBook ? r.coverUrl : r.posterUrl;
+    const fallback = isBook ? '📚' : (r.type === 'tv' ? '📺' : '🎬');
+    const sub = isBook
+      ? [r.author, r.year].filter(Boolean).map(esc).join(' · ')
+      : `${r.type === 'tv' ? '📺 TV' : '🎬 Movie'}${r.year ? ' · ' + esc(r.year) : ''}`;
+    return `
     <div class="ac-item tmdb-item" onclick="pickIdentifyResult(${i})">
-      ${r.posterUrl
-        ? `<img class="tmdb-thumb" src="${esc(r.posterUrl)}" alt="" loading="lazy">`
-        : `<div class="tmdb-thumb tmdb-thumb-empty">${r.type === 'tv' ? '📺' : '🎬'}</div>`}
+      ${img
+        ? `<img class="tmdb-thumb" src="${esc(img)}" alt="" loading="lazy">`
+        : `<div class="tmdb-thumb tmdb-thumb-empty">${fallback}</div>`}
       <div class="tmdb-meta">
         <div class="tmdb-title">${esc(r.title)}</div>
-        <div class="tmdb-sub">${r.type === 'tv' ? '📺 TV' : '🎬 Movie'}${r.year ? ' · ' + esc(r.year) : ''}</div>
+        <div class="tmdb-sub">${sub}</div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   box.style.display = 'block';
 }
 
@@ -1303,10 +1440,26 @@ function pickIdentifyResult(i) {
   stopScanCamera();
   document.getElementById('identifyModal').classList.remove('open');
 
+  if (_identifyTarget === 'books') {
+    openAddModal();
+    document.getElementById('f-title').value  = r.title;
+    document.getElementById('f-author').value = r.author || '';
+    if (r.coverUrl) document.getElementById('f-coverUrl').value = r.coverUrl;
+    // An ISBN from Open Library gives this book the same duplicate detection
+    // a scanned one gets.
+    if (r.isbn) pendingScanCode = r.isbn;
+    return;
+  }
+
   if (_identifyTarget === 'wishlist') {
     openWishlistModal(null);
     document.getElementById('wl-title').value = r.title;
-    setRadio('wl-type', r.type);
+    if (_identifyKind === 'book') {
+      document.getElementById('wl-author').value = r.author || '';
+      setRadio('wl-type', 'book');
+    } else {
+      setRadio('wl-type', r.type);
+    }
     return;
   }
 
@@ -1321,14 +1474,27 @@ function pickIdentifyResult(i) {
 }
 
 function openIdentifyFallbackForm(guess, identified) {
+  const first = identified.candidates[0];
+
+  if (_identifyTarget === 'books') {
+    openAddModal();
+    if (guess) document.getElementById('f-title').value = guess;
+    if (first && first.author) document.getElementById('f-author').value = first.author;
+    return;
+  }
+
   if (_identifyTarget === 'wishlist') {
     openWishlistModal(null);
     if (guess) document.getElementById('wl-title').value = guess;
-    setRadio('wl-type', (identified.candidates[0] && identified.candidates[0].type) || 'movie');
+    if (_identifyKind === 'book') {
+      if (first && first.author) document.getElementById('wl-author').value = first.author;
+      setRadio('wl-type', 'book');
+    } else {
+      setRadio('wl-type', (first && first.type) || 'movie');
+    }
     return;
   }
   openMediaModal(null);
-  const first = identified.candidates[0];
   if (first) {
     if (first.year) document.getElementById('m-year').value = first.year;
     setMediaRadio('m-type', first.type);

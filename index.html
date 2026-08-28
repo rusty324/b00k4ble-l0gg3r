@@ -132,6 +132,8 @@
     <div class="form-group">
       <label>Title</label>
       <input type="text" class="plain" id="f-title" placeholder="Book title">
+      <button type="button" class="btn btn-sm identify-btn" id="bookIdentifyBtn"
+              onclick="openIdentify('books')" style="display:none">&#128247; Identify from cover</button>
     </div>
 
     <div class="form-group">
@@ -456,6 +458,9 @@
         <button class="btn" onclick="submitManualBarcode()" style="flex-shrink:0">Look up</button>
       </div>
     </div>
+
+    <button type="button" class="btn btn-sm identify-btn" id="scanIdentifyBtn"
+            onclick="switchToIdentify()" style="display:none">&#128247; No barcode? Identify from the cover</button>
 
     <div class="scan-footer">
       <label class="scan-toggle" for="scanKeepGoing">

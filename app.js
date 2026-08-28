@@ -1217,6 +1217,7 @@ function openAddModal() {
   updateStars(0);
   document.getElementById('fmt-error').style.display = 'none';
   populateDataLists();
+  syncIdentifyButtons();
   document.getElementById('modal').classList.add('open');
   document.getElementById('f-title').focus();
 }
@@ -1243,6 +1244,7 @@ function openEditModal(id) {
   updateStars(currentRating);
   document.getElementById('fmt-error').style.display = 'none';
   populateDataLists();
+  syncIdentifyButtons();
   document.getElementById('modal').classList.add('open');
 }
 
