@@ -21,9 +21,12 @@ const GOOGLE_BOOKS_URL     = 'https://www.googleapis.com/books/v1/volumes';
 // Discs are identified from a photo of the cover, not a barcode: no free,
 // CORS-enabled UPC→title database exists (UPCitemdb sends no
 // Access-Control-Allow-Origin). Gemini reads the artwork; TMDb verifies it.
-const GEMINI_API_BASE  = 'https://generativelanguage.googleapis.com/v1beta';
-const GEMINI_MODEL     = 'gemini-2.5-flash';
-const GEMINI_KEY_STORE = 'geminiKey';
+const GEMINI_API_BASE    = 'https://generativelanguage.googleapis.com/v1beta';
+const GEMINI_KEY_STORE   = 'geminiKey';
+// Which models a key can reach varies by account, project and region, so the
+// model is discovered from the key rather than hardcoded — a fixed id 404s
+// for anyone whose account does not carry it.
+const GEMINI_MODEL_STORE = 'geminiModel';
 const GEMINI_MAX_EDGE  = 768;   // keeps a photo at exactly 258 image tokens
 const IDENTIFY_MAX_QUERIES = 4; // parallel TMDb verifications per capture
 
@@ -877,16 +880,104 @@ function geminiKey() {
 
 function geminiEnabled() { return !!geminiKey(); }
 
-function geminiEndpoint(key) {
-  return `${GEMINI_API_BASE}/models/${GEMINI_MODEL}:generateContent`;
+function geminiModel() {
+  try { return (localStorage.getItem(GEMINI_MODEL_STORE) || '').trim(); } catch { return ''; }
+}
+
+function setGeminiModel(id) {
+  try {
+    if (id) localStorage.setItem(GEMINI_MODEL_STORE, id);
+    else localStorage.removeItem(GEMINI_MODEL_STORE);
+  } catch { /* storage full or blocked — discovery just repeats */ }
+}
+
+function geminiEndpoint(model) {
+  return `${GEMINI_API_BASE}/models/${model}:generateContent`;
+}
+
+// Ask the key what it can actually use. Discovery and generation share
+// GEMINI_API_BASE, so anything listed here is callable by construction.
+async function geminiListModels(key) {
+  let res;
+  try {
+    res = await fetchWithTimeout(`${GEMINI_API_BASE}/models`, 12000, {
+      headers: { 'x-goog-api-key': key },
+    });
+  } catch (err) {
+    throw new Error(err && err.name === 'AbortError'
+      ? 'Google took too long to respond — try again.'
+      : 'Could not reach Google. Check your connection and try again.');
+  }
+  if (res.status === 401) throw new Error('That key was rejected by Google.');
+  if (res.status === 403) {
+    throw new Error('Google refused the key. Check it is correct and that the ' +
+                    'Generative Language API is enabled for its project.');
+  }
+  if (!res.ok) throw new Error(`Google returned HTTP ${res.status}.`);
+
+  const data = await res.json().catch(() => ({}));
+  const usable = (data.models || [])
+    .filter(m => {
+      const methods = m.supportedGenerationMethods;
+      // Tolerate the field being absent rather than discarding the model.
+      return !Array.isArray(methods) || methods.includes('generateContent');
+    })
+    .map(m => String(m.name || '').replace(/^models\//, ''))
+    .filter(Boolean);
+
+  if (!usable.length) {
+    throw new Error('That key works, but no models on it can generate content. ' +
+                    'Check the project has Gemini access.');
+  }
+  return usable;
+}
+
+function geminiModelTier(id) {
+  const l = String(id).toLowerCase();
+  if (!l.includes('gemini')) return 0;
+  // Exclude variants that cannot take an image prompt and return text.
+  if (/embedding|aqa|imagen|veo|tts|audio|live/.test(l)) return 0;
+  if (l.includes('flash')) return 3;
+  if (l.includes('pro')) return 2;
+  return 1;
+}
+
+// Only models that could actually identify a cover. Offering the rest in the
+// picker would just let someone select something guaranteed to fail.
+function viableGeminiModels(models) {
+  const viable = models.filter(id => geminiModelTier(id) > 0);
+  return viable.length ? viable : models;
+}
+
+// Prefer the cheapest vision-capable tier, and a newer one over an older.
+function pickGeminiModel(models) {
+  const version = id => {
+    const m = id.match(/(\d+)(?:\.(\d+))?/);
+    return m ? parseFloat(`${m[1]}.${m[2] || 0}`) : 0;
+  };
+  const ranked = models
+    .map(id => ({ id, t: geminiModelTier(id), v: version(id) }))
+    .filter(m => m.t > 0)
+    .sort((a, b) => (b.t - a.t) || (b.v - a.v) || a.id.localeCompare(b.id));
+  return ranked.length ? ranked[0].id : models[0];
+}
+
+async function resolveGeminiModel(key, force) {
+  if (!force) {
+    const cached = geminiModel();
+    if (cached) return cached;
+  }
+  const picked = pickGeminiModel(await geminiListModels(key));
+  setGeminiModel(picked);
+  return picked;
 }
 
 // Plain fetch, never the js-genai SDK: Gemini's preflight allows only
 // content-type and x-goog-api-key, and the SDK adds headers that fail CORS.
-async function geminiPost(key, body, timeout) {
+async function geminiRequest(key, model, body, timeout) {
   let res;
   try {
-    res = await fetchWithTimeout(geminiEndpoint(key), timeout, {
+    res = await fetchWithTimeout(geminiEndpoint(model), timeout, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify(body),
@@ -896,22 +987,40 @@ async function geminiPost(key, body, timeout) {
       ? 'Google took too long to respond — try again.'
       : 'Could not reach Google. Check your connection and try again.');
   }
-  if (res.status === 400 || res.status === 401 || res.status === 403) {
-    throw new Error('That key was rejected by Google.');
+  if (res.status === 400 || res.status === 401) throw new Error('That key was rejected by Google.');
+  if (res.status === 403) {
+    throw new Error('Google refused the key. Check it is correct and that the ' +
+                    'Generative Language API is enabled for its project.');
   }
   if (res.status === 429) {
     throw new Error('Google rate limit reached — the free tier allows about 500 images a day.');
   }
+  return res;
+}
+
+async function geminiPost(key, body, timeout) {
+  let model = await resolveGeminiModel(key);
+  let res = await geminiRequest(key, model, body, timeout);
+
+  // Google withdrew or renamed the cached model — rediscover once and retry,
+  // so a deprecation does not require the user to do anything.
+  if (res.status === 404) {
+    setGeminiModel('');
+    model = await resolveGeminiModel(key, true);
+    res = await geminiRequest(key, model, body, timeout);
+  }
+
   if (!res.ok) throw new Error(`Google returned HTTP ${res.status}.`);
   return res.json();
 }
 
+// Validating with ListModels rather than a generation call means an
+// unavailable model can never masquerade as a bad key — which is exactly
+// what the hardcoded id did.
 async function geminiTestKey(key) {
-  await geminiPost(key, {
-    contents: [{ parts: [{ text: 'Reply with the single word: ok' }] }],
-    generationConfig: { maxOutputTokens: 8 },
-  }, 12000);
-  return true;
+  const all = await geminiListModels(key);
+  const models = viableGeminiModels(all);
+  return { models, picked: pickGeminiModel(models) };
 }
 
 // Downscale to 768px on the long edge: that is exactly one Gemini image tile
@@ -1244,8 +1353,24 @@ function handleIdentifyBackdrop(e) {
 function openGeminiKeyModal() {
   document.getElementById('geminiKeyInput').value = geminiKey();
   geminiKeyStatus('');
+  // Show the model already in use, if any; the full list needs a key check.
+  const current = geminiModel();
+  showGeminiModels(current ? [current] : [], current);
   document.getElementById('geminiKeyModal').classList.add('open');
   document.getElementById('geminiKeyInput').focus();
+}
+
+// Which models a key can reach differs per account, so the effective one is
+// surfaced rather than hidden — and is overridable if the pick is wrong.
+function showGeminiModels(models, selected) {
+  const wrap = document.getElementById('geminiModelGroup');
+  const sel  = document.getElementById('geminiModelSelect');
+  if (!wrap || !sel) return;
+  if (!models.length) { wrap.style.display = 'none'; sel.innerHTML = ''; return; }
+  sel.innerHTML = models
+    .map(m => `<option value="${esc(m)}"${m === selected ? ' selected' : ''}>${esc(m)}</option>`)
+    .join('');
+  wrap.style.display = '';
 }
 
 function closeGeminiKeyModal() {
@@ -1266,19 +1391,35 @@ function geminiKeyStatus(msg, isError) {
 async function saveGeminiKey() {
   const key = document.getElementById('geminiKeyInput').value.trim();
   if (!key) { clearGeminiKey(); return; }
+
+  const sel = document.getElementById('geminiModelSelect');
+  const keyUnchanged = key === geminiKey();
+  const chosen = keyUnchanged && sel && sel.value ? sel.value : '';
+
   geminiKeyStatus('Checking with Google…');
-  try { await geminiTestKey(key); }
+  let found;
+  try { found = await geminiTestKey(key); }
   catch (err) { geminiKeyStatus(err.message || 'Could not verify the key.', true); return; }
-  try { localStorage.setItem(GEMINI_KEY_STORE, key); }
-  catch { geminiKeyStatus('Could not save the key (storage is full or blocked).', true); return; }
+
+  // Keep an explicit choice if it is still offered; otherwise take the pick.
+  const model = chosen && found.models.includes(chosen) ? chosen : found.picked;
+
+  try {
+    localStorage.setItem(GEMINI_KEY_STORE, key);
+    setGeminiModel(model);
+  } catch { geminiKeyStatus('Could not save the key (storage is full or blocked).', true); return; }
+
+  showGeminiModels(found.models, model);
   syncScanButton();
-  geminiKeyStatus('Saved. Cover identification is on.');
-  setTimeout(closeGeminiKeyModal, 900);
+  geminiKeyStatus(`Saved — using ${model}.`);
+  setTimeout(closeGeminiKeyModal, 1400);
 }
 
 function clearGeminiKey() {
   try { localStorage.removeItem(GEMINI_KEY_STORE); } catch { /* ignore */ }
+  setGeminiModel('');
   document.getElementById('geminiKeyInput').value = '';
+  showGeminiModels([], '');
   syncScanButton();
   geminiKeyStatus('Key removed. Cover identification is off.');
 }

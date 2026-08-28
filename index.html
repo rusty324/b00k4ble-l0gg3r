@@ -412,6 +412,12 @@
       <div class="hint" id="geminiKeyStatus"></div>
     </div>
 
+    <div class="form-group" id="geminiModelGroup" style="display:none">
+      <label for="geminiModelSelect">Model</label>
+      <select class="plain" id="geminiModelSelect" aria-label="Gemini model"></select>
+      <div class="hint">Chosen automatically from what your key can reach. Change it only if identification misbehaves.</div>
+    </div>
+
     <div class="modal-footer">
       <button class="btn btn-danger" onclick="clearGeminiKey()">Remove</button>
       <button class="btn" onclick="closeGeminiKeyModal()">Cancel</button>
