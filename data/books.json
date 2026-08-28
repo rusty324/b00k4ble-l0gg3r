@@ -72,7 +72,7 @@
   {
     "status": "want",
     "id": 11091503145,
-    "title": "The Complete Guide to Outdoor Wood Projects",
+    "title": "Black & Decker: The Complete Guide to Outdoor Wood Projects",
     "author": "Black & Decker",
     "series": "Black & Decker Complete Guides",
     "formats": [
@@ -2969,11 +2969,13 @@
     "id": 1120,
     "title": "Origins of The Wheel of Time",
     "author": "Michael Livingston, Harriet McDougal, Robert Jordan",
-    "series": "Wheel of Time #0",
+    "series": "The Wheel of Time #0",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want"
   },
   {
@@ -3542,7 +3544,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want"
   },
   {
@@ -3553,7 +3557,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/603821-M.jpg"
   },
@@ -3565,7 +3571,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/10293497-M.jpg"
   },
@@ -3577,7 +3585,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want"
   },
   {
@@ -3588,7 +3598,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want"
   },
   {
@@ -3599,7 +3611,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want"
   },
   {
@@ -3621,7 +3635,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want"
   },
   {
@@ -3632,7 +3648,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/603240-M.jpg"
   },
@@ -3644,7 +3662,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/603239-M.jpg"
   },
@@ -3685,7 +3705,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/182398-M.jpg"
   },
@@ -3697,7 +3719,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want"
   },
   {
@@ -3708,7 +3732,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want"
   },
   {
@@ -3719,7 +3745,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/182352-M.jpg"
   },
@@ -3731,7 +3759,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want"
   },
   {
@@ -5574,7 +5604,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/14242378-M.jpg"
   },
@@ -5586,7 +5618,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/14827571-M.jpg"
   },
@@ -5598,7 +5632,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/14649358-M.jpg"
   },
@@ -5682,7 +5718,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/8138324-M.jpg"
   },
@@ -5694,7 +5732,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/8191910-M.jpg"
   },
@@ -6220,7 +6260,8 @@
       "ebook"
     ],
     "tags": [
-      "Graphic Novels & Comic Books"
+      "Graphic Novels & Comic Books",
+      "DC Comics"
     ],
     "status": "want"
   },
@@ -6551,7 +6592,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6562,7 +6606,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6573,7 +6620,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6584,7 +6634,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6595,7 +6648,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6606,7 +6662,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6617,7 +6676,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6628,7 +6690,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6639,7 +6704,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6650,7 +6718,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6661,7 +6732,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/8570853-M.jpg"
   },
@@ -6673,7 +6747,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/8745611-M.jpg"
   },
@@ -6685,7 +6762,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11107659-M.jpg"
   },
@@ -6697,7 +6777,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6708,7 +6791,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6719,7 +6805,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6730,7 +6819,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/10147174-M.jpg"
   },
@@ -6742,7 +6834,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/12181360-M.jpg"
   },
@@ -6754,7 +6849,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6765,7 +6863,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6776,7 +6877,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11171125-M.jpg"
   },
@@ -6788,7 +6892,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6799,7 +6906,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6832,7 +6942,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11171108-M.jpg"
   },
@@ -6844,7 +6957,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6855,7 +6971,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6866,7 +6985,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6877,7 +6999,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/209493-M.jpg"
   },
@@ -6889,7 +7014,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6900,7 +7028,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/209483-M.jpg"
   },
@@ -6912,7 +7043,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11171114-M.jpg"
   },
@@ -6924,7 +7058,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6935,7 +7072,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6946,7 +7086,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11171118-M.jpg"
   },
@@ -6958,7 +7101,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11171102-M.jpg"
   },
@@ -6970,7 +7116,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6981,7 +7130,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -6992,7 +7144,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7003,7 +7158,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7014,7 +7172,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7025,7 +7186,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7036,7 +7200,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7098,7 +7265,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7109,7 +7279,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11046303-M.jpg"
   },
@@ -7121,7 +7294,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11153181-M.jpg"
   },
@@ -7133,7 +7309,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11153191-M.jpg"
   },
@@ -7145,7 +7324,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/6861962-M.jpg"
   },
@@ -7157,7 +7339,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/6301467-M.jpg"
   },
@@ -7169,7 +7354,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11286335-M.jpg"
   },
@@ -7181,7 +7369,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7192,7 +7383,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7203,7 +7397,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7214,7 +7411,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11153060-M.jpg"
   },
@@ -7226,7 +7426,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11152541-M.jpg"
   },
@@ -7238,7 +7441,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7249,7 +7455,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7260,7 +7469,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7271,7 +7483,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7282,7 +7497,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/8722039-M.jpg"
   },
@@ -7294,7 +7512,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/8776682-M.jpg"
   },
@@ -7306,7 +7527,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/8776682-M.jpg"
   },
@@ -7318,7 +7542,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7329,7 +7556,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7340,7 +7570,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7351,7 +7584,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7362,7 +7598,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7373,7 +7612,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/10941645-M.jpg"
   },
@@ -7385,7 +7627,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7396,7 +7641,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7407,7 +7655,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7418,7 +7669,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7429,7 +7683,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7440,7 +7697,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7451,7 +7711,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7462,7 +7725,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7473,7 +7739,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7484,7 +7753,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7511,7 +7783,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7522,7 +7797,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7533,7 +7811,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7544,7 +7825,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7555,7 +7839,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7566,7 +7853,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7577,7 +7867,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7588,7 +7881,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7599,7 +7895,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7610,7 +7909,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7632,7 +7934,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7643,7 +7948,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7665,7 +7973,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7676,7 +7987,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7687,7 +8001,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7698,7 +8015,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/10958595-M.jpg"
   },
@@ -7710,7 +8030,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/10958493-M.jpg"
   },
@@ -7722,7 +8045,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/10950081-M.jpg"
   },
@@ -7734,7 +8060,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/10935816-M.jpg"
   },
@@ -7746,7 +8075,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -7757,7 +8089,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/8084626-M.jpg"
   },
@@ -7769,7 +8104,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/9041814-M.jpg"
   },
@@ -14182,7 +14520,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -14193,40 +14533,48 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
     "id": 1076,
     "title": "Black & Decker: The Book of Home Improvement: The Most Popular Remodeling Projects Shown in Full Detail",
-    "author": "Black+Decker",
+    "author": "Black & Decker",
     "series": "Black+Decker: The Complete Guide #0",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
     "id": 1075,
     "title": "Black & Decker: Here's How: Windows",
-    "author": "Black+Decker",
+    "author": "Black & Decker",
     "series": "Black+Decker: The Complete Guide #0",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
     "id": 1072,
     "title": "Black & Decker: The Complete Guide to Finishing Basements",
-    "author": "Black+Decker",
+    "author": "Black & Decker",
     "series": "Black+Decker: The Complete Guide #0",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -14237,7 +14585,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -14248,7 +14598,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -14259,7 +14611,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -14270,7 +14624,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -14281,7 +14637,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -14292,7 +14650,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -14303,7 +14663,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -14314,7 +14676,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -14325,7 +14689,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -14337,7 +14703,8 @@
       "ebook"
     ],
     "tags": [
-      "Graphic Novels & Comic Books"
+      "Graphic Novels & Comic Books",
+      "DC Comics"
     ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11188795-M.jpg"
@@ -14351,7 +14718,8 @@
       "ebook"
     ],
     "tags": [
-      "Graphic Novels & Comic Books"
+      "Graphic Novels & Comic Books",
+      "DC Comics"
     ],
     "status": "want"
   },
@@ -14364,7 +14732,8 @@
       "ebook"
     ],
     "tags": [
-      "Graphic Novels & Comic Books"
+      "Graphic Novels & Comic Books",
+      "DC Comics"
     ],
     "status": "want"
   },
@@ -14377,7 +14746,8 @@
       "ebook"
     ],
     "tags": [
-      "Graphic Novels & Comic Books"
+      "Graphic Novels & Comic Books",
+      "DC Comics"
     ],
     "status": "want"
   },
@@ -14390,7 +14760,8 @@
       "ebook"
     ],
     "tags": [
-      "Graphic Novels & Comic Books"
+      "Graphic Novels & Comic Books",
+      "DC Comics"
     ],
     "status": "want"
   },
@@ -14403,7 +14774,8 @@
       "ebook"
     ],
     "tags": [
-      "Graphic Novels & Comic Books"
+      "Graphic Novels & Comic Books",
+      "DC Comics"
     ],
     "status": "want"
   },
@@ -14416,7 +14788,8 @@
       "ebook"
     ],
     "tags": [
-      "Graphic Novels & Comic Books"
+      "Graphic Novels & Comic Books",
+      "DC Comics"
     ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/14415443-M.jpg"
@@ -14430,7 +14803,8 @@
       "ebook"
     ],
     "tags": [
-      "Graphic Novels & Comic Books"
+      "Graphic Novels & Comic Books",
+      "DC Comics"
     ],
     "status": "want"
   },
@@ -14663,7 +15037,9 @@
       "ebook",
       "audio"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "read",
     "coverUrl": "https://covers.openlibrary.org/b/id/9912899-M.jpg",
     "notes": "",
@@ -14919,7 +15295,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction"
+    ],
     "status": "want"
   },
   {
@@ -14941,7 +15319,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Memoir",
+      "Historical Non-Fiction"
+    ],
     "status": "want"
   },
   {
@@ -14964,7 +15345,10 @@
       "physical",
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Biography",
+      "Historical Non-Fiction"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/10661694-M.jpg"
   },
@@ -15043,7 +15427,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/15177830-M.jpg"
   },
@@ -15055,7 +15441,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want"
   },
   {
@@ -15071,7 +15459,7 @@
   },
   {
     "id": 1246,
-    "title": "How to Live Safely in a Science Fictional Universe: A Novel",
+    "title": "How to Live Safely in a Science Fictional Universe",
     "author": "Charles Yu",
     "series": "",
     "formats": [
@@ -15123,7 +15511,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Non-Fiction"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/15038381-M.jpg"
   },
@@ -15146,7 +15536,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Historical Non-Fiction"
+    ],
     "status": "want"
   },
   {
@@ -15157,7 +15549,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Non-Fiction"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/851547-M.jpg"
   },
@@ -15185,7 +15579,7 @@
   },
   {
     "id": 1202,
-    "title": "Sea of Tranquility: A novel",
+    "title": "Sea of Tranquility",
     "author": "Emily St. John Mandel",
     "series": "",
     "formats": [
@@ -15213,7 +15607,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Non-Fiction"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11007314-M.jpg"
   },
@@ -15241,7 +15637,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Graphic Novels & Comic Books"
+    ],
     "status": "want"
   },
   {
@@ -15252,7 +15650,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Graphic Novels & Comic Books"
+    ],
     "status": "want"
   },
   {
@@ -15263,7 +15663,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Graphic Novels & Comic Books"
+    ],
     "status": "want"
   },
   {
@@ -15274,7 +15676,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Historical Non-Fiction"
+    ],
     "status": "want"
   },
   {
@@ -15296,7 +15700,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Destiny"
+    ],
     "status": "want"
   },
   {
@@ -15307,7 +15714,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Destiny"
+    ],
     "status": "want"
   },
   {
@@ -15335,7 +15745,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Halo"
+    ],
     "status": "want"
   },
   {
@@ -15346,7 +15759,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Halo"
+    ],
     "status": "want"
   },
   {
@@ -15357,7 +15773,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Halo"
+    ],
     "status": "want"
   },
   {
@@ -15368,7 +15787,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Halo"
+    ],
     "status": "want"
   },
   {
@@ -15379,7 +15801,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Halo"
+    ],
     "status": "want"
   },
   {
@@ -15390,29 +15815,38 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Halo"
+    ],
     "status": "want"
   },
   {
     "id": 1156,
     "title": "Halo: Oblivion",
     "author": "Troy Denning",
-    "series": "",
+    "series": "Halo",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Halo"
+    ],
     "status": "want"
   },
   {
     "id": 1155,
     "title": "HALO: New Blood",
     "author": "Matt Forbeck",
-    "series": "",
+    "series": "Halo",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Halo"
+    ],
     "status": "want"
   },
   {
@@ -15423,7 +15857,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fitness & Health"
+    ],
     "status": "want"
   },
   {
@@ -15456,7 +15892,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want"
   },
   {
@@ -15467,7 +15905,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction"
+    ],
     "status": "want"
   },
   {
@@ -15478,7 +15918,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -15489,7 +15932,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -15500,7 +15946,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/7488930-M.jpg"
   },
@@ -15512,7 +15961,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/10940997-M.jpg"
   },
@@ -15524,7 +15976,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -15535,40 +15990,52 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
     "id": 1106,
     "title": "Dynasty of Evil: A Novel of the Old Republic",
     "author": "Drew Karpyshyn",
-    "series": "",
+    "series": "Star Wars",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
     "id": 1105,
     "title": "Path of Destruction: A Novel of the Old Republic",
     "author": "Drew Karpyshyn",
-    "series": "",
+    "series": "Star Wars",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
     "id": 1104,
     "title": "Dark Lord: The Rise of Darth Vader: The Rise of Darth Vader",
     "author": "James Luceno",
-    "series": "",
+    "series": "Star Wars",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/10950059-M.jpg"
   },
@@ -15576,22 +16043,28 @@
     "id": 1103,
     "title": "A New Hope",
     "author": "George Lucas",
-    "series": "",
+    "series": "Star Wars",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
     "id": 1102,
     "title": "Labyrinth of Evil",
     "author": "James Luceno",
-    "series": "",
+    "series": "Star Wars: ",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/10941879-M.jpg"
   },
@@ -15599,11 +16072,14 @@
     "id": 1101,
     "title": "Return of the Jedi",
     "author": "James Kahn",
-    "series": "",
+    "series": "Star Wars: Episode 6",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/6558101-M.jpg"
   },
@@ -15611,11 +16087,14 @@
     "id": 1100,
     "title": "The Empire Strikes Back",
     "author": "Donald F. Glut",
-    "series": "",
+    "series": "Star Wars: Episode 5",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/9806770-M.jpg"
   },
@@ -15635,11 +16114,14 @@
     "id": 1098,
     "title": "The Clone Wars",
     "author": "Karen Traviss",
-    "series": "",
+    "series": "Star Wars: ",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/10404016-M.jpg"
   },
@@ -15647,11 +16129,14 @@
     "id": 1097,
     "title": "Rule of Two",
     "author": "Drew Karpyshyn",
-    "series": "",
+    "series": "Star Wars: ",
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/7127927-M.jpg"
   },
@@ -15709,7 +16194,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -15720,7 +16207,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -15754,7 +16243,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want"
   },
   {
@@ -15765,7 +16256,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want"
   },
   {
@@ -15776,7 +16269,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want"
   },
   {
@@ -15787,7 +16282,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want"
   },
   {
@@ -15798,7 +16295,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want"
   },
   {
@@ -15809,7 +16308,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want"
   },
   {
@@ -15820,7 +16321,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want"
   },
   {
@@ -15831,7 +16334,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want"
   },
   {
@@ -15842,7 +16347,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want"
   },
   {
@@ -15853,7 +16360,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Reference"
+    ],
     "status": "want"
   },
   {
@@ -15880,7 +16389,11 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Memoir",
+      "Non-Fiction",
+      "World War II"
+    ],
     "status": "want"
   },
   {
@@ -15891,7 +16404,11 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Memoir",
+      "Non-Fiction",
+      "Vietnam"
+    ],
     "status": "want"
   },
   {
@@ -15953,7 +16470,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fitness & Health"
+    ],
     "status": "want"
   },
   {
@@ -15964,7 +16483,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fitness & Health"
+    ],
     "status": "want"
   },
   {
@@ -15986,7 +16507,11 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Trek",
+      "Memoir"
+    ],
     "status": "want"
   },
   {
@@ -15997,7 +16522,11 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Trek",
+      "Biography"
+    ],
     "status": "want"
   },
   {
@@ -16008,7 +16537,11 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Trek",
+      "Memoir"
+    ],
     "status": "want"
   },
   {
@@ -16019,7 +16552,11 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Trek",
+      "Biography"
+    ],
     "status": "want"
   },
   {
@@ -16052,7 +16589,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction"
+    ],
     "status": "want"
   },
   {
@@ -16063,7 +16602,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -16085,7 +16626,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Memoir"
+    ],
     "status": "want"
   },
   {
@@ -16096,7 +16639,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -16107,7 +16652,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -16130,7 +16677,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -16213,7 +16762,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/8816856-M.jpg"
   },
@@ -16225,7 +16776,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/8816868-M.jpg"
   },
@@ -16237,7 +16790,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -16248,7 +16803,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -16259,7 +16816,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11152391-M.jpg"
   },
@@ -16294,7 +16854,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -16305,7 +16867,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Historical Non-Fiction"
+    ],
     "status": "want"
   },
   {
@@ -16316,7 +16880,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/10719651-M.jpg"
   },
@@ -16328,7 +16894,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/10587128-M.jpg"
   },
@@ -16340,7 +16908,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/8220298-M.jpg"
   },
@@ -16352,7 +16922,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -16363,7 +16935,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -16374,7 +16948,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -16385,7 +16961,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -16440,7 +17018,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/7844217-M.jpg"
   },
@@ -16464,7 +17045,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/7019564-M.jpg"
   },
@@ -16489,6 +17073,7 @@
       "ebook"
     ],
     "tags": [
+      "Science Fiction",
       "Star Wars"
     ],
     "status": "want",
@@ -16539,7 +17124,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/372801-M.jpg"
   },
@@ -16551,7 +17139,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/372014-M.jpg"
   },
@@ -16563,7 +17154,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/6980786-M.jpg"
   },
@@ -16575,7 +17169,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11116808-M.jpg"
   },
@@ -16587,7 +17184,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11153132-M.jpg"
   },
@@ -16599,7 +17199,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11046293-M.jpg"
   },
@@ -16611,7 +17214,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/6303555-M.jpg"
   },
@@ -16623,7 +17229,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11122540-M.jpg"
   },
@@ -16635,7 +17244,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11122907-M.jpg"
   },
@@ -16647,7 +17259,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11152477-M.jpg"
   },
@@ -16676,7 +17291,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/372486-M.jpg"
   },
@@ -16688,7 +17306,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/6481453-M.jpg"
   },
@@ -16700,7 +17321,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want"
   },
   {
@@ -16711,7 +17335,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/372419-M.jpg"
   },
@@ -16741,7 +17368,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/372797-M.jpg"
   },
@@ -16798,7 +17428,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/6939315-M.jpg"
   },
@@ -16810,7 +17443,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/6442192-M.jpg"
   },
@@ -16822,7 +17458,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -16833,7 +17471,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -16844,7 +17484,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -16855,7 +17497,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -16866,7 +17510,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "DIY"
+    ],
     "status": "want"
   },
   {
@@ -17064,7 +17710,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11153234-M.jpg"
   },
@@ -17076,7 +17725,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/10314580-M.jpg"
   },
@@ -17088,7 +17740,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/11161699-M.jpg"
   },
@@ -17100,7 +17755,10 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Science Fiction",
+      "Star Wars"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/6445017-M.jpg"
   },
@@ -17198,7 +17856,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/14658405-M.jpg"
   },
@@ -17206,7 +17866,7 @@
     "id": 270,
     "title": "The Amazing Maurice and His Educated Rodents",
     "author": "Terry Pratchett",
-    "series": "",
+    "series": "Discworld",
     "formats": [
       "ebook"
     ],
@@ -17222,7 +17882,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fantasy"
+    ],
     "status": "want",
     "coverUrl": "https://covers.openlibrary.org/b/id/14658347-M.jpg"
   },
@@ -17234,7 +17896,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Fiction"
+    ],
     "status": "want"
   },
   {
@@ -17321,7 +17985,9 @@
     "formats": [
       "ebook"
     ],
-    "tags": [],
+    "tags": [
+      "Military Fantasy"
+    ],
     "status": "want"
   },
   {
