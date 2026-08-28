@@ -443,7 +443,9 @@ input[type="radio"], input[type="checkbox"] { display: none; }
   .brand { font-size: 1.2rem; flex: 1; }
   .header-actions { width: 100%; justify-content: flex-end; gap: 0.4rem; flex-wrap: nowrap; }
   .btn, .pill { min-height: 44px; }
-  .btn-primary { flex: 1; justify-content: center; }
+  .btn-primary { flex: 1; justify-content: center; min-width: 0; }
+  /* Let the "Add book" label truncate so the icon buttons keep 44px targets */
+  #addBtnLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .filter-row { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; scrollbar-width: none; }
   .filter-row::-webkit-scrollbar { display: none; }
   .pill-group { flex-wrap: nowrap; }
@@ -457,4 +459,68 @@ input[type="radio"], input[type="checkbox"] { display: none; }
 /* ─── RESPONSIVE: SMALL PHONE ────────────────────────────────────── */
 @media (max-width: 360px) {
   .brand { font-size: 1.1rem; }
+}
+
+
+/* ─── BARCODE SCANNER ────────────────────────────────────────────── */
+.scan-modal { max-width: 460px; }
+
+.scan-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 46vh;
+  background: #000;
+  border: 1px solid var(--border-mid);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+.scan-stage video { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Wide and short — a square QR-style guide hurts 1D barcode scan rates */
+.scan-guide {
+  position: absolute;
+  left: 8%; right: 8%; top: 50%;
+  height: 28%;
+  transform: translateY(-50%);
+  border: 2px solid var(--amber-200);
+  border-radius: 8px;
+  box-shadow: 0 0 0 100vmax rgba(0,0,0,0.35);
+  pointer-events: none;
+}
+
+.scan-torch { position: absolute; top: 0.5rem; right: 0.5rem; z-index: 2; }
+.scan-torch.active { background: var(--amber-200); border-color: var(--amber-200); color: #2C2C2A; }
+
+.scan-status { font-size: 13px; color: var(--text-muted); min-height: 2.4em; line-height: 1.4; margin-bottom: 0.75rem; }
+.scan-status-error { color: var(--coral-600); }
+
+.scan-duplicate {
+  background: var(--amber-50);
+  border: 1px solid var(--amber-100);
+  border-radius: 8px;
+  padding: 0.75rem 0.875rem;
+  margin-bottom: 1rem;
+  font-size: 13px;
+  color: var(--amber-800);
+}
+.scan-duplicate strong { color: var(--amber-900); }
+.scan-duplicate-actions { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
+
+.scan-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.75rem; flex-wrap: wrap; margin-top: 0.25rem;
+}
+.scan-toggle { display: flex; align-items: center; gap: 0.5rem; cursor: pointer;
+  font-size: 12px; color: var(--text-muted); text-transform: none; letter-spacing: 0; margin: 0; font-weight: 400; }
+/* Checkboxes are globally hidden for the pill-style format pickers — undo that here */
+.scan-toggle input[type="checkbox"] {
+  display: inline-block; width: 16px; height: 16px; flex-shrink: 0;
+  accent-color: var(--amber-200); cursor: pointer; margin: 0;
+}
+.scan-count { font-size: 12px; color: var(--text-light); white-space: nowrap; }
+
+@media (max-width: 480px) {
+  .scan-stage { aspect-ratio: 1 / 1; max-height: 40vh; }
 }

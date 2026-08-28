@@ -62,7 +62,10 @@ function normalizeBook(b) {
   // '★'.repeat(5 - rating) to throw a RangeError with a negative count.
   const rating = Number.isFinite(+b.rating) ? Math.max(0, Math.min(5, Math.round(+b.rating))) : 0;
 
-  return { ...b, id: normalizeId(b.id), title, series, author, status, formats, tags, rating, _searchStr };
+  return {
+    ...b, id: normalizeId(b.id), title, series, author, status, formats, tags, rating, _searchStr,
+    ...(b.isbn != null ? { isbn: String(b.isbn) } : {}),
+  };
 }
 
 // Normalize wishlist items — adds 'type' (default 'book') and unifies author/creator field
@@ -74,6 +77,8 @@ function normalizeWishlistItem(item) {
     title: item.title != null ? String(item.title) : '',
     creator: String(item.creator || item.author || ''),
     notes: item.notes != null ? String(item.notes) : '',
+    ...(item.isbn != null ? { isbn: String(item.isbn) } : {}),
+    ...(item.upc  != null ? { upc:  String(item.upc)  } : {}),
   };
 }
 
@@ -98,6 +103,7 @@ function normalizeMediaItem(m) {
     genre,
     formats,
     rating: Number.isFinite(+m.rating) ? Math.max(0, Math.min(5, Math.round(+m.rating))) : 0,
+    ...(m.upc != null ? { upc: String(m.upc) } : {}),
   };
 }
 
@@ -262,6 +268,18 @@ function switchTab(tab) {
   };
   document.getElementById('addBtnLabel').textContent = labels[tab] || 'Add';
 
+  const scanTitles = {
+    books:    'Scan a book barcode (ISBN)',
+    media:    'Scan a DVD or Blu-ray barcode',
+    wishlist: 'Scan a book, DVD, or Blu-ray barcode',
+  };
+  const scanBtn = document.getElementById('scanBtn');
+  if (scanBtn) {
+    const t = scanTitles[tab] || 'Scan a barcode';
+    scanBtn.title = t;
+    scanBtn.setAttribute('aria-label', t);
+  }
+
   // Update export/import button labels to reflect active tab
   const ioLabels = {
     books:    { exp: '⬇ Export library',     imp: '⬆ Import library' },
@@ -287,6 +305,7 @@ function switchTab(tab) {
 }
 
 function handleAddClick() {
+  pendingScanCode = null;
   if (activeTab === 'books')        openAddModal();
   else if (activeTab === 'media')   openMediaModal(null);
   else if (activeTab === 'wishlist') openWishlistModal(null);
@@ -1203,6 +1222,7 @@ function openEditModal(id) {
 }
 
 function closeModal() {
+  pendingScanCode = null;
   document.getElementById('modal').classList.remove('open');
 }
 
@@ -1267,7 +1287,8 @@ function saveBook() {
       books[i] = normalizeBook({ ...books[i], title, author, series, tags, formats, status, notes, rating: currentRating, coverUrl });
     }
   } else {
-    books.push(normalizeBook({ id: newId(), title, author, series, tags, formats, status, notes, rating: currentRating, coverUrl }));
+    books.push(normalizeBook({ id: newId(), title, author, series, tags, formats, status, notes, rating: currentRating, coverUrl,
+      ...(pendingScanCode ? { isbn: pendingScanCode } : {}) }));
   }
 
   save();
@@ -1309,6 +1330,7 @@ function openWishlistModal(id) {
 }
 
 function closeWishlistModal() {
+  pendingScanCode = null;
   document.getElementById('wishlistModal').classList.remove('open');
 }
 
@@ -1328,7 +1350,8 @@ function saveWishlistItem() {
     const i = bookWishlist.findIndex(x => x.id === wishlistEditingId);
     if (i !== -1) bookWishlist[i] = { ...bookWishlist[i], type, title, creator, notes };
   } else {
-    bookWishlist.push({ id: newId(), type, title, creator, notes });
+    bookWishlist.push(normalizeWishlistItem({ id: newId(), type, title, creator, notes,
+      ...(pendingScanCode ? (type === 'book' ? { isbn: pendingScanCode } : { upc: pendingScanCode }) : {}) }));
   }
 
   saveWishlist();
@@ -1391,6 +1414,7 @@ function openMediaModal(id) {
 }
 
 function closeMediaModal() {
+  pendingScanCode = null;
   document.getElementById('mediaModal').classList.remove('open');
 }
 
@@ -1416,7 +1440,8 @@ function saveMediaItem() {
       mediaLibrary[i] = { ...mediaLibrary[i], title, type, year, genre, formats, status, notes, rating: mediaRating };
     }
   } else {
-    mediaLibrary.push({ id: newId(), title, type, year, genre, formats, status, notes, rating: mediaRating });
+    mediaLibrary.push(normalizeMediaItem({ id: newId(), title, type, year, genre, formats, status, notes, rating: mediaRating,
+      ...(pendingScanCode ? { upc: pendingScanCode } : {}) }));
   }
 
   saveMedia();

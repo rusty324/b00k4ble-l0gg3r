@@ -15,6 +15,9 @@
     <div class="brand">My<span>·</span>Library</div>
     <div class="header-actions">
 
+      <!-- Barcode scanner — label/tooltip updated per tab in switchTab() -->
+      <button class="btn btn-sm" id="scanBtn" onclick="openScanner()" title="Scan a barcode" aria-label="Scan a barcode">&#128247;</button>
+
       <!-- Card / list view toggle (hidden on non-book tabs) -->
       <button class="btn btn-sm" id="viewToggleBtn" onclick="toggleView()" title="Toggle list / card view">⊞</button>
 
@@ -315,8 +318,55 @@
   </div>
 </div>
 
+<!-- ─── SCANNER MODAL ───────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="scanModal" onclick="handleScanBackdrop(event)">
+  <div class="modal scan-modal">
+    <div class="modal-title">Scan a barcode</div>
+
+    <div class="scan-stage">
+      <video id="scanVideo" playsinline autoplay muted></video>
+      <div class="scan-guide"></div>
+      <button class="btn btn-sm scan-torch" id="scanTorchBtn" onclick="toggleScanTorch()"
+              title="Toggle flashlight" aria-label="Toggle flashlight" style="display:none">&#128161;</button>
+    </div>
+
+    <div class="scan-status" id="scanStatus"></div>
+
+    <div class="scan-duplicate" id="scanDuplicate" style="display:none">
+      <div id="scanDuplicateText"></div>
+      <div class="scan-duplicate-actions">
+        <button class="btn btn-sm btn-primary" onclick="editScannedDuplicate()">Open it</button>
+        <button class="btn btn-sm" onclick="dismissScanDuplicate()">Scan another</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="scanManualInput">Or type the barcode <span class="opt">(ISBN or UPC)</span></label>
+      <div style="display:flex;gap:0.5rem;align-items:flex-start">
+        <input type="text" class="plain" id="scanManualInput" inputmode="numeric" autocomplete="off"
+               placeholder="9780140328721" onkeydown="manualBarcodeKey(event)">
+        <button class="btn" onclick="submitManualBarcode()" style="flex-shrink:0">Look up</button>
+      </div>
+    </div>
+
+    <div class="scan-footer">
+      <label class="scan-toggle" for="scanKeepGoing">
+        <input type="checkbox" id="scanKeepGoing" onchange="toggleScanKeepGoing(this.checked)">
+        <span>Keep scanning &mdash; add straight to the library</span>
+      </label>
+      <span class="scan-count" id="scanCount"></span>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="scanUndo" onclick="undoLastScanAdd()" style="display:none">Undo last</button>
+      <button class="btn" onclick="closeScanModal()">Done</button>
+    </div>
+  </div>
+</div>
+
 <button class="scroll-top-btn" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top" aria-label="Scroll to top">↑</button>
 
+<script src="scanner.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
