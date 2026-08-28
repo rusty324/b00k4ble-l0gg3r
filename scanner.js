@@ -20,6 +20,14 @@ const OPENLIBRARY_ISBN_URL = 'https://openlibrary.org/api/books';
 const GOOGLE_BOOKS_URL     = 'https://www.googleapis.com/books/v1/volumes';
 const UPCITEMDB_URL        = 'https://api.upcitemdb.com/prod/trial/lookup';
 
+// UPCitemdb sends no Access-Control-Allow-Origin, so a direct browser call is
+// blocked and disc auto-fill cannot work unaided. Point this at a proxy that
+// returns UPCitemdb's JSON verbatim to re-enable it; it is called as
+// `${UPC_PROXY_URL}<upc>`. Empty means "try direct, then stop trying".
+const UPC_PROXY_URL   = '';
+const UPC_BLOCKED_KEY = 'upcLookupBlocked';
+const UPC_BLOCKED_TTL = 7 * 24 * 3600 * 1000;   // re-probe weekly
+
 const SCAN_CACHE_KEY   = 'scanCache';
 const SCAN_HIT_TTL     = 30 * 24 * 3600 * 1000;  // 30 days
 const SCAN_MISS_TTL    =      24 * 3600 * 1000;  // 1 day
@@ -200,14 +208,30 @@ async function lookupISBN(isbn) {
 // retail listing string we parse heuristically. If it is unreachable —
 // CORS, 429, offline — we return null and the caller falls back to manual
 // entry, which is the same place a miss would land anyway.
+// True once a direct call has been shown to be unreachable, so later scans
+// skip a request that cannot succeed instead of repeating it every time.
+function upcLookupUnavailable() {
+  if (UPC_PROXY_URL) return false;
+  try {
+    const t = +localStorage.getItem(UPC_BLOCKED_KEY) || 0;
+    return t > 0 && Date.now() - t < UPC_BLOCKED_TTL;
+  } catch { return false; }
+}
+
 async function lookupUPC(upc) {
   const cached = scanCacheGet(upc);
   if (cached !== undefined) return cached;
+  if (upcLookupUnavailable()) return null;
+
+  const url = UPC_PROXY_URL
+    ? UPC_PROXY_URL + encodeURIComponent(upc)
+    : `${UPCITEMDB_URL}?upc=${upc}`;
 
   try {
-    const res = await fetchWithTimeout(`${UPCITEMDB_URL}?upc=${upc}`);
+    const res = await fetchWithTimeout(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+    try { localStorage.removeItem(UPC_BLOCKED_KEY); } catch { /* ignore */ }
     const item = data.items && data.items[0];
     if (item && item.title) {
       const parsed = parseDiscTitle(item.title);
@@ -219,8 +243,14 @@ async function lookupUPC(upc) {
     }
     scanCacheSet(upc, false, null);   // genuine miss — worth remembering
     return null;
-  } catch {
-    return null;                      // transport failure — do not cache
+  } catch (err) {
+    // A CORS block or dead network rejects with TypeError; latch on that so
+    // the request is not repeated. A timeout (AbortError) may just be a slow
+    // connection, so it is not treated as permanent.
+    if (!err || err.name !== 'AbortError') {
+      try { localStorage.setItem(UPC_BLOCKED_KEY, String(Date.now())); } catch { /* ignore */ }
+    }
+    return null;                      // transport failure — do not cache as a miss
   }
 }
 
@@ -581,7 +611,7 @@ async function acceptScannedCode(rawCode) {
   if (!info) {
     scanBanner(isBookPath
       ? `No match found for ${storeCode} — enter the details manually.`
-      : `Could not identify ${storeCode} — enter the details manually.`);
+      : `Scanned ${storeCode} — add the title and this disc will be recognised next time.`);
   }
   openPrefilledForm(storeCode, info, isBookPath);
 }
