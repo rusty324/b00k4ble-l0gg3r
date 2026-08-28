@@ -550,3 +550,36 @@ input[type="radio"], input[type="checkbox"] { display: none; }
 .tmdb-sub { font-size: 11px; color: var(--text-muted); margin-top: 0.1rem; }
 
 .hint-error { color: var(--coral-600); }
+
+/* ─── MODAL SCROLL CONTAINMENT ───────────────────────────────────── */
+/* Stops a scroll gesture inside a modal from chaining to the page behind
+   it once the modal hits its top or bottom. */
+.modal,
+.tmdb-ac,
+#tags-ac { overscroll-behavior: contain; }
+
+/* While any modal is open the body is pinned. position:fixed is used
+   rather than overflow:hidden because iOS Safari ignores the latter on
+   body; the scroll offset is held in `top` and restored on close. */
+body.modal-open {
+  position: fixed;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ─── PREVENT iOS FOCUS ZOOM ─────────────────────────────────────── */
+/* Mobile Safari zooms toward any form control with a font smaller than
+   16px. Bumping touch devices to 16px avoids that without resorting to
+   maximum-scale, which would also block deliberate pinch-zoom. */
+/* Selectors mirror the originals: media queries add no specificity, so
+   `input[type=text]` alone would lose to `input[type=text].plain`. */
+@media (pointer: coarse) {
+  input[type="text"].plain,
+  input[type="search"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="email"],
+  textarea,
+  select.plain,
+  select.sort-select { font-size: 16px; }
+}
