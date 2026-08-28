@@ -104,6 +104,8 @@ function normalizeMediaItem(m) {
     formats,
     rating: Number.isFinite(+m.rating) ? Math.max(0, Math.min(5, Math.round(+m.rating))) : 0,
     ...(m.upc != null ? { upc: String(m.upc) } : {}),
+    ...(m.posterUrl != null ? { posterUrl: String(m.posterUrl) } : {}),
+    ...(m.tmdbId != null ? { tmdbId: m.tmdbId } : {}),
   };
 }
 
@@ -782,7 +784,9 @@ function renderMedia(listOnly = false) {
       const icon    = typeIcon[m.type] || '🎬';
       const formats = (m.formats || []).map(f => fmtIcons[f] || '').join(' ');
       return `<div class="book-row">
-        <div class="book-row-initial" style="font-size:18px;background:none;color:var(--text)">${icon}</div>
+        ${m.posterUrl
+          ? `<img class="book-row-thumb" src="${esc(m.posterUrl)}" alt="" loading="lazy">`
+          : `<div class="book-row-initial" style="font-size:18px;background:none;color:var(--text)">${icon}</div>`}
         <div class="book-row-content">
           <div class="book-row-title">${esc(m.title)}</div>
           <div class="book-row-meta">
@@ -812,7 +816,9 @@ function renderMedia(listOnly = false) {
         ? `<span class="stars">${'★'.repeat(mr)}<span class="empty">${'★'.repeat(5-mr)}</span></span>`
         : '';
       return `<div class="book-card">
-        <div class="media-card-placeholder">${icon}</div>
+        ${m.posterUrl
+          ? `<img class="book-card-cover" src="${esc(m.posterUrl)}" alt="" loading="lazy">`
+          : `<div class="media-card-placeholder">${icon}</div>`}
         <div class="book-title">${esc(m.title)}</div>
         ${m.year ? `<div class="book-author">${esc(String(m.year))}</div>` : ''}
         <div class="book-meta">
@@ -1409,12 +1415,19 @@ function openMediaModal(id) {
     setMediaRadio('m-type',   'movie');
     setMediaRadio('m-status', 'want');
   }
+  pendingTmdb = null;
+  syncTmdbUI();
   document.getElementById('mediaModal').classList.add('open');
-  document.getElementById('m-title').focus();
+  // With a key set, searching is the faster path than typing every field.
+  const tmdbInput = document.getElementById('m-tmdb');
+  if (tmdbEnabled() && mediaEditingId === null && tmdbInput) tmdbInput.focus();
+  else document.getElementById('m-title').focus();
 }
 
 function closeMediaModal() {
   pendingScanCode = null;
+  pendingTmdb = null;
+  closeTmdbAC();
   document.getElementById('mediaModal').classList.remove('open');
 }
 
@@ -1437,10 +1450,12 @@ function saveMediaItem() {
   if (mediaEditingId !== null) {
     const i = mediaLibrary.findIndex(x => x.id === mediaEditingId);
     if (i !== -1) {
-      mediaLibrary[i] = { ...mediaLibrary[i], title, type, year, genre, formats, status, notes, rating: mediaRating };
+      mediaLibrary[i] = normalizeMediaItem({ ...mediaLibrary[i], title, type, year, genre, formats, status, notes, rating: mediaRating,
+        ...(pendingTmdb || {}) });
     }
   } else {
     mediaLibrary.push(normalizeMediaItem({ id: newId(), title, type, year, genre, formats, status, notes, rating: mediaRating,
+      ...(pendingTmdb || {}),
       ...(pendingScanCode ? { upc: pendingScanCode } : {}) }));
   }
 
