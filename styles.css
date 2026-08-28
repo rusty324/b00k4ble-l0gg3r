@@ -583,3 +583,35 @@ body.modal-open {
   select.plain,
   select.sort-select { font-size: 16px; }
 }
+
+/* ─── IDENTIFY FROM COVER ────────────────────────────────────────── */
+/* Portrait guide — a disc case is taller than it is wide, unlike the
+   wide-and-short reticle the 1D barcode scanner uses. */
+.identify-guide {
+  position: absolute;
+  top: 6%; bottom: 6%;
+  left: 50%;
+  width: 46%;
+  transform: translateX(-50%);
+  border: 2px solid var(--amber-200);
+  border-radius: 8px;
+  box-shadow: 0 0 0 100vmax rgba(0,0,0,0.35);
+  pointer-events: none;
+}
+
+.identify-results {
+  border: 1px solid var(--border-mid);
+  border-radius: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin-bottom: 0.75rem;
+}
+.identify-results .ac-item {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.4rem 0.6rem; cursor: pointer;
+  color: var(--text); transition: background 0.1s;
+}
+.identify-results .ac-item:hover { background: var(--amber-50); color: var(--amber-900); }
+
+.identify-btn { margin-top: 0.5rem; }

@@ -18,18 +18,17 @@
 const SCAN_POLYFILL_URL = 'https://cdn.jsdelivr.net/npm/barcode-detector@3.2.2/dist/iife/polyfill.js';
 const OPENLIBRARY_ISBN_URL = 'https://openlibrary.org/api/books';
 const GOOGLE_BOOKS_URL     = 'https://www.googleapis.com/books/v1/volumes';
-const UPCITEMDB_URL        = 'https://api.upcitemdb.com/prod/trial/lookup';
+// Discs are identified from a photo of the cover, not a barcode: no free,
+// CORS-enabled UPC→title database exists (UPCitemdb sends no
+// Access-Control-Allow-Origin). Gemini reads the artwork; TMDb verifies it.
+const GEMINI_API_BASE  = 'https://generativelanguage.googleapis.com/v1beta';
+const GEMINI_MODEL     = 'gemini-2.5-flash';
+const GEMINI_KEY_STORE = 'geminiKey';
+const GEMINI_MAX_EDGE  = 768;   // keeps a photo at exactly 258 image tokens
+const IDENTIFY_MAX_QUERIES = 4; // parallel TMDb verifications per capture
 
-// UPCitemdb sends no Access-Control-Allow-Origin, so a direct browser call is
-// blocked and disc auto-fill cannot work unaided. Point this at a proxy that
-// returns UPCitemdb's JSON verbatim to re-enable it; it is called as
-// `${UPC_PROXY_URL}<upc>`. Empty means "try direct, then stop trying".
-const UPC_PROXY_URL   = '';
-const UPC_BLOCKED_KEY = 'upcLookupBlocked';
-const UPC_BLOCKED_TTL = 7 * 24 * 3600 * 1000;   // re-probe weekly
-
-// TMDb cannot look up a barcode — /find accepts IMDb/TVDB/Wikidata ids, not
-// GTINs — so it is used for title search instead, to fill in a scanned disc.
+// TMDb has no barcode and no image lookup, so it is used for title search:
+// to verify what the vision model reports and to fill in the details.
 // The key lives in localStorage, never in this repo: TMDb has no referrer or
 // domain restriction, so a committed key is usable by anyone who finds it.
 const TMDB_API_BASE    = 'https://api.themoviedb.org/3';
@@ -73,29 +72,11 @@ function isBookBarcode(code) {
   return /^97[89]/.test(code) && !code.startsWith('9790');
 }
 
-// UPC-E (8 digits) expands to UPC-A (12) by a fixed positional rule.
-function upcEToA(upce) {
-  if (!/^\d{8}$/.test(upce)) return null;
-  const ns = upce[0], d = upce.slice(1, 7), check = upce[7];
-  if (ns !== '0' && ns !== '1') return null;
-  const last = d[5];
-  let mfr, prod;
-  if (last === '0' || last === '1' || last === '2') {
-    mfr = d[0] + d[1] + last + '00';        prod = '00' + d[2] + d[3] + d[4];
-  } else if (last === '3') {
-    mfr = d[0] + d[1] + d[2] + '00';        prod = '000' + d[3] + d[4];
-  } else if (last === '4') {
-    mfr = d[0] + d[1] + d[2] + d[3] + '0';  prod = '0000' + d[4];
-  } else {
-    mfr = d.slice(0, 5);                    prod = '0000' + last;
-  }
-  return ns + mfr + prod + check;
-}
-
-// Retail listing strings look like:
-//   "The Dark Knight (Blu-ray Disc, 2008, 2-Disc Set) Christian Bale Widescreen"
-//   "Breaking Bad: The Complete Series [Blu-ray] [Region Free]"
-// Pull out a usable title, year, disc format, and movie/TV type.
+// Cleans raw cover text into something TMDb can match. Originally written for
+// retail listing strings; it does the same job on the verbatim text a vision
+// model reads off a case, which carries the same noise:
+//   "THE DARK KNIGHT  WIDESCREEN  2-DISC SPECIAL EDITION  BLU-RAY"
+// Strips edition/format qualifiers, pulls a bracketed year, guesses movie/tv.
 function parseDiscTitle(raw) {
   const original = String(raw || '').trim();
   if (!original) return { title: '', year: '', format: '', type: '' };
@@ -132,9 +113,9 @@ function parseDiscTitle(raw) {
 
 
 // ─── LOOKUP CACHE ─────────────────────────────────────────────────────
-// Open Library throttles anonymous callers at ~1 req/sec (the User-Agent
-// that would raise that is a forbidden header in browser JS), and
-// UPCitemdb's free tier is 100/day per IP — so caching matters.
+// Open Library throttles anonymous callers at ~1 req/sec, and the User-Agent
+// that would raise that limit is a forbidden header in browser JS — so
+// caching every ISBN lookup matters.
 function _scanCacheAll() {
   try { return JSON.parse(localStorage.getItem(SCAN_CACHE_KEY) || '{}'); }
   catch { return {}; }
@@ -159,10 +140,10 @@ function scanCacheSet(code, hit, data) {
 // ─── METADATA LOOKUP ──────────────────────────────────────────────────
 // Bounded fetch — without this a stalled request leaves the user staring at
 // "Looking up…" with no way forward.
-async function fetchWithTimeout(url, ms = SCAN_LOOKUP_TIMEOUT) {
+async function fetchWithTimeout(url, ms = SCAN_LOOKUP_TIMEOUT, init = {}) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
-  try { return await fetch(url, { signal: ctrl.signal }); }
+  try { return await fetch(url, { ...init, signal: ctrl.signal }); }
   finally { clearTimeout(timer); }
 }
 
@@ -218,53 +199,6 @@ async function lookupISBN(isbn) {
 // retail listing string we parse heuristically. If it is unreachable —
 // CORS, 429, offline — we return null and the caller falls back to manual
 // entry, which is the same place a miss would land anyway.
-// True once a direct call has been shown to be unreachable, so later scans
-// skip a request that cannot succeed instead of repeating it every time.
-function upcLookupUnavailable() {
-  if (UPC_PROXY_URL) return false;
-  try {
-    const t = +localStorage.getItem(UPC_BLOCKED_KEY) || 0;
-    return t > 0 && Date.now() - t < UPC_BLOCKED_TTL;
-  } catch { return false; }
-}
-
-async function lookupUPC(upc) {
-  const cached = scanCacheGet(upc);
-  if (cached !== undefined) return cached;
-  if (upcLookupUnavailable()) return null;
-
-  const url = UPC_PROXY_URL
-    ? UPC_PROXY_URL + encodeURIComponent(upc)
-    : `${UPCITEMDB_URL}?upc=${upc}`;
-
-  try {
-    const res = await fetchWithTimeout(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    try { localStorage.removeItem(UPC_BLOCKED_KEY); } catch { /* ignore */ }
-    const item = data.items && data.items[0];
-    if (item && item.title) {
-      const parsed = parseDiscTitle(item.title);
-      if (parsed.title) {
-        const out = { ...parsed, raw: item.title, source: 'UPCitemdb' };
-        scanCacheSet(upc, true, out);
-        return out;
-      }
-    }
-    scanCacheSet(upc, false, null);   // genuine miss — worth remembering
-    return null;
-  } catch (err) {
-    // A CORS block or dead network rejects with TypeError; latch on that so
-    // the request is not repeated. A timeout (AbortError) may just be a slow
-    // connection, so it is not treated as permanent.
-    if (!err || err.name !== 'AbortError') {
-      try { localStorage.setItem(UPC_BLOCKED_KEY, String(Date.now())); } catch { /* ignore */ }
-    }
-    return null;                      // transport failure — do not cache as a miss
-  }
-}
-
-
 // ─── TMDb (title search for discs) ────────────────────────────────────
 function tmdbKey() {
   try { return (localStorage.getItem(TMDB_KEY_STORE) || '').trim(); } catch { return ''; }
@@ -365,38 +299,33 @@ async function ensureScannerLib() {
   _scanLibLoaded = true;
 }
 
-// Restricting formats per tab is the biggest accuracy win: book back
-// covers carry an EAN-5 price add-on (and often a separate UPC-A) that a
-// permissive scanner will happily return instead of the ISBN.
-function scanFormatsFor(tab) {
-  if (tab === 'books') return ['ean_13'];
-  if (tab === 'media') return ['upc_a', 'upc_e', 'ean_13'];
-  return ['ean_13', 'upc_a', 'upc_e'];
+// EAN-13 only. Book back covers carry an EAN-5 price add-on, and often a
+// separate UPC-A, that a permissive scanner returns instead of the ISBN.
+function scanFormatsFor() {
+  return ['ean_13'];
 }
 
-function scanPromptFor(tab) {
-  if (tab === 'books') return 'Point at the barcode on the back cover — tilt slightly to avoid glare.';
-  if (tab === 'media') return 'Point at the barcode on the case — tilt slightly to avoid glare.';
-  return 'Scan a book, DVD, or Blu-ray barcode.';
+function scanPromptFor() {
+  return 'Point at the barcode on the back cover — tilt slightly to avoid glare.';
 }
 
-function cameraErrorMessage(err) {
+function cameraErrorMessage(err, fallback = 'You can type the barcode below.') {
   switch (err && err.name) {
     case 'NotAllowedError':
     case 'SecurityError':
-      return 'Camera access was blocked. Allow it in your browser settings, or type the barcode below.';
+      return `Camera access was blocked. Allow it in your browser settings. ${fallback}`;
     case 'NotFoundError':
     case 'OverconstrainedError':
-      return 'No camera available. You can type the barcode below.';
+      return `No camera available. ${fallback}`;
     case 'NotReadableError':
-      return 'The camera is in use by another app. Close it and retry, or type the barcode below.';
+      return `The camera is in use by another app. Close it and retry. ${fallback}`;
     default:
-      return 'Could not start the camera. You can type the barcode below.';
+      return `Could not start the camera. ${fallback}`;
   }
 }
 
-async function startScanCamera() {
-  const video = document.getElementById('scanVideo');
+async function startCamera(videoId) {
+  const video = document.getElementById(videoId);
   _scanStream = await navigator.mediaDevices.getUserMedia({
     // `ideal`, never `exact` — `exact` throws on front-camera-only laptops.
     // High width matters: 1D barcodes need horizontal pixel density.
@@ -409,12 +338,17 @@ async function startScanCamera() {
 
   // Torch is Chrome-on-Android only; iOS never exposes it.
   const caps = (_scanTrack.getCapabilities && _scanTrack.getCapabilities()) || {};
-  const torchBtn = document.getElementById('scanTorchBtn');
-  torchBtn.style.display = caps.torch ? '' : 'none';
-  torchBtn.classList.remove('active');
+  const torchBtn = document.getElementById(
+    videoId === 'identifyVideo' ? 'identifyTorchBtn' : 'scanTorchBtn');
+  if (torchBtn) {
+    torchBtn.style.display = caps.torch ? '' : 'none';
+    torchBtn.classList.remove('active');
+  }
   _scanTorchOn = false;
+}
 
-  const wanted = scanFormatsFor(activeTab);
+async function attachBarcodeDetector() {
+  const wanted = scanFormatsFor();
   let supported = [];
   try { supported = await window.BarcodeDetector.getSupportedFormats(); } catch { /* assume all */ }
   const usable = supported.length ? wanted.filter(f => supported.includes(f)) : wanted;
@@ -434,8 +368,10 @@ function stopScanCamera() {
   }
   _scanTrack = null;
   _scanDetector = null;
-  const video = document.getElementById('scanVideo');
-  if (video) video.srcObject = null;
+  ['scanVideo', 'identifyVideo'].forEach(id => {
+    const v = document.getElementById(id);
+    if (v) v.srcObject = null;
+  });
 }
 
 
@@ -504,16 +440,10 @@ function updateScanCount() {
   if (el) el.textContent = _scanCount ? `${_scanCount} added this session` : '';
 }
 
-function findExistingByCode(code, isBookPath) {
-  if (isBookPath) {
-    const b = books.find(x => x.isbn && String(x.isbn) === code);
-    if (b) return { kind: 'book', item: b };
-  } else {
-    const m = mediaLibrary.find(x => x.upc && String(x.upc) === code);
-    if (m) return { kind: 'media', item: m };
-  }
-  const w = bookWishlist.find(x =>
-    (x.isbn && String(x.isbn) === code) || (x.upc && String(x.upc) === code));
+function findExistingByCode(code) {
+  const b = books.find(x => x.isbn && String(x.isbn) === code);
+  if (b) return { kind: 'book', item: b };
+  const w = bookWishlist.find(x => x.isbn && String(x.isbn) === code);
   if (w) return { kind: 'wishlist', item: w };
   return null;
 }
@@ -541,7 +471,7 @@ function editScannedDuplicate() {
 
 function dismissScanDuplicate() {
   document.getElementById('scanDuplicate').style.display = 'none';
-  setScanStatus(scanPromptFor(activeTab));
+  setScanStatus(scanPromptFor());
   resumeScanLoop();
 }
 
@@ -556,25 +486,13 @@ function openPrefilledForm(code, info, isBookPath) {
       document.getElementById('f-author').value = info.author || '';
       if (info.coverUrl) document.getElementById('f-coverUrl').value = info.coverUrl;
     }
-  } else if (activeTab === 'media') {
-    openMediaModal(null);
-    if (info) {
-      document.getElementById('m-title').value = info.title || '';
-      if (info.year)   document.getElementById('m-year').value = info.year;
-      if (info.format) setMediaFormats([info.format]);
-      if (info.type)   setMediaRadio('m-type', info.type);
-      // Seed TMDb with the parsed retail title so the user can confirm a
-      // proper match in one tap instead of retyping it.
-      const tq = document.getElementById('m-tmdb');
-      if (tmdbEnabled() && tq && info.title) { tq.value = info.title; tmdbAC(); }
-    }
   } else {
     openWishlistModal(null);
     if (info) {
       document.getElementById('wl-title').value  = info.title  || '';
       document.getElementById('wl-author').value = info.author || '';
     }
-    setRadio('wl-type', isBookPath ? 'book' : ((info && info.type) || 'movie'));
+    setRadio('wl-type', 'book');
   }
   // Set last: the open* helpers reset form state, and saveBook() builds a
   // fresh object literal that would otherwise drop the code.
@@ -593,20 +511,11 @@ function quickAddScanned(code, info, isBookPath) {
     books.push(b);
     save();
     _scanLastAdded = { kind: 'book', id: b.id, code };
-  } else if (activeTab === 'media') {
-    const m = normalizeMediaItem({
-      id: newId(), title: info.title, type: info.type || 'movie',
-      year: info.year || '', genre: [], formats: info.format ? [info.format] : [],
-      status: 'want', notes: '', rating: 0, upc: code,
-    });
-    mediaLibrary.push(m);
-    saveMedia();
-    _scanLastAdded = { kind: 'media', id: m.id, code };
   } else {
     const w = normalizeWishlistItem({
-      id: newId(), type: isBookPath ? 'book' : ((info && info.type) || 'movie'),
+      id: newId(), type: 'book',
       title: info.title, creator: info.author || '', notes: '',
-      ...(isBookPath ? { isbn: code } : { upc: code }),
+      isbn: code,
     });
     bookWishlist.push(w);
     saveWishlist();
@@ -636,26 +545,22 @@ function undoLastScanAdd() {
 }
 
 async function acceptScannedCode(rawCode) {
-  let code = String(rawCode).replace(/\D/g, '');
+  const code = String(rawCode).replace(/\D/g, '');
   if (!code) return;
-  if (/^\d{8}$/.test(code)) { const a = upcEToA(code); if (a) code = a; }
 
   const ean13 = /^\d{12}$/.test(code) ? '0' + code : code;
   if (!eanChecksumValid(ean13)) { setScanStatus('Misread — hold steady and try again.'); return; }
 
-  const isBook = isBookBarcode(ean13);
-  if (activeTab === 'books' && !isBook) {
-    setScanStatus('That is the price code — scan the wider barcode to its left.');
+  // A barcode is only actionable when it is a book: an EAN-13 starting
+  // 978/979 IS the ISBN-13. A disc's UPC resolves to nothing, so it is
+  // rejected rather than stored — discs are identified from their cover.
+  if (!isBookBarcode(ean13)) {
+    setScanStatus('That is not a book barcode — scan the wider one starting 978, to its left.');
     return;
   }
 
-  const isBookPath = activeTab === 'books' ? true
-                   : activeTab === 'media' ? false
-                   : isBook;
-  // A UPC-A and its zero-padded EAN-13 are the same barcode. Canonicalise to
-  // the 12-digit form so one disc matches however the reader reports it.
-  const storeCode = isBookPath ? ean13
-                  : (/^0\d{12}$/.test(ean13) ? ean13.slice(1) : ean13);
+  const isBookPath = true;
+  const storeCode = ean13;
 
   // Ignore a just-undone item until something else is scanned.
   if (storeCode === _scanSuppress) return;
@@ -664,7 +569,7 @@ async function acceptScannedCode(rawCode) {
   pauseScanLoop();
 
   // Local library first: always correct, no network, never degrades.
-  const dup = findExistingByCode(storeCode, isBookPath);
+  const dup = findExistingByCode(storeCode);
   if (dup) {
     // In bulk mode a duplicate should not interrupt the run.
     if (scanKeepGoing) {
@@ -678,7 +583,7 @@ async function acceptScannedCode(rawCode) {
 
   setScanStatus('Looking up ' + storeCode + '…');
   let info = null;
-  try { info = isBookPath ? await lookupISBN(ean13) : await lookupUPC(storeCode); }
+  try { info = await lookupISBN(ean13); }
   catch { info = null; }
 
   if (scanKeepGoing && info && info.title) {
@@ -694,13 +599,7 @@ async function acceptScannedCode(rawCode) {
   document.getElementById('scanModal').classList.remove('open');
   document.getElementById('scanDuplicate').style.display = 'none';
 
-  if (!info) {
-    scanBanner(isBookPath
-      ? `No match found for ${storeCode} — enter the details manually.`
-      : tmdbEnabled()
-        ? `Scanned ${storeCode} — search for the title and this disc will be recognised next time.`
-        : `Scanned ${storeCode} — add the title and this disc will be recognised next time.`);
-  }
+  if (!info) scanBanner(`No match found for ${storeCode} — enter the details manually.`);
   openPrefilledForm(storeCode, info, isBookPath);
 }
 
@@ -733,10 +632,10 @@ async function openScanner() {
 
   if (!modal.classList.contains('open')) return;   // closed while loading
 
-  try { await startScanCamera(); }
+  try { await startCamera('scanVideo'); await attachBarcodeDetector(); }
   catch (err) { setScanStatus(cameraErrorMessage(err), true); return; }
 
-  setScanStatus(scanPromptFor(activeTab));
+  setScanStatus(scanPromptFor());
   runScanLoop();
 }
 
@@ -768,7 +667,10 @@ async function toggleScanTorch() {
   try {
     await _scanTrack.applyConstraints({ advanced: [{ torch: next }] });
     _scanTorchOn = next;
-    document.getElementById('scanTorchBtn').classList.toggle('active', next);
+    ['scanTorchBtn', 'identifyTorchBtn'].forEach(id => {
+      const b = document.getElementById(id);
+      if (b) b.classList.toggle('active', next);
+    });
   } catch { /* device refused — leave the torch off */ }
 }
 
@@ -881,7 +783,16 @@ function tmdbPick(i) {
 
 // Shows the search box only when a key is present, with a pointer to where
 // to add one otherwise.
+function syncIdentifyButtons() {
+  const on = geminiEnabled();
+  ['mediaIdentifyBtn', 'wishlistIdentifyBtn'].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) b.style.display = on ? '' : 'none';
+  });
+}
+
 function syncTmdbUI() {
+  syncIdentifyButtons();
   const wrap = document.getElementById('tmdbSearchGroup');
   const none = document.getElementById('tmdbNoKey');
   if (!wrap || !none) return;
@@ -951,18 +862,475 @@ function clearTmdbKey() {
 }
 
 
+// ─── COVER IDENTIFICATION (Gemini) ────────────────────────────────────
+// Discs have no usable barcode route, so the cover itself is the input. A
+// vision model reads the artwork — not just the text — which is what makes
+// this work on stylised title logotypes that OCR cannot handle.
+
+let _identifyResults = [];   // ranked TMDb matches awaiting the user's pick
+let _identifyBusy    = false;
+let _identifyTarget  = 'media';   // which form a pick should fill
+
+function geminiKey() {
+  try { return (localStorage.getItem(GEMINI_KEY_STORE) || '').trim(); } catch { return ''; }
+}
+
+function geminiEnabled() { return !!geminiKey(); }
+
+function geminiEndpoint(key) {
+  return `${GEMINI_API_BASE}/models/${GEMINI_MODEL}:generateContent`;
+}
+
+// Plain fetch, never the js-genai SDK: Gemini's preflight allows only
+// content-type and x-goog-api-key, and the SDK adds headers that fail CORS.
+async function geminiPost(key, body, timeout) {
+  let res;
+  try {
+    res = await fetchWithTimeout(geminiEndpoint(key), timeout, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    throw new Error(err && err.name === 'AbortError'
+      ? 'Google took too long to respond — try again.'
+      : 'Could not reach Google. Check your connection and try again.');
+  }
+  if (res.status === 400 || res.status === 401 || res.status === 403) {
+    throw new Error('That key was rejected by Google.');
+  }
+  if (res.status === 429) {
+    throw new Error('Google rate limit reached — the free tier allows about 500 images a day.');
+  }
+  if (!res.ok) throw new Error(`Google returned HTTP ${res.status}.`);
+  return res.json();
+}
+
+async function geminiTestKey(key) {
+  await geminiPost(key, {
+    contents: [{ parts: [{ text: 'Reply with the single word: ok' }] }],
+    generationConfig: { maxOutputTokens: 8 },
+  }, 12000);
+  return true;
+}
+
+// Downscale to 768px on the long edge: that is exactly one Gemini image tile
+// (258 tokens) and keeps the upload small on mobile data.
+function captureFrameAsJpeg(video, maxEdge = GEMINI_MAX_EDGE) {
+  const vw = video.videoWidth, vh = video.videoHeight;
+  if (!vw || !vh) return null;
+  const scale = Math.min(1, maxEdge / Math.max(vw, vh));
+  const c = document.createElement('canvas');
+  c.width  = Math.max(1, Math.round(vw * scale));
+  c.height = Math.max(1, Math.round(vh * scale));
+  const ctx = c.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(video, 0, 0, c.width, c.height);
+  const dataUrl = c.toDataURL('image/jpeg', 0.8);
+  return { base64: dataUrl.split(',')[1] || '', width: c.width, height: c.height };
+}
+
+const IDENTIFY_PROMPT =
+  'This photo shows a DVD or Blu-ray case, or a TV title card. Identify the film ' +
+  'or TV series it is. Use the artwork as well as any text. Give up to 3 ' +
+  'candidates, most likely first, even if you are unsure. Do not name any people.';
+
+const IDENTIFY_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    verbatim_text: { type: 'STRING' },
+    candidates: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          title: { type: 'STRING' },
+          year: { type: 'INTEGER' },
+          type: { type: 'STRING', enum: ['movie', 'tv'] },
+          confidence: { type: 'NUMBER' },
+        },
+        required: ['title', 'type', 'confidence'],
+      },
+    },
+  },
+  required: ['verbatim_text', 'candidates'],
+};
+
+async function identifyCover(base64) {
+  const key = geminiKey();
+  if (!key) throw new Error('No image recognition key set.');
+
+  const data = await geminiPost(key, {
+    contents: [{ parts: [
+      { inline_data: { mime_type: 'image/jpeg', data: base64 } },
+      { text: IDENTIFY_PROMPT },
+    ] }],
+    generationConfig: {
+      responseMimeType: 'application/json',
+      responseSchema: IDENTIFY_SCHEMA,
+      maxOutputTokens: 512,
+    },
+  }, 20000);
+
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  let parsed;
+  try { parsed = JSON.parse(text); } catch { parsed = null; }
+  if (!parsed) throw new Error('Could not read the response from Google.');
+
+  return {
+    verbatim: String(parsed.verbatim_text || ''),
+    candidates: (parsed.candidates || [])
+      .filter(c => c && c.title)
+      .map(c => ({
+        title: String(c.title),
+        year: c.year ? String(c.year) : '',
+        type: c.type === 'tv' ? 'tv' : 'movie',
+        confidence: Number.isFinite(+c.confidence) ? +c.confidence : 0.5,
+      })),
+  };
+}
+
+// ─── MATCH VERIFICATION ───────────────────────────────────────────────
+// The model's title is never trusted on its own: every candidate is checked
+// against TMDb, and agreement between candidates is the strongest signal.
+
+function levenshtein(a, b) {
+  a = a.toLowerCase(); b = b.toLowerCase();
+  if (a === b) return 0;
+  if (!a.length || !b.length) return Math.max(a.length, b.length);
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return prev[b.length];
+}
+
+function titleSimilarity(a, b) {
+  const norm = t => String(t || '').toLowerCase().replace(/[^a-z0-9 ]+/g, '').replace(/\s+/g, ' ').trim();
+  const x = norm(a), y = norm(b);
+  if (!x || !y) return 0;
+  return 1 - levenshtein(x, y) / Math.max(x.length, y.length);
+}
+
+// TMDb search is phrase/prefix matched, not fuzzy, so several phrasings are
+// tried and the results merged rather than relying on any single query.
+async function verifyAgainstTmdb(identified) {
+  const queries = [];
+  const seen = new Set();
+  const push = q => {
+    const t = String(q || '').trim();
+    const k = t.toLowerCase();
+    if (t.length >= 2 && !seen.has(k)) { seen.add(k); queries.push(t); }
+  };
+  identified.candidates.forEach(c => push(c.title));
+  push(parseDiscTitle(identified.verbatim).title);
+
+  const used = queries.slice(0, IDENTIFY_MAX_QUERIES);
+  const settled = await Promise.allSettled(used.map(q => tmdbSearch(q)));
+
+  // How much the model's belief transfers to a given TMDb hit. Squaring the
+  // similarity makes it decay fast, so "The Dark Knight" does not lend its
+  // confidence to "The Dark Knight Rises".
+  const modelBelief = hit => identified.candidates.reduce((best, c) => {
+    const sim = titleSimilarity(c.title, hit.title);
+    const typed = c.type === hit.type ? 1 : 0.8;
+    return Math.max(best, c.confidence * sim * sim * typed);
+  }, 0);
+
+  const byId = new Map();
+  settled.forEach((r, qi) => {
+    if (r.status !== 'fulfilled') return;
+    r.value.forEach((hit, rank) => {
+      const score =
+        titleSimilarity(used[qi], hit.title) * 2 +   // matches what we asked for
+        modelBelief(hit) * 2 +                       // what the model actually believed
+        Math.max(0, 0.5 - rank * 0.1);               // TMDb's own ordering
+      const prev = byId.get(hit.tmdbId);
+      if (prev) {
+        prev.agree += 1;
+        prev.score = Math.max(prev.score, score);
+      } else {
+        byId.set(hit.tmdbId, { ...hit, agree: 1, score });
+      }
+    });
+  });
+
+  // Agreement is a bonus, not an override: a broad query returns several
+  // hits, so appearing twice is weaker evidence than matching well once.
+  return [...byId.values()]
+    .map(r => ({ ...r, score: r.score + 0.25 * (r.agree - 1) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5);
+}
+
+
+// ─── IDENTIFY MODAL ───────────────────────────────────────────────────
+function setIdentifyStatus(msg, isError) {
+  const el = document.getElementById('identifyStatus');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('scan-status-error', !!isError);
+}
+
+async function openIdentify(target) {
+  _identifyTarget  = target || (activeTab === 'wishlist' ? 'wishlist' : 'media');
+  _identifyResults = [];
+  _identifyBusy    = false;
+
+  const modal = document.getElementById('identifyModal');
+  modal.classList.add('open');
+  document.getElementById('identifyResults').innerHTML = '';
+  document.getElementById('identifyResults').style.display = 'none';
+  document.getElementById('identifyTorchBtn').style.display = 'none';
+  setIdentifyCaptureEnabled(false);
+
+  if (!geminiEnabled()) {
+    setIdentifyStatus('Add an image recognition key under ⋯ to identify covers.', true);
+    return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    setIdentifyStatus('This browser cannot access the camera.', true);
+    return;
+  }
+
+  setIdentifyStatus('Starting camera…');
+  try { await startCamera('identifyVideo'); }
+  catch (err) {
+    setIdentifyStatus(cameraErrorMessage(err, 'You can search by title instead.'), true);
+    return;
+  }
+  if (!modal.classList.contains('open')) { stopScanCamera(); return; }
+
+  setIdentifyCaptureEnabled(true);
+  setIdentifyStatus('Fill the frame with the front of the case, then tap Identify.');
+}
+
+function setIdentifyCaptureEnabled(on) {
+  const btn = document.getElementById('identifyCaptureBtn');
+  if (btn) btn.disabled = !on;
+}
+
+async function captureAndIdentify() {
+  if (_identifyBusy) return;
+  const video = document.getElementById('identifyVideo');
+  const shot = captureFrameAsJpeg(video);
+  if (!shot || !shot.base64) { setIdentifyStatus('Camera is not ready yet.', true); return; }
+
+  _identifyBusy = true;
+  setIdentifyCaptureEnabled(false);
+  setIdentifyStatus('Identifying…');
+
+  let identified = null;
+  try {
+    identified = await identifyCover(shot.base64);
+  } catch (err) {
+    _identifyBusy = false;
+    setIdentifyCaptureEnabled(true);
+    setIdentifyStatus(err.message || 'Could not identify this cover.', true);
+    return;
+  }
+
+  if (!tmdbEnabled()) {
+    // Without TMDb there is nothing to verify against — hand over the raw
+    // title and let the form take it.
+    finishIdentify(identified, []);
+    return;
+  }
+
+  setIdentifyStatus('Checking against TMDb…');
+  let matches = [];
+  try { matches = await verifyAgainstTmdb(identified); }
+  catch { matches = []; }
+  finishIdentify(identified, matches);
+}
+
+function finishIdentify(identified, matches) {
+  _identifyBusy = false;
+  _identifyResults = matches;
+
+  if (matches.length) {
+    setIdentifyStatus('Tap the right one.');
+    renderIdentifyResults();
+    setIdentifyCaptureEnabled(true);
+    return;
+  }
+
+  // Nothing verifiable: fall back to the form with the best text we have, so
+  // the user is one search away rather than starting from scratch.
+  const guess = (identified.candidates[0] && identified.candidates[0].title)
+             || parseDiscTitle(identified.verbatim).title;
+  stopScanCamera();
+  document.getElementById('identifyModal').classList.remove('open');
+  scanBanner(guess
+    ? `Could not confirm a match — search started from “${guess}”.`
+    : 'Could not identify this cover — enter the details manually.');
+  openIdentifyFallbackForm(guess, identified);
+}
+
+function renderIdentifyResults() {
+  const box = document.getElementById('identifyResults');
+  if (!box) return;
+  box.innerHTML = _identifyResults.map((r, i) => `
+    <div class="ac-item tmdb-item" onclick="pickIdentifyResult(${i})">
+      ${r.posterUrl
+        ? `<img class="tmdb-thumb" src="${esc(r.posterUrl)}" alt="" loading="lazy">`
+        : `<div class="tmdb-thumb tmdb-thumb-empty">${r.type === 'tv' ? '📺' : '🎬'}</div>`}
+      <div class="tmdb-meta">
+        <div class="tmdb-title">${esc(r.title)}</div>
+        <div class="tmdb-sub">${r.type === 'tv' ? '📺 TV' : '🎬 Movie'}${r.year ? ' · ' + esc(r.year) : ''}</div>
+      </div>
+    </div>`).join('');
+  box.style.display = 'block';
+}
+
+function pickIdentifyResult(i) {
+  const r = _identifyResults[i];
+  if (!r) return;
+  stopScanCamera();
+  document.getElementById('identifyModal').classList.remove('open');
+
+  if (_identifyTarget === 'wishlist') {
+    openWishlistModal(null);
+    document.getElementById('wl-title').value = r.title;
+    setRadio('wl-type', r.type);
+    return;
+  }
+
+  openMediaModal(null);
+  document.getElementById('m-title').value = r.title;
+  document.getElementById('m-year').value  = r.year || '';
+  if (r.genre && r.genre.length) document.getElementById('m-genre').value = r.genre.join(', ');
+  setMediaRadio('m-type', r.type);
+  // Same handoff tmdbPick uses, so posters and the save path work unchanged.
+  pendingTmdb = { tmdbId: r.tmdbId, posterUrl: r.posterUrl || '' };
+  tmdbHint(`Identified from the cover: ${r.title}${r.year ? ' (' + r.year + ')' : ''}`);
+}
+
+function openIdentifyFallbackForm(guess, identified) {
+  if (_identifyTarget === 'wishlist') {
+    openWishlistModal(null);
+    if (guess) document.getElementById('wl-title').value = guess;
+    setRadio('wl-type', (identified.candidates[0] && identified.candidates[0].type) || 'movie');
+    return;
+  }
+  openMediaModal(null);
+  const first = identified.candidates[0];
+  if (first) {
+    if (first.year) document.getElementById('m-year').value = first.year;
+    setMediaRadio('m-type', first.type);
+  }
+  const tq = document.getElementById('m-tmdb');
+  if (tmdbEnabled() && tq && guess) { tq.value = guess; tmdbAC(); }
+  else if (guess) document.getElementById('m-title').value = guess;
+}
+
+function closeIdentifyModal() {
+  stopScanCamera();
+  document.getElementById('identifyModal').classList.remove('open');
+  _identifyBusy = false;
+}
+
+function handleIdentifyBackdrop(e) {
+  if (e.target === document.getElementById('identifyModal')) closeIdentifyModal();
+}
+
+
+// ─── GEMINI KEY SETTINGS ──────────────────────────────────────────────
+function openGeminiKeyModal() {
+  document.getElementById('geminiKeyInput').value = geminiKey();
+  geminiKeyStatus('');
+  document.getElementById('geminiKeyModal').classList.add('open');
+  document.getElementById('geminiKeyInput').focus();
+}
+
+function closeGeminiKeyModal() {
+  document.getElementById('geminiKeyModal').classList.remove('open');
+}
+
+function handleGeminiKeyBackdrop(e) {
+  if (e.target === document.getElementById('geminiKeyModal')) closeGeminiKeyModal();
+}
+
+function geminiKeyStatus(msg, isError) {
+  const el = document.getElementById('geminiKeyStatus');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('hint-error', !!isError);
+}
+
+async function saveGeminiKey() {
+  const key = document.getElementById('geminiKeyInput').value.trim();
+  if (!key) { clearGeminiKey(); return; }
+  geminiKeyStatus('Checking with Google…');
+  try { await geminiTestKey(key); }
+  catch (err) { geminiKeyStatus(err.message || 'Could not verify the key.', true); return; }
+  try { localStorage.setItem(GEMINI_KEY_STORE, key); }
+  catch { geminiKeyStatus('Could not save the key (storage is full or blocked).', true); return; }
+  syncScanButton();
+  geminiKeyStatus('Saved. Cover identification is on.');
+  setTimeout(closeGeminiKeyModal, 900);
+}
+
+function clearGeminiKey() {
+  try { localStorage.removeItem(GEMINI_KEY_STORE); } catch { /* ignore */ }
+  document.getElementById('geminiKeyInput').value = '';
+  syncScanButton();
+  geminiKeyStatus('Key removed. Cover identification is off.');
+}
+
+
+// ─── HEADER CAMERA BUTTON ─────────────────────────────────────────────
+// Books and Wishlist scan a barcode; Movies & TV identifies a cover, which
+// needs a key, so the button is hidden there without one.
+function scanButtonMode() {
+  if (activeTab === 'media') return geminiEnabled() ? 'identify' : 'none';
+  return 'scan';
+}
+
+function syncScanButton() {
+  syncIdentifyButtons();
+  const btn = document.getElementById('scanBtn');
+  if (!btn) return;
+  const mode = scanButtonMode();
+  btn.style.display = mode === 'none' ? 'none' : '';
+  const label = mode === 'identify'
+    ? 'Identify a film or show from its cover'
+    : 'Scan a book barcode (ISBN)';
+  btn.title = label;
+  btn.setAttribute('aria-label', label);
+}
+
+function handleScanButton() {
+  if (scanButtonMode() === 'identify') openIdentify('media');
+  else openScanner();
+}
+
+
 // ─── GLOBAL LISTENERS ─────────────────────────────────────────────────
 // A live camera track keeps the device in a high-power state and can block
 // a later getUserMedia, so release it whenever the page is backgrounded.
 document.addEventListener('visibilitychange', () => {
-  const modal = document.getElementById('scanModal');
-  if (document.hidden && modal && modal.classList.contains('open') && _scanStream) {
+  if (!document.hidden || !_scanStream) return;
+  const scan = document.getElementById('scanModal');
+  const ident = document.getElementById('identifyModal');
+  if (scan && scan.classList.contains('open')) {
     stopScanCamera();
     setScanStatus('Camera paused. Close and reopen the scanner to continue.');
+  } else if (ident && ident.classList.contains('open')) {
+    stopScanCamera();
+    setIdentifyStatus('Camera paused. Close and reopen to continue.');
   }
 });
 
 document.addEventListener('keydown', e => {
-  const modal = document.getElementById('scanModal');
-  if (e.key === 'Escape' && modal && modal.classList.contains('open')) closeScanModal();
+  if (e.key !== 'Escape') return;
+  const scan = document.getElementById('scanModal');
+  const ident = document.getElementById('identifyModal');
+  if (scan && scan.classList.contains('open')) closeScanModal();
+  else if (ident && ident.classList.contains('open')) closeIdentifyModal();
 });

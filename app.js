@@ -78,7 +78,6 @@ function normalizeWishlistItem(item) {
     creator: String(item.creator || item.author || ''),
     notes: item.notes != null ? String(item.notes) : '',
     ...(item.isbn != null ? { isbn: String(item.isbn) } : {}),
-    ...(item.upc  != null ? { upc:  String(item.upc)  } : {}),
   };
 }
 
@@ -103,7 +102,6 @@ function normalizeMediaItem(m) {
     genre,
     formats,
     rating: Number.isFinite(+m.rating) ? Math.max(0, Math.min(5, Math.round(+m.rating))) : 0,
-    ...(m.upc != null ? { upc: String(m.upc) } : {}),
     ...(m.posterUrl != null ? { posterUrl: String(m.posterUrl) } : {}),
     ...(m.tmdbId != null ? { tmdbId: m.tmdbId } : {}),
   };
@@ -270,17 +268,7 @@ function switchTab(tab) {
   };
   document.getElementById('addBtnLabel').textContent = labels[tab] || 'Add';
 
-  const scanTitles = {
-    books:    'Scan a book barcode (ISBN)',
-    media:    'Scan a DVD or Blu-ray barcode',
-    wishlist: 'Scan a book, DVD, or Blu-ray barcode',
-  };
-  const scanBtn = document.getElementById('scanBtn');
-  if (scanBtn) {
-    const t = scanTitles[tab] || 'Scan a barcode';
-    scanBtn.title = t;
-    scanBtn.setAttribute('aria-label', t);
-  }
+  syncScanButton();
 
   // Update export/import button labels to reflect active tab
   const ioLabels = {
@@ -1362,6 +1350,7 @@ function openWishlistModal(id) {
     const defaultType = (wishlistFilters.type !== 'all') ? wishlistFilters.type : 'book';
     setRadio('wl-type', defaultType);
   }
+  syncIdentifyButtons();
   document.getElementById('wishlistModal').classList.add('open');
   document.getElementById('wl-title').focus();
 }
@@ -1388,7 +1377,7 @@ function saveWishlistItem() {
     if (i !== -1) bookWishlist[i] = { ...bookWishlist[i], type, title, creator, notes };
   } else {
     bookWishlist.push(normalizeWishlistItem({ id: newId(), type, title, creator, notes,
-      ...(pendingScanCode ? (type === 'book' ? { isbn: pendingScanCode } : { upc: pendingScanCode }) : {}) }));
+      ...(pendingScanCode && type === 'book' ? { isbn: pendingScanCode } : {}) }));
   }
 
   saveWishlist();
@@ -1486,8 +1475,7 @@ function saveMediaItem() {
     }
   } else {
     mediaLibrary.push(normalizeMediaItem({ id: newId(), title, type, year, genre, formats, status, notes, rating: mediaRating,
-      ...(pendingTmdb || {}),
-      ...(pendingScanCode ? { upc: pendingScanCode } : {}) }));
+      ...(pendingTmdb || {}) }));
   }
 
   saveMedia();
