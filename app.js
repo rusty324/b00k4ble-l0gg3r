@@ -56,7 +56,7 @@ function normalizeBook(b) {
 
   const title  = b.title  != null ? String(b.title)  : '';
   const series = b.series ? String(b.series) : '';
-  const _searchStr = [title, author, series, ...tags].join(' ').toLowerCase();
+  const _searchStr = [title, author, series, b.isbn || '', ...tags].join(' ').toLowerCase();
 
   // Clamp rating to 0–5; out-of-range values (e.g. from imported JSON) cause
   // '★'.repeat(5 - rating) to throw a RangeError with a negative count.
@@ -1208,9 +1208,10 @@ function openAddModal() {
   currentRating = 0;
   document.getElementById('modalTitle').textContent = 'Add a book';
 
-  ['f-title', 'f-author', 'f-series', 'f-seriesIndex', 'f-tags', 'f-notes', 'f-coverUrl'].forEach(id =>
-    document.getElementById(id).value = ''
-  );
+  ['f-title', 'f-author', 'f-series', 'f-seriesIndex', 'f-tags', 'f-notes', 'f-coverUrl', 'f-isbn', 'f-ol']
+    .forEach(id => document.getElementById(id).value = '');
+  closeOlAC();
+  olHint('');
 
   setFormats(['physical']);
   setRadio('status', 'want');
@@ -1238,6 +1239,10 @@ function openEditModal(id) {
   document.getElementById('f-tags').value   = (b.tags || []).join(', ');
   document.getElementById('f-notes').value  = b.notes || '';
   document.getElementById('f-coverUrl').value = b.coverUrl || '';
+  document.getElementById('f-isbn').value = b.isbn || '';
+  document.getElementById('f-ol').value = '';
+  closeOlAC();
+  olHint('');
 
   setFormats(b.formats || ['physical']);
   setRadio('status', b.status);
@@ -1292,6 +1297,7 @@ function saveBook() {
   const seriesIdx  = document.getElementById('f-seriesIndex').value.trim();
   const series     = seriesName && seriesIdx ? `${seriesName} #${seriesIdx}` : seriesName;
   const coverUrl   = document.getElementById('f-coverUrl').value.trim();
+  const isbn       = document.getElementById('f-isbn').value.replace(/[^0-9Xx]/g, '');
 
   const tags = document.getElementById('f-tags').value
     .split(',').map(t => t.trim()).filter(Boolean);
@@ -1311,11 +1317,12 @@ function saveBook() {
   if (editingId !== null) {
     const i = books.findIndex(b => b.id === editingId);
     if (i !== -1) {
-      books[i] = normalizeBook({ ...books[i], title, author, series, tags, formats, status, notes, rating: currentRating, coverUrl });
+      books[i] = normalizeBook({ ...books[i], title, author, series, tags, formats, status, notes, rating: currentRating, coverUrl,
+        isbn: isbn || pendingScanCode || books[i].isbn || '' });
     }
   } else {
     books.push(normalizeBook({ id: newId(), title, author, series, tags, formats, status, notes, rating: currentRating, coverUrl,
-      ...(pendingScanCode ? { isbn: pendingScanCode } : {}) }));
+      ...(isbn || pendingScanCode ? { isbn: isbn || pendingScanCode } : {}) }));
   }
 
   save();
