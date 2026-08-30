@@ -27,6 +27,10 @@ const GEMINI_KEY_STORE   = 'geminiKey';
 // model is discovered from the key rather than hardcoded — a fixed id 404s
 // for anyone whose account does not carry it.
 const GEMINI_MODEL_STORE = 'geminiModel';
+// Bumped when the ranking rules change, so a model chosen by older, worse
+// rules is re-resolved once instead of being trusted forever.
+const GEMINI_RESOLVER_VERSION = 2;
+const GEMINI_RESOLVER_STORE   = 'geminiModelRules';
 const GEMINI_MAX_EDGE  = 768;   // keeps a photo at exactly 258 image tokens
 const IDENTIFY_MAX_QUERIES = 4; // parallel TMDb verifications per capture
 // Open Library throttles anonymous callers at ~1 req/sec and 429s readily, so
@@ -901,8 +905,13 @@ function geminiModel() {
 
 function setGeminiModel(id) {
   try {
-    if (id) localStorage.setItem(GEMINI_MODEL_STORE, id);
-    else localStorage.removeItem(GEMINI_MODEL_STORE);
+    if (id) {
+      localStorage.setItem(GEMINI_MODEL_STORE, id);
+      localStorage.setItem(GEMINI_RESOLVER_STORE, String(GEMINI_RESOLVER_VERSION));
+    } else {
+      localStorage.removeItem(GEMINI_MODEL_STORE);
+      localStorage.removeItem(GEMINI_RESOLVER_STORE);
+    }
   } catch { /* storage full or blocked — discovery just repeats */ }
 }
 
@@ -923,12 +932,7 @@ async function geminiListModels(key) {
       ? 'Google took too long to respond — try again.'
       : 'Could not reach Google. Check your connection and try again.');
   }
-  if (res.status === 401) throw new Error('That key was rejected by Google.');
-  if (res.status === 403) {
-    throw new Error('Google refused the key. Check it is correct and that the ' +
-                    'Generative Language API is enabled for its project.');
-  }
-  if (!res.ok) throw new Error(`Google returned HTTP ${res.status}.`);
+  if (!res.ok) throw new Error(geminiErrorMessage(res.status, '', await geminiErrorInfo(res)));
 
   const data = await res.json().catch(() => ({}));
   const usable = (data.models || [])
@@ -957,6 +961,16 @@ function geminiModelTier(id) {
   return 1;
 }
 
+// Google's docs are explicit that limits are "more restricted for
+// experimental and preview models", and such a model often carries zero
+// free-tier quota — which 429s on the very first request.
+function geminiModelStable(id) {
+  const l = String(id).toLowerCase();
+  if (/preview|experimental|\bexp\b|-exp-|thinking/.test(l)) return 0;
+  if (/-\d{2}-\d{2,4}$|-\d{6,8}$/.test(l)) return 0;   // date-stamped build
+  return 1;
+}
+
 // Only models that could actually identify a cover. Offering the rest in the
 // picker would just let someone select something guaranteed to fail.
 function viableGeminiModels(models) {
@@ -965,30 +979,99 @@ function viableGeminiModels(models) {
 }
 
 // Prefer the cheapest vision-capable tier, and a newer one over an older.
-function pickGeminiModel(models) {
+// Stability outranks everything: a stable release always beats a preview,
+// even a newer one. Within a band, flash beats pro and newer beats older.
+function rankGeminiModels(models) {
   const version = id => {
     const m = id.match(/(\d+)(?:\.(\d+))?/);
     return m ? parseFloat(`${m[1]}.${m[2] || 0}`) : 0;
   };
-  const ranked = models
-    .map(id => ({ id, t: geminiModelTier(id), v: version(id) }))
+  return models
+    .map(id => ({ id, s: geminiModelStable(id), t: geminiModelTier(id), v: version(id) }))
     .filter(m => m.t > 0)
-    .sort((a, b) => (b.t - a.t) || (b.v - a.v) || a.id.localeCompare(b.id));
-  return ranked.length ? ranked[0].id : models[0];
+    .sort((a, b) => (b.s - a.s) || (b.t - a.t) || (b.v - a.v) || a.id.localeCompare(b.id))
+    .map(m => m.id);
+}
+
+function pickGeminiModel(models) {
+  const ranked = rankGeminiModels(models);
+  return ranked.length ? ranked[0] : models[0];
+}
+
+function geminiResolverCurrent() {
+  try { return +localStorage.getItem(GEMINI_RESOLVER_STORE) === GEMINI_RESOLVER_VERSION; }
+  catch { return false; }
 }
 
 async function resolveGeminiModel(key, force) {
-  if (!force) {
+  if (!force && geminiResolverCurrent()) {
     const cached = geminiModel();
     if (cached) return cached;
   }
   const picked = pickGeminiModel(await geminiListModels(key));
   setGeminiModel(picked);
+  try { localStorage.setItem(GEMINI_RESOLVER_STORE, String(GEMINI_RESOLVER_VERSION)); }
+  catch { /* re-resolves next time, which is harmless */ }
   return picked;
+}
+
+// The ranked alternatives, so a model with no quota can be stepped over.
+async function geminiModelCandidates(key) {
+  try { return rankGeminiModels(await geminiListModels(key)); }
+  catch { return []; }
 }
 
 // Plain fetch, never the js-genai SDK: Gemini's preflight allows only
 // content-type and x-goog-api-key, and the SDK adds headers that fail CORS.
+// Google sends a structured reason with every failure. Read it rather than
+// asserting one — an invented cause sends people looking for the wrong
+// problem, which is exactly what the old hardcoded quota text did.
+async function geminiErrorInfo(res) {
+  let body = null;
+  try { body = await res.clone().json(); } catch { /* no body, or not JSON */ }
+  const err = (body && body.error) || {};
+  const details = Array.isArray(err.details) ? err.details : [];
+
+  const quota = details.find(d => String(d['@type'] || '').includes('QuotaFailure'));
+  const retry = details.find(d => String(d['@type'] || '').includes('RetryInfo'));
+  const violation = quota && Array.isArray(quota.violations) ? quota.violations[0] : null;
+
+  return {
+    message: err.message || '',
+    violation,
+    // "0" means the model carries no allowance on this plan at all, which is
+    // a different problem from having used up a real quota.
+    zeroQuota: !!violation && String(violation.quotaValue) === '0',
+    retryDelay: (retry && retry.retryDelay) || '',
+  };
+}
+
+function geminiErrorMessage(status, model, info) {
+  const where = model ? ` (model ${model})` : '';
+  const detail = info.message ? ` ${info.message}` : '';
+
+  if (status === 429) {
+    if (info.zeroQuota) {
+      return `Your key has no quota for ${model || 'that model'}. ` +
+             'Pick a different one under ⋯ → Image recognition key.';
+    }
+    const quotaName = info.violation && (info.violation.quotaId || info.violation.quotaMetric);
+    const wait = info.retryDelay ? ` Try again in ${info.retryDelay}.` : '';
+    return `Google rate limit reached${where}` +
+           (quotaName ? ` — ${quotaName}.` : '.') + wait +
+           (info.message && !quotaName ? ` ${info.message}` : '');
+  }
+  if (status === 400 || status === 401) return `That key was rejected by Google.${detail}`;
+  if (status === 403) {
+    return 'Google refused the key. Check it is correct and that the ' +
+           `Generative Language API is enabled for its project.${detail}`;
+  }
+  if (status === 404) {
+    return `Google does not offer ${model || 'that model'} to this key.${detail}`;
+  }
+  return `Google returned HTTP ${status}.${detail}`;
+}
+
 async function geminiRequest(key, model, body, timeout) {
   let res;
   try {
@@ -1002,14 +1085,6 @@ async function geminiRequest(key, model, body, timeout) {
       ? 'Google took too long to respond — try again.'
       : 'Could not reach Google. Check your connection and try again.');
   }
-  if (res.status === 400 || res.status === 401) throw new Error('That key was rejected by Google.');
-  if (res.status === 403) {
-    throw new Error('Google refused the key. Check it is correct and that the ' +
-                    'Generative Language API is enabled for its project.');
-  }
-  if (res.status === 429) {
-    throw new Error('Google rate limit reached — the free tier allows about 500 images a day.');
-  }
   return res;
 }
 
@@ -1017,15 +1092,35 @@ async function geminiPost(key, body, timeout) {
   let model = await resolveGeminiModel(key);
   let res = await geminiRequest(key, model, body, timeout);
 
-  // Google withdrew or renamed the cached model — rediscover once and retry,
-  // so a deprecation does not require the user to do anything.
-  if (res.status === 404) {
-    setGeminiModel('');
-    model = await resolveGeminiModel(key, true);
-    res = await geminiRequest(key, model, body, timeout);
+  if (!res.ok) {
+    let info = await geminiErrorInfo(res);
+
+    // Two recoverable cases, both meaning "this model is not usable here":
+    // Google withdrew it (404), or the key carries no allowance for it (429
+    // with a zero quota). Step to the next ranked model and retry once — a
+    // genuine rate limit is NOT retried, since another model would not help.
+    const unusable = res.status === 404 || (res.status === 429 && info.zeroQuota);
+    if (unusable) {
+      const next = (await geminiModelCandidates(key)).find(m => m !== model);
+      if (next) {
+        const first = model;
+        model = next;
+        res = await geminiRequest(key, model, body, timeout);
+        if (res.ok) {
+          setGeminiModel(model);   // remember what actually worked
+        } else {
+          info = await geminiErrorInfo(res);
+          throw new Error(geminiErrorMessage(res.status, model, info) +
+            ` (${first} was unusable too.)`);
+        }
+      } else {
+        throw new Error(geminiErrorMessage(res.status, model, info));
+      }
+    } else {
+      throw new Error(geminiErrorMessage(res.status, model, info));
+    }
   }
 
-  if (!res.ok) throw new Error(`Google returned HTTP ${res.status}.`);
   return res.json();
 }
 
