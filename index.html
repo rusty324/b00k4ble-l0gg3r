@@ -209,6 +209,13 @@
     </div>
 
     <div class="form-group">
+      <label for="f-links">Where I own this <span class="opt">(optional — one link per line)</span></label>
+      <textarea id="f-links" class="links-input" placeholder="https://read.amazon.com/?asin=…" oninput="previewLinks('f')"></textarea>
+      <div class="hint">Paste the link the app's own Share button gives you. On a phone it will usually open the app.</div>
+      <div class="link-preview" id="f-links-preview"></div>
+    </div>
+
+    <div class="form-group">
       <label>Notes</label>
       <textarea id="f-notes" placeholder="Optional notes, thoughts, quotes…"></textarea>
     </div>
@@ -254,6 +261,13 @@
     <div class="form-group">
       <label>Author / Creator <span class="opt">(optional)</span></label>
       <input type="text" class="plain" id="wl-author" placeholder="Author or creator name">
+    </div>
+
+    <div class="form-group">
+      <label for="wl-links">Where I own this <span class="opt">(optional — one link per line)</span></label>
+      <textarea id="wl-links" class="links-input" placeholder="https://www.goodreads.com/book/show/…" oninput="previewLinks('wl')"></textarea>
+      <div class="hint">Paste the link the app's own Share button gives you. On a phone it will usually open the app.</div>
+      <div class="link-preview" id="wl-links-preview"></div>
     </div>
 
     <div class="form-group">
@@ -344,6 +358,13 @@
         <button class="star-btn" type="button" data-val="4" aria-label="Rate 4 stars" onclick="setMediaRating(4)">★</button>
         <button class="star-btn" type="button" data-val="5" aria-label="Rate 5 stars" onclick="setMediaRating(5)">★</button>
       </div>
+    </div>
+
+    <div class="form-group">
+      <label for="m-links">Where I own this <span class="opt">(optional — one link per line)</span></label>
+      <textarea id="m-links" class="links-input" placeholder="https://app.primevideo.com/detail?gti=…" oninput="previewLinks('m')"></textarea>
+      <div class="hint">Paste the link the app's own Share button gives you. On a phone it will usually open the app.</div>
+      <div class="link-preview" id="m-links-preview"></div>
     </div>
 
     <div class="form-group">
