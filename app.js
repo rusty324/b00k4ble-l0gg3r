@@ -389,7 +389,7 @@ let mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary') || '[]')
   .map(normalizeMediaItem);
 let mediaEditingId = null;
 let mediaRating = 0;
-let mediaFilters = { type: 'all', status: 'all' };
+let mediaFilters = { type: 'all', status: 'all', format: 'all' };
 let mediaSort = 'added-desc';
 let mediaSearch = '';
 let mediaSearchTimer = null;
@@ -940,6 +940,9 @@ function renderMedia(listOnly = false) {
   let items = mediaLibrary;
   if (mediaFilters.type !== 'all') items = items.filter(m => m.type === mediaFilters.type);
   if (mediaFilters.status !== 'all') items = items.filter(m => m.status === mediaFilters.status);
+  // An item can hold several formats, so this is "has it", not "is it".
+  if (mediaFilters.format !== 'all')
+    items = items.filter(m => (m.formats || []).includes(mediaFilters.format));
   if (mediaSearch.trim()) {
     const q = mediaSearch.toLowerCase().trim();
     items = items.filter(m =>
@@ -972,6 +975,11 @@ function renderMedia(listOnly = false) {
   const statusPills = [['all','All'],['want','Want to Watch'],['watched','Watched']].map(([v,l]) =>
     `<button class="pill${mediaFilters.status===v?' active':''}" onclick="setMediaFilter('status','${v}')">${l}</button>`
   ).join('');
+  // Same values and icons as the form's format checkboxes.
+  const formatPills = [['all','All'],['bluray','📀 Blu-ray'],['dvd','💿 DVD'],
+                       ['digital','💻 Digital'],['streaming','📡 Streaming']].map(([v,l]) =>
+    `<button class="pill${mediaFilters.format===v?' active':''}" onclick="setMediaFilter('format','${v}')">${l}</button>`
+  ).join('');
   const sortSelect = `<select class="sort-select" aria-label="Sort movies and TV shows" onchange="setMediaSort(this.value)">
     <option value="added-desc"${mediaSort==='added-desc'?' selected':''}>Newest added</option>
     <option value="added-asc"${mediaSort==='added-asc'?' selected':''}>Oldest added</option>
@@ -994,6 +1002,10 @@ function renderMedia(listOnly = false) {
       <div class="pill-group">${statusPills}</div>
     </div>
     <div class="filter-row">
+      <span class="filter-label">Format</span>
+      <div class="pill-group">${formatPills}</div>
+    </div>
+    <div class="filter-row">
       <span class="filter-label">Sort</span>
       ${sortSelect}
     </div>
@@ -1001,8 +1013,12 @@ function renderMedia(listOnly = false) {
 
   let contentHtml;
   if (!items.length) {
+    const narrowed = mediaFilters.type !== 'all' || mediaFilters.status !== 'all' ||
+                     mediaFilters.format !== 'all';
     const emptyMsg = mediaSearch.trim()
       ? { h: 'No results', p: 'Try a different search term or clear the search.' }
+      : narrowed
+      ? { h: 'No matches', p: 'Nothing here has that combination — try clearing a filter.' }
       : { h: 'Nothing here yet', p: 'Click "Add title" to track movies and TV shows.' };
     contentHtml = `<div class="empty-state">
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -1615,7 +1631,9 @@ function openWishlistModal(id) {
   }
   syncIdentifyButtons();
   document.getElementById('wishlistModal').classList.add('open');
-  document.getElementById('wl-title').focus();
+  // Only when adding: focusing on edit raises the phone keyboard over the
+  // form the user opened in order to read it.
+  if (wishlistEditingId === null) document.getElementById('wl-title').focus();
 }
 
 function closeWishlistModal() {
@@ -1704,10 +1722,13 @@ function openMediaModal(id) {
   pendingTmdb = null;
   syncTmdbUI();
   document.getElementById('mediaModal').classList.add('open');
-  // With a key set, searching is the faster path than typing every field.
-  const tmdbInput = document.getElementById('m-tmdb');
-  if (tmdbEnabled() && mediaEditingId === null && tmdbInput) tmdbInput.focus();
-  else document.getElementById('m-title').focus();
+  // Only when adding, for the same reason as the wishlist form. With a key
+  // set, searching is the faster path than typing every field.
+  if (mediaEditingId === null) {
+    const tmdbInput = document.getElementById('m-tmdb');
+    if (tmdbEnabled() && tmdbInput) tmdbInput.focus();
+    else document.getElementById('m-title').focus();
+  }
 }
 
 function closeMediaModal() {
