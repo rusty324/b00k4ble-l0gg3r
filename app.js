@@ -43,6 +43,8 @@ function safeUrl(raw) {
   // any non-ASCII lookalike that slipped through parsing.
   if (!/^[a-z][a-z0-9+.-]*:$/.test(u.protocol)) return null;
   if (BLOCKED_SCHEMES.has(u.protocol)) return null;
+  // A bare `youtube:` with nothing after it parses fine and points nowhere.
+  if (!u.host && !u.pathname && !u.search && !u.hash) return null;
   return u.href;
 }
 
@@ -172,6 +174,68 @@ function previewLinks(prefix) {
   }).join('');
 }
 
+// Share sheets rarely copy a bare URL — YouTube's gives you
+// `Watch "X" on YouTube: https://youtu.be/…` — so take the first token that
+// survives safeUrl() rather than assuming the clipboard holds only a link.
+//
+// Scanning prose needs a stricter test than storing does. Now that any
+// scheme is allowed, the `YouTube:` in that very sentence is a well-formed
+// app URL and would win the race, so demand either `://` or the
+// colon-separated form apps actually use (`spotify:album:…`). A plain
+// English word followed by a colon has neither.
+function looksLikeLink(token) {
+  return token.includes('://') || (token.match(/:/g) || []).length >= 2;
+}
+
+function firstUrlIn(text) {
+  for (const token of String(text || '').split(/[\s<>"'`]+/)) {
+    if (!looksLikeLink(token)) continue;
+    // A URL at the end of a sentence keeps the sentence's punctuation.
+    // Far more common than a URL that genuinely ends in one of these.
+    const url = safeUrl(token.replace(/[.,;:!?)\]]+$/, '')) || safeUrl(token);
+    if (url) return url;
+  }
+  return null;
+}
+
+const _pasteTimers = {};
+
+function pasteMsg(prefix, text, bad) {
+  const el = document.getElementById(`${prefix}-links-msg`);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'paste-msg' + (bad ? ' paste-msg-bad' : '');
+  clearTimeout(_pasteTimers[prefix]);
+  if (text) _pasteTimers[prefix] = setTimeout(() => { el.textContent = ''; }, 4000);
+}
+
+// Saves the switch back and forth: copy in the service's app, come back,
+// tap once. Appends to the raw field value rather than the normalized list,
+// so a half-typed line the user is still working on is not thrown away.
+async function pasteLink(prefix) {
+  const ta = document.getElementById(`${prefix}-links`);
+  if (!ta) return;
+  if (!navigator.clipboard || !navigator.clipboard.readText) {
+    return pasteMsg(prefix, 'This browser will not share the clipboard — paste into the box above.', true);
+  }
+
+  let text = '';
+  try { text = await navigator.clipboard.readText(); }
+  catch { return pasteMsg(prefix, 'Clipboard access was declined — paste into the box above.', true); }
+
+  const url = firstUrlIn(text);
+  if (!url) return pasteMsg(prefix, 'No link on the clipboard. Copy one from the service first.', true);
+
+  const raw = ta.value.replace(/\s+$/, '');
+  if (normalizeLinks(raw.split('\n')).includes(url)) {
+    return pasteMsg(prefix, `That ${linkServiceName(url)} link is already here.`, false);
+  }
+
+  ta.value = raw ? `${raw}\n${url}` : url;
+  previewLinks(prefix);
+  pasteMsg(prefix, `Added ${linkServiceName(url)}.`, false);
+}
+
 function readLinksField(prefix) {
   const ta = document.getElementById(`${prefix}-links`);
   return ta ? normalizeLinks(ta.value.split('\n')) : [];
@@ -180,6 +244,11 @@ function readLinksField(prefix) {
 function setLinksField(prefix, links) {
   const ta = document.getElementById(`${prefix}-links`);
   if (ta) ta.value = normalizeLinks(links).join('\n');
+  // readText() is missing entirely in some browsers, so offer the button
+  // only where it can work; a click still reports a refusal on its own.
+  const btn = document.getElementById(`${prefix}-links-paste`);
+  if (btn) btn.style.display = (navigator.clipboard && navigator.clipboard.readText) ? '' : 'none';
+  pasteMsg(prefix, '');
   previewLinks(prefix);
 }
 

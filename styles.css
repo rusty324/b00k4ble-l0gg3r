@@ -639,3 +639,7 @@ body.modal-open {
 .link-btn.link-btn-app { color: var(--amber-800); }
 .link-btn.link-btn-app:hover { background: var(--amber-50); border-color: var(--amber-200); }
 .link-chip.link-chip-app { background: var(--amber-50); color: var(--amber-800); }
+
+.links-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.4rem; flex-wrap: wrap; }
+.paste-msg { font-size: 12px; color: var(--text-light); }
+.paste-msg.paste-msg-bad { color: var(--coral-600); }
