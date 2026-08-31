@@ -1196,7 +1196,9 @@ function renderWishlist(listOnly = false) {
           <div class="book-row-meta">
             <div class="book-row-author">${esc(item.creator || '')}</div>
             <div class="book-row-actions">
-              ${renderLinkButtons(item.links, true)}
+              <!-- Not compact: the wishlist has no card view, so a second
+                   link would otherwise be reachable only by editing. -->
+              ${renderLinkButtons(item.links)}
               <button class="btn btn-sm" onclick="openWishlistModal(${item.id})" title="Edit">✏</button>
               <button class="btn btn-sm btn-danger" onclick="deleteWishlistItem(${item.id})" title="Delete">🗑</button>
             </div>
