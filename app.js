@@ -11,6 +11,123 @@ const REPO_WISHLIST_JSON_URL = 'data/wishlist.json';
 const PAGE_SIZE = 48;
 
 
+// ─── OWNERSHIP LINKS ──────────────────────────────────────────────────
+// A link recorded by the user for where they own an item. Tapping it on a
+// phone usually opens the service's app (via universal / app links) and
+// otherwise opens the website — the page cannot influence or detect which,
+// so the button is labelled "Open on X" rather than "Open in app".
+
+// esc() escapes HTML but says nothing about URL schemes, so `javascript:…`
+// would survive into an href untouched. Links can also arrive via
+// importData() from a shared file, so this is not purely self-inflicted.
+// Allowlist http/https rather than blocklisting the many script schemes.
+function safeUrl(raw) {
+  if (typeof raw !== 'string') return null;
+  const cleaned = raw.replace(/[\u0000-\u0020]/g, '');   // "\u0001javascript:" is tolerated by browsers
+  let u;
+  try { u = new URL(cleaned); } catch { return null; }     // also rejects relative URLs
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+  return u.href;
+}
+
+// Longest hostname suffix wins, so app.primevideo.com beats amazon.com.
+// Never substring-match the whole URL: evil.com/?x=netflix.com must not pass.
+const LINK_SERVICES = [
+  ['netflix.com',       'Netflix'],      ['primevideo.com',    'Prime Video'],
+  ['watch.amazon.com',  'Prime Video'],  ['disneyplus.com',    'Disney+'],
+  ['max.com',           'Max'],          ['hbomax.com',        'Max'],
+  ['tv.apple.com',      'Apple TV'],     ['hulu.com',          'Hulu'],
+  ['paramountplus.com', 'Paramount+'],   ['peacocktv.com',     'Peacock'],
+  ['bbc.co.uk',         'BBC iPlayer'],  ['itv.com',           'ITVX'],
+  ['youtube.com',       'YouTube'],      ['channel4.com',      'Channel 4'],
+  ['read.amazon.com',   'Kindle'],       ['audible.com',       'Audible'],
+  ['audible.co.uk',     'Audible'],      ['amazon.com',        'Amazon'],
+  ['amazon.co.uk',      'Amazon'],       ['kobo.com',          'Kobo'],
+  ['play.google.com',   'Play Books'],   ['books.apple.com',   'Apple Books'],
+  ['share.libbyapp.com','Libby'],        ['libbyapp.com',      'Libby'],
+  ['overdrive.com',     'Libby'],        ['hoopladigital.com', 'hoopla'],
+  ['goodreads.com',     'Goodreads'],    ['thestorygraph.com', 'StoryGraph'],
+  ['spotify.com',       'Spotify'],      ['storytel.com',      'Storytel'],
+];
+
+function linkServiceName(url) {
+  let host;
+  try { host = new URL(url).hostname.toLowerCase().replace(/^www\./, ''); }
+  catch { return 'link'; }
+  let best = null;
+  for (const [domain, name] of LINK_SERVICES) {
+    if (host === domain || host.endsWith('.' + domain)) {
+      if (!best || domain.length > best[0].length) best = [domain, name];
+    }
+  }
+  return best ? best[1] : host;   // unknown domains still get a usable label
+}
+
+function normalizeLinks(raw) {
+  const list = Array.isArray(raw) ? raw : (typeof raw === 'string' ? [raw] : []);
+  const out = [];
+  const seen = new Set();
+  list.forEach(entry => {
+    const url = safeUrl(typeof entry === 'string' ? entry : (entry && entry.url));
+    if (url && !seen.has(url)) { seen.add(url); out.push(url); }
+  });
+  return out;
+}
+
+// Applied to the finished object rather than spread into it: the normalizers
+// start from `...raw`, so an empty result has to *remove* the key the spread
+// already copied, not merely decline to add one. An item with no links then
+// exports exactly as it did before this feature existed.
+function applyLinks(obj, raw) {
+  const links = normalizeLinks(raw);
+  if (links.length) obj.links = links;
+  else delete obj.links;
+  return obj;
+}
+
+
+// A real anchor, not a button: iOS only hands an https URL to an app when the
+// navigation comes from a genuine tap on an <a>, which a JS-driven
+// button click does not preserve.
+function renderLinkButtons(links, compact) {
+  const list = normalizeLinks(links);
+  if (!list.length) return '';
+  const shown = compact ? list.slice(0, 1) : list;
+  return shown.map(url => {
+    const name = linkServiceName(url);
+    return `<a class="btn btn-sm link-btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer"
+      title="Open on ${esc(name)}" onclick="event.stopPropagation()">↗ ${compact ? '' : esc(name)}</a>`;
+  }).join('');
+}
+
+
+// Shows what each pasted line was understood as, so a typo or an
+// unsupported scheme is visible before saving rather than silently dropped.
+function previewLinks(prefix) {
+  const ta  = document.getElementById(`${prefix}-links`);
+  const box = document.getElementById(`${prefix}-links-preview`);
+  if (!ta || !box) return;
+  const lines = ta.value.split('\n').map(l => l.trim()).filter(Boolean);
+  box.innerHTML = lines.map(line => {
+    const url = safeUrl(line);
+    return url
+      ? `<span class="link-chip">${esc(linkServiceName(url))}</span>`
+      : `<span class="link-chip link-chip-bad">not a web link</span>`;
+  }).join('');
+}
+
+function readLinksField(prefix) {
+  const ta = document.getElementById(`${prefix}-links`);
+  return ta ? normalizeLinks(ta.value.split('\n')) : [];
+}
+
+function setLinksField(prefix, links) {
+  const ta = document.getElementById(`${prefix}-links`);
+  if (ta) ta.value = normalizeLinks(links).join('\n');
+  previewLinks(prefix);
+}
+
+
 // ─── DATA NORMALIZATION ───────────────────────────────────────────────
 
 // Unique numeric id — Date.now() alone can collide when two items are
@@ -62,15 +179,15 @@ function normalizeBook(b) {
   // '★'.repeat(5 - rating) to throw a RangeError with a negative count.
   const rating = Number.isFinite(+b.rating) ? Math.max(0, Math.min(5, Math.round(+b.rating))) : 0;
 
-  return {
+  return applyLinks({
     ...b, id: normalizeId(b.id), title, series, author, status, formats, tags, rating, _searchStr,
     ...(b.isbn != null ? { isbn: String(b.isbn) } : {}),
-  };
+  }, b.links);
 }
 
 // Normalize wishlist items — adds 'type' (default 'book') and unifies author/creator field
 function normalizeWishlistItem(item) {
-  return {
+  return applyLinks({
     ...item,
     id: normalizeId(item.id),
     type: item.type || 'book',
@@ -78,7 +195,7 @@ function normalizeWishlistItem(item) {
     creator: String(item.creator || item.author || ''),
     notes: item.notes != null ? String(item.notes) : '',
     ...(item.isbn != null ? { isbn: String(item.isbn) } : {}),
-  };
+  }, item.links);
 }
 
 // Normalize media items — coerces every field the render/sort/search paths
@@ -93,7 +210,7 @@ function normalizeMediaItem(m) {
     : m.formats ? [String(m.formats)]
     : [];
 
-  return {
+  return applyLinks({
     ...m,
     id: normalizeId(m.id),
     title: m.title != null ? String(m.title) : '',
@@ -104,7 +221,7 @@ function normalizeMediaItem(m) {
     rating: Number.isFinite(+m.rating) ? Math.max(0, Math.min(5, Math.round(+m.rating))) : 0,
     ...(m.posterUrl != null ? { posterUrl: String(m.posterUrl) } : {}),
     ...(m.tmdbId != null ? { tmdbId: m.tmdbId } : {}),
-  };
+  }, m.links);
 }
 
 
@@ -612,6 +729,7 @@ function render() {
             <div class="book-row-author">${esc(b.author || '')}</div>
             <div class="book-row-badges">${fmtBadges}<span class="badge ${stCls[b.status] || 'badge-want'}">${stLabel[b.status] || esc(b.status)}</span></div>
             <div class="book-row-actions">
+              ${renderLinkButtons(b.links, true)}
               <button class="btn btn-sm" onclick="openEditModal(${b.id})" title="Edit">✏</button>
               <button class="btn btn-sm btn-danger" onclick="deleteBook(${b.id})" title="Delete">🗑</button>
             </div>
@@ -650,6 +768,7 @@ function render() {
         ${tagBadges ? `<div class="book-tags">${tagBadges}</div>` : ''}
         ${b.notes ? `<div class="book-notes">${esc(b.notes)}</div>` : ''}
         <div class="book-actions">
+          ${renderLinkButtons(b.links)}
           <button class="btn btn-sm" onclick="openEditModal(${b.id})">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -784,6 +903,7 @@ function renderMedia(listOnly = false) {
               ${formats ? `<span class="badge badge-media">${formats}</span>` : ''}
             </div>
             <div class="book-row-actions">
+              ${renderLinkButtons(m.links, true)}
               <button class="btn btn-sm" onclick="openMediaModal(${m.id})" title="Edit">✏</button>
               <button class="btn btn-sm btn-danger" onclick="deleteMediaItem(${m.id})" title="Delete">🗑</button>
             </div>
@@ -817,6 +937,7 @@ function renderMedia(listOnly = false) {
         ${genreTags ? `<div class="book-tags">${genreTags}</div>` : ''}
         ${m.notes ? `<div class="book-notes">${esc(m.notes)}</div>` : ''}
         <div class="book-actions">
+          ${renderLinkButtons(m.links)}
           <button class="btn btn-sm" onclick="openMediaModal(${m.id})">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -950,6 +1071,7 @@ function renderWishlist(listOnly = false) {
           <div class="book-row-meta">
             <div class="book-row-author">${esc(item.creator || '')}</div>
             <div class="book-row-actions">
+              ${renderLinkButtons(item.links, true)}
               <button class="btn btn-sm" onclick="openWishlistModal(${item.id})" title="Edit">✏</button>
               <button class="btn btn-sm btn-danger" onclick="deleteWishlistItem(${item.id})" title="Delete">🗑</button>
             </div>
@@ -1210,6 +1332,7 @@ function openAddModal() {
 
   ['f-title', 'f-author', 'f-series', 'f-seriesIndex', 'f-tags', 'f-notes', 'f-coverUrl', 'f-isbn', 'f-ol']
     .forEach(id => document.getElementById(id).value = '');
+  setLinksField('f', []);
   closeOlAC();
   olHint('');
 
@@ -1240,6 +1363,7 @@ function openEditModal(id) {
   document.getElementById('f-notes').value  = b.notes || '';
   document.getElementById('f-coverUrl').value = b.coverUrl || '';
   document.getElementById('f-isbn').value = b.isbn || '';
+  setLinksField('f', b.links);
   document.getElementById('f-ol').value = '';
   closeOlAC();
   olHint('');
@@ -1298,6 +1422,7 @@ function saveBook() {
   const series     = seriesName && seriesIdx ? `${seriesName} #${seriesIdx}` : seriesName;
   const coverUrl   = document.getElementById('f-coverUrl').value.trim();
   const isbn       = document.getElementById('f-isbn').value.replace(/[^0-9Xx]/g, '');
+  const links      = readLinksField('f');
 
   const tags = document.getElementById('f-tags').value
     .split(',').map(t => t.trim()).filter(Boolean);
@@ -1317,11 +1442,11 @@ function saveBook() {
   if (editingId !== null) {
     const i = books.findIndex(b => b.id === editingId);
     if (i !== -1) {
-      books[i] = normalizeBook({ ...books[i], title, author, series, tags, formats, status, notes, rating: currentRating, coverUrl,
+      books[i] = normalizeBook({ ...books[i], title, author, series, tags, formats, status, notes, rating: currentRating, coverUrl, links,
         isbn: isbn || pendingScanCode || books[i].isbn || '' });
     }
   } else {
-    books.push(normalizeBook({ id: newId(), title, author, series, tags, formats, status, notes, rating: currentRating, coverUrl,
+    books.push(normalizeBook({ id: newId(), title, author, series, tags, formats, status, notes, rating: currentRating, coverUrl, links,
       ...(isbn || pendingScanCode ? { isbn: isbn || pendingScanCode } : {}) }));
   }
 
@@ -1350,11 +1475,13 @@ function openWishlistModal(id) {
     document.getElementById('wl-title').value  = item.title   || '';
     document.getElementById('wl-author').value = item.creator || '';
     document.getElementById('wl-notes').value  = item.notes   || '';
+    setLinksField('wl', item.links);
     setRadio('wl-type', item.type || 'book');
   } else {
     wishlistEditingId = null;
     document.getElementById('wishlistModalTitle').textContent = 'Add to wishlist';
     ['wl-title', 'wl-author', 'wl-notes'].forEach(fid => document.getElementById(fid).value = '');
+    setLinksField('wl', []);
     // Pre-select type based on active filter (if not 'all')
     const defaultType = (wishlistFilters.type !== 'all') ? wishlistFilters.type : 'book';
     setRadio('wl-type', defaultType);
@@ -1380,12 +1507,13 @@ function saveWishlistItem() {
   const type    = document.querySelector('input[name="wl-type"]:checked')?.value || 'book';
   const creator = document.getElementById('wl-author').value.trim();
   const notes   = document.getElementById('wl-notes').value.trim();
+  const links   = readLinksField('wl');
 
   if (wishlistEditingId !== null) {
     const i = bookWishlist.findIndex(x => x.id === wishlistEditingId);
-    if (i !== -1) bookWishlist[i] = { ...bookWishlist[i], type, title, creator, notes };
+    if (i !== -1) bookWishlist[i] = normalizeWishlistItem({ ...bookWishlist[i], type, title, creator, notes, links });
   } else {
-    bookWishlist.push(normalizeWishlistItem({ id: newId(), type, title, creator, notes,
+    bookWishlist.push(normalizeWishlistItem({ id: newId(), type, title, creator, notes, links,
       ...(pendingScanCode && type === 'book' ? { isbn: pendingScanCode } : {}) }));
   }
 
@@ -1430,6 +1558,7 @@ function openMediaModal(id) {
     document.getElementById('m-year').value  = m.year  || '';
     document.getElementById('m-genre').value = (m.genre || []).join(', ');
     document.getElementById('m-notes').value = m.notes || '';
+    setLinksField('m', m.links);
     setMediaRadio('m-type',   m.type   || 'movie');
     setMediaRadio('m-status', m.status || 'want');
     setMediaFormats(m.formats || []);
@@ -1439,6 +1568,7 @@ function openMediaModal(id) {
     mediaRating    = 0;
     document.getElementById('mediaModalTitle').textContent = 'Add title';
     ['m-title', 'm-year', 'm-genre', 'm-notes'].forEach(fid => document.getElementById(fid).value = '');
+    setLinksField('m', []);
     setMediaFormats([]);
     updateMediaStars(0);
     setMediaRadio('m-type',   'movie');
@@ -1471,6 +1601,7 @@ function saveMediaItem() {
   const year    = document.getElementById('m-year').value.trim();
   const genre   = document.getElementById('m-genre').value.split(',').map(g => g.trim()).filter(Boolean);
   const notes   = document.getElementById('m-notes').value.trim();
+  const links   = readLinksField('m');
   const type    = document.querySelector('input[name="m-type"]:checked')?.value   || 'movie';
   const status  = document.querySelector('input[name="m-status"]:checked')?.value || 'want';
   const formats = [...document.querySelectorAll('#m-format-group input[type="checkbox"]:checked')]
@@ -1479,11 +1610,11 @@ function saveMediaItem() {
   if (mediaEditingId !== null) {
     const i = mediaLibrary.findIndex(x => x.id === mediaEditingId);
     if (i !== -1) {
-      mediaLibrary[i] = normalizeMediaItem({ ...mediaLibrary[i], title, type, year, genre, formats, status, notes, rating: mediaRating,
+      mediaLibrary[i] = normalizeMediaItem({ ...mediaLibrary[i], title, type, year, genre, formats, status, notes, rating: mediaRating, links,
         ...(pendingTmdb || {}) });
     }
   } else {
-    mediaLibrary.push(normalizeMediaItem({ id: newId(), title, type, year, genre, formats, status, notes, rating: mediaRating,
+    mediaLibrary.push(normalizeMediaItem({ id: newId(), title, type, year, genre, formats, status, notes, rating: mediaRating, links,
       ...(pendingTmdb || {}) }));
   }
 
