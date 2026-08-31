@@ -12,22 +12,44 @@ const PAGE_SIZE = 48;
 
 
 // ─── OWNERSHIP LINKS ──────────────────────────────────────────────────
-// A link recorded by the user for where they own an item. Tapping it on a
-// phone usually opens the service's app (via universal / app links) and
-// otherwise opens the website — the page cannot influence or detect which,
-// so the button is labelled "Open on X" rather than "Open in app".
+// A link recorded by the user for where they own an item, in either of two
+// forms. An https link (the service's own Share button) is claimed by the
+// installed app via universal / app links and otherwise opens the website —
+// the page cannot influence or detect which, so it is labelled "Open on X".
+// An app-scheme link (`youtube://…`) goes straight to the app and does
+// nothing at all without it, so it is labelled and previewed as an app link.
 
 // esc() escapes HTML but says nothing about URL schemes, so `javascript:…`
 // would survive into an href untouched. Links can also arrive via
 // importData() from a shared file, so this is not purely self-inflicted.
-// Allowlist http/https rather than blocklisting the many script schemes.
+//
+// What actually matters is *which* schemes are dangerous, not whether a
+// scheme is http. `javascript:` and friends run script in this page's own
+// origin; an app scheme like `youtube://` is handed straight to the OS and
+// can do no more than the app it opens. So deny the executable ones by name
+// and let the rest through, otherwise the field refuses the very links the
+// user is trying to record.
+const BLOCKED_SCHEMES = new Set([
+  'javascript:', 'vbscript:', 'data:', 'blob:', 'filesystem:',
+  'file:', 'about:', 'view-source:', 'ws:', 'wss:',
+]);
+
 function safeUrl(raw) {
   if (typeof raw !== 'string') return null;
   const cleaned = raw.replace(/[\u0000-\u0020]/g, '');   // "\u0001javascript:" is tolerated by browsers
   let u;
   try { u = new URL(cleaned); } catch { return null; }     // also rejects relative URLs
-  if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+  // A scheme must look like one: URL() lowercases it, and this shuts out
+  // any non-ASCII lookalike that slipped through parsing.
+  if (!/^[a-z][a-z0-9+.-]*:$/.test(u.protocol)) return null;
+  if (BLOCKED_SCHEMES.has(u.protocol)) return null;
+  // A bare `youtube:` with nothing after it parses fine and points nowhere.
+  if (!u.host && !u.pathname && !u.search && !u.hash) return null;
   return u.href;
+}
+
+function isWebLink(url) {
+  return /^https?:/.test(url);
 }
 
 // Longest hostname suffix wins, so app.primevideo.com beats amazon.com.
@@ -50,10 +72,35 @@ const LINK_SERVICES = [
   ['spotify.com',       'Spotify'],      ['storytel.com',      'Storytel'],
 ];
 
+// Most app schemes are just the service's name (`youtube:`, `spotify:`), so
+// they resolve through the domain table for free. These are the ones that
+// aren't, and would otherwise be labelled with the raw scheme.
+const SCHEME_ALIASES = {
+  'nflx': 'netflix.com',   'aiv': 'primevideo.com',
+  'vnd.youtube': 'youtube.com', 'hbomax': 'max.com',
+  'ibooks': 'books.apple.com',  'itms-books': 'books.apple.com',
+  'com.audible.application': 'audible.com',
+  'overdrive': 'overdrive.com', 'videos': 'tv.apple.com',
+};
+
+function serviceForDomain(domain) {
+  const hit = LINK_SERVICES.find(([d]) => d === domain);
+  return hit ? hit[1] : null;
+}
+
 function linkServiceName(url) {
-  let host;
-  try { host = new URL(url).hostname.toLowerCase().replace(/^www\./, ''); }
-  catch { return 'link'; }
+  let u;
+  try { u = new URL(url); } catch { return 'link'; }
+
+  // An app scheme has no hostname to match on — `youtube://watch?v=x` parses
+  // with an empty host — so name it from the scheme instead.
+  if (!isWebLink(url)) {
+    const scheme = u.protocol.slice(0, -1);
+    return serviceForDomain(SCHEME_ALIASES[scheme] || `${scheme}.com`)
+      || scheme.replace(/^./, c => c.toUpperCase());
+  }
+
+  const host = u.hostname.toLowerCase().replace(/^www\./, '');
   let best = null;
   for (const [domain, name] of LINK_SERVICES) {
     if (host === domain || host.endsWith('.' + domain)) {
@@ -86,23 +133,32 @@ function applyLinks(obj, raw) {
 }
 
 
-// A real anchor, not a button: iOS only hands an https URL to an app when the
+// A real anchor, not a button: a phone only hands a URL to an app when the
 // navigation comes from a genuine tap on an <a>, which a JS-driven
 // button click does not preserve.
+//
+// Web links open in a new tab so the library stays put. App-scheme links
+// must not: the browser cannot render `youtube://`, so a new tab would be
+// left blank and orphaned whether or not the handoff worked.
 function renderLinkButtons(links, compact) {
   const list = normalizeLinks(links);
   if (!list.length) return '';
   const shown = compact ? list.slice(0, 1) : list;
   return shown.map(url => {
     const name = linkServiceName(url);
-    return `<a class="btn btn-sm link-btn" href="${esc(url)}" target="_blank" rel="noopener noreferrer"
-      title="Open on ${esc(name)}" onclick="event.stopPropagation()">↗ ${compact ? '' : esc(name)}</a>`;
+    const web  = isWebLink(url);
+    const tab  = web ? ' target="_blank" rel="noopener noreferrer"' : '';
+    const title = web ? `Open on ${name}` : `Open in the ${name} app`;
+    return `<a class="btn btn-sm link-btn${web ? '' : ' link-btn-app'}" href="${esc(url)}"${tab}
+      title="${esc(title)}" onclick="event.stopPropagation()">↗ ${compact ? '' : esc(name)}</a>`;
   }).join('');
 }
 
 
-// Shows what each pasted line was understood as, so a typo or an
-// unsupported scheme is visible before saving rather than silently dropped.
+// Shows what each pasted line was understood as, so a typo or a blocked
+// scheme is visible before saving rather than silently dropped. App-scheme
+// links are marked as such: they open nothing without the app installed,
+// which is a real trade-off the user should see while typing.
 function previewLinks(prefix) {
   const ta  = document.getElementById(`${prefix}-links`);
   const box = document.getElementById(`${prefix}-links-preview`);
@@ -110,10 +166,74 @@ function previewLinks(prefix) {
   const lines = ta.value.split('\n').map(l => l.trim()).filter(Boolean);
   box.innerHTML = lines.map(line => {
     const url = safeUrl(line);
-    return url
-      ? `<span class="link-chip">${esc(linkServiceName(url))}</span>`
-      : `<span class="link-chip link-chip-bad">not a web link</span>`;
+    if (!url) return `<span class="link-chip link-chip-bad">not a usable link</span>`;
+    const name = esc(linkServiceName(url));
+    return isWebLink(url)
+      ? `<span class="link-chip">${name}</span>`
+      : `<span class="link-chip link-chip-app" title="Opens only if the app is installed">${name} app</span>`;
   }).join('');
+}
+
+// Share sheets rarely copy a bare URL — YouTube's gives you
+// `Watch "X" on YouTube: https://youtu.be/…` — so take the first token that
+// survives safeUrl() rather than assuming the clipboard holds only a link.
+//
+// Scanning prose needs a stricter test than storing does. Now that any
+// scheme is allowed, the `YouTube:` in that very sentence is a well-formed
+// app URL and would win the race, so demand either `://` or the
+// colon-separated form apps actually use (`spotify:album:…`). A plain
+// English word followed by a colon has neither.
+function looksLikeLink(token) {
+  return token.includes('://') || (token.match(/:/g) || []).length >= 2;
+}
+
+function firstUrlIn(text) {
+  for (const token of String(text || '').split(/[\s<>"'`]+/)) {
+    if (!looksLikeLink(token)) continue;
+    // A URL at the end of a sentence keeps the sentence's punctuation.
+    // Far more common than a URL that genuinely ends in one of these.
+    const url = safeUrl(token.replace(/[.,;:!?)\]]+$/, '')) || safeUrl(token);
+    if (url) return url;
+  }
+  return null;
+}
+
+const _pasteTimers = {};
+
+function pasteMsg(prefix, text, bad) {
+  const el = document.getElementById(`${prefix}-links-msg`);
+  if (!el) return;
+  el.textContent = text;
+  el.className = 'paste-msg' + (bad ? ' paste-msg-bad' : '');
+  clearTimeout(_pasteTimers[prefix]);
+  if (text) _pasteTimers[prefix] = setTimeout(() => { el.textContent = ''; }, 4000);
+}
+
+// Saves the switch back and forth: copy in the service's app, come back,
+// tap once. Appends to the raw field value rather than the normalized list,
+// so a half-typed line the user is still working on is not thrown away.
+async function pasteLink(prefix) {
+  const ta = document.getElementById(`${prefix}-links`);
+  if (!ta) return;
+  if (!navigator.clipboard || !navigator.clipboard.readText) {
+    return pasteMsg(prefix, 'This browser will not share the clipboard — paste into the box above.', true);
+  }
+
+  let text = '';
+  try { text = await navigator.clipboard.readText(); }
+  catch { return pasteMsg(prefix, 'Clipboard access was declined — paste into the box above.', true); }
+
+  const url = firstUrlIn(text);
+  if (!url) return pasteMsg(prefix, 'No link on the clipboard. Copy one from the service first.', true);
+
+  const raw = ta.value.replace(/\s+$/, '');
+  if (normalizeLinks(raw.split('\n')).includes(url)) {
+    return pasteMsg(prefix, `That ${linkServiceName(url)} link is already here.`, false);
+  }
+
+  ta.value = raw ? `${raw}\n${url}` : url;
+  previewLinks(prefix);
+  pasteMsg(prefix, `Added ${linkServiceName(url)}.`, false);
 }
 
 function readLinksField(prefix) {
@@ -124,6 +244,11 @@ function readLinksField(prefix) {
 function setLinksField(prefix, links) {
   const ta = document.getElementById(`${prefix}-links`);
   if (ta) ta.value = normalizeLinks(links).join('\n');
+  // readText() is missing entirely in some browsers, so offer the button
+  // only where it can work; a click still reports a refusal on its own.
+  const btn = document.getElementById(`${prefix}-links-paste`);
+  if (btn) btn.style.display = (navigator.clipboard && navigator.clipboard.readText) ? '' : 'none';
+  pasteMsg(prefix, '');
   previewLinks(prefix);
 }
 
@@ -1071,7 +1196,9 @@ function renderWishlist(listOnly = false) {
           <div class="book-row-meta">
             <div class="book-row-author">${esc(item.creator || '')}</div>
             <div class="book-row-actions">
-              ${renderLinkButtons(item.links, true)}
+              <!-- Not compact: the wishlist has no card view, so a second
+                   link would otherwise be reachable only by editing. -->
+              ${renderLinkButtons(item.links)}
               <button class="btn btn-sm" onclick="openWishlistModal(${item.id})" title="Edit">✏</button>
               <button class="btn btn-sm btn-danger" onclick="deleteWishlistItem(${item.id})" title="Delete">🗑</button>
             </div>
