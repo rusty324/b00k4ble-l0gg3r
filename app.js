@@ -298,7 +298,7 @@ function normalizeBook(b) {
 
   const title  = b.title  != null ? String(b.title)  : '';
   const series = b.series ? String(b.series) : '';
-  const _searchStr = [title, author, series, b.isbn || '', ...tags].join(' ').toLowerCase();
+  const _searchStr = [title, author, series, b.isbn || '', b.asin || '', ...tags].join(' ').toLowerCase();
 
   // Clamp rating to 0–5; out-of-range values (e.g. from imported JSON) cause
   // '★'.repeat(5 - rating) to throw a RangeError with a negative count.
@@ -307,6 +307,7 @@ function normalizeBook(b) {
   return applyLinks({
     ...b, id: normalizeId(b.id), title, series, author, status, formats, tags, rating, _searchStr,
     ...(b.isbn != null ? { isbn: String(b.isbn) } : {}),
+    ...(b.asin != null ? { asin: String(b.asin).toUpperCase() } : {}),
   }, b.links);
 }
 
@@ -1348,6 +1349,23 @@ document.querySelectorAll('.modal-backdrop').forEach(el => {
 
 
 // ─── MODAL HELPERS ────────────────────────────────────────────────────
+// Stored as one "Name #N" string, edited as two inputs. Shared so the Audible
+// lookup splits it exactly the way opening an existing book does.
+function setSeriesFields(series) {
+  const m = (series || '').match(/^(.+?)[\s#]+(\d+(?:\.\d+)?)$/);
+  document.getElementById('f-series').value      = m ? m[1].trim() : (series || '');
+  document.getElementById('f-seriesIndex').value = m ? m[2] : '';
+}
+
+// setFormats() replaces the whole selection; this adds one, keeping whatever
+// the user already ticked. The .active class is what actually looks checked.
+function tickFormat(value) {
+  const cb = document.querySelector(`#f-format-group input[value="${value}"]`);
+  if (!cb || cb.checked) return;
+  cb.checked = true;
+  cb.closest('.radio-btn').classList.add('active');
+}
+
 function setFormats(vals) {
   document.querySelectorAll('#f-format-group input[type="checkbox"]').forEach(cb => {
     cb.checked = vals.includes(cb.value);
@@ -1473,7 +1491,7 @@ function openAddModal() {
   currentRating = 0;
   document.getElementById('modalTitle').textContent = 'Add a book';
 
-  ['f-title', 'f-author', 'f-series', 'f-seriesIndex', 'f-tags', 'f-notes', 'f-coverUrl', 'f-isbn', 'f-ol']
+  ['f-title', 'f-author', 'f-series', 'f-seriesIndex', 'f-tags', 'f-notes', 'f-coverUrl', 'f-isbn', 'f-asin', 'f-ol']
     .forEach(id => document.getElementById(id).value = '');
   setLinksField('f', []);
   closeOlAC();
@@ -1499,13 +1517,12 @@ function openEditModal(id) {
   document.getElementById('modalTitle').textContent = 'Edit book';
   document.getElementById('f-title').value  = b.title;
   document.getElementById('f-author').value = b.author || '';
-  const sm = (b.series || '').match(/^(.+?)[\s#]+(\d+(?:\.\d+)?)$/);
-  document.getElementById('f-series').value      = sm ? sm[1].trim() : (b.series || '');
-  document.getElementById('f-seriesIndex').value = sm ? sm[2] : '';
+  setSeriesFields(b.series);
   document.getElementById('f-tags').value   = (b.tags || []).join(', ');
   document.getElementById('f-notes').value  = b.notes || '';
   document.getElementById('f-coverUrl').value = b.coverUrl || '';
   document.getElementById('f-isbn').value = b.isbn || '';
+  document.getElementById('f-asin').value = b.asin || '';
   setLinksField('f', b.links);
   document.getElementById('f-ol').value = '';
   closeOlAC();
@@ -1565,6 +1582,9 @@ function saveBook() {
   const series     = seriesName && seriesIdx ? `${seriesName} #${seriesIdx}` : seriesName;
   const coverUrl   = document.getElementById('f-coverUrl').value.trim();
   const isbn       = document.getElementById('f-isbn').value.replace(/[^0-9Xx]/g, '');
+  // Amazon prints ASINs uppercase; accept any case and store one form so
+  // duplicate detection and search do not depend on how it was typed.
+  const asin       = document.getElementById('f-asin').value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
   const links      = readLinksField('f');
 
   const tags = document.getElementById('f-tags').value
@@ -1586,11 +1606,12 @@ function saveBook() {
     const i = books.findIndex(b => b.id === editingId);
     if (i !== -1) {
       books[i] = normalizeBook({ ...books[i], title, author, series, tags, formats, status, notes, rating: currentRating, coverUrl, links,
-        isbn: isbn || pendingScanCode || books[i].isbn || '' });
+        isbn: isbn || pendingScanCode || books[i].isbn || '', asin });
     }
   } else {
     books.push(normalizeBook({ id: newId(), title, author, series, tags, formats, status, notes, rating: currentRating, coverUrl, links,
-      ...(isbn || pendingScanCode ? { isbn: isbn || pendingScanCode } : {}) }));
+      ...(isbn || pendingScanCode ? { isbn: isbn || pendingScanCode } : {}),
+      ...(asin ? { asin } : {}) }));
   }
 
   save();

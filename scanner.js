@@ -38,6 +38,14 @@ const IDENTIFY_MAX_QUERIES = 4; // parallel TMDb verifications per capture
 const IDENTIFY_MAX_BOOK_QUERIES = 2;
 const OPENLIBRARY_SEARCH_URL = 'https://openlibrary.org/search.json';
 
+// Audible has no public API. Audnexus is the community aggregator that
+// Audiobookshelf uses: it normalizes Audible's own data and, unlike Audible,
+// serves CORS headers for any origin, so a static page can call it. Keyless,
+// and rate-limited at 100 requests a minute — far looser than Open Library.
+// ASIN lookup only; it has no title search, which is why Open Library still
+// handles everything that is not an ASIN.
+const AUDNEXUS_BOOK_URL = 'https://api.audnex.us/books';
+
 // TMDb has no barcode and no image lookup, so it is used for title search:
 // to verify what the vision model reports and to fill in the details.
 // The key lives in localStorage, never in this repo: TMDb has no referrer or
@@ -1745,17 +1753,78 @@ function isIsbnQuery(q) {
   return (d.length === 10 || d.length === 13) && /^\d{9}[\dXx]$|^\d{13}$/.test(d);
 }
 
+// An ASIN is ten characters. Amazon reuses ISBN-10s as ASINs for print books,
+// so only the B-prefixed form is claimed here — anything all-digits stays an
+// ISBN, which Open Library answers better anyway.
+function isAsinQuery(q) {
+  return /^B[0-9A-Z]{9}$/i.test(String(q).replace(/[^0-9A-Za-z]/g, ''));
+}
+
+// Catalogues are per-region and an ASIN in one is usually absent from the
+// others, so guess from the browser's locale rather than asking.
+const AUDNEXUS_REGIONS = { GB: 'uk', CA: 'ca', AU: 'au', DE: 'de', FR: 'fr',
+  JP: 'jp', IT: 'it', IN: 'in', ES: 'es', BR: 'br', US: 'us' };
+
+function audnexusRegion() {
+  const loc = (navigator.languages && navigator.languages[0]) || navigator.language || '';
+  const country = (String(loc).split('-')[1] || '').toUpperCase();
+  return AUDNEXUS_REGIONS[country] || 'us';
+}
+
+async function audnexusFetch(asin, region) {
+  const res = await fetchWithTimeout(`${AUDNEXUS_BOOK_URL}/${encodeURIComponent(asin)}?region=${region}`);
+  if (res.status === 404) return null;
+  if (res.status === 429) throw new Error('Audible lookups are rate limited right now — try again in a minute.');
+  if (!res.ok) throw new Error(`Audnexus error (HTTP ${res.status})`);
+  return res.json();
+}
+
+// The app's series field is "Name #N", and Audnexus splits the two.
+function audnexusSeries(book) {
+  const s = book.seriesPrimary;
+  if (!s || !s.name) return '';
+  return s.position ? `${s.name} #${String(s.position).replace(/^Book\s*/i, '')}` : s.name;
+}
+
+async function lookupASIN(raw) {
+  const asin = String(raw).replace(/[^0-9A-Za-z]/g, '').toUpperCase();
+  const region = audnexusRegion();
+  let book = await audnexusFetch(asin, region);
+  // Not in the local catalogue: US is much the largest, so it is worth one
+  // more request before reporting nothing.
+  if (!book && region !== 'us') book = await audnexusFetch(asin, 'us');
+  if (!book) return null;
+
+  const authors = (book.authors || []).map(a => a.name).filter(Boolean);
+  return {
+    source: 'audible',
+    title: String(book.title || ''),
+    author: authors.join(', '),
+    narrator: (book.narrators || []).map(n => n.name).filter(Boolean).join(', '),
+    year: book.releaseDate ? String(book.releaseDate).slice(0, 4) : '',
+    coverUrl: book.image || '',
+    isbn: book.isbn || '',
+    asin: book.asin || asin,
+    series: audnexusSeries(book),
+  };
+}
+
 // A bare 10/13-digit query is an ISBN, so look it up directly rather than
 // treating the digits as a title.
 async function olSearch(query) {
   const q = query.trim();
   if (!q) return [];
 
+  if (isAsinQuery(q)) {
+    const book = await lookupASIN(q);
+    return book ? [book] : [];
+  }
+
   if (isIsbnQuery(q)) {
     const isbn = q.replace(/[^0-9Xx]/g, '');
     const info = await lookupISBN(isbn);
     return info ? [{
-      title: info.title, author: info.author, year: '',
+      source: 'ol', title: info.title, author: info.author, year: '',
       coverUrl: info.coverUrl || '', isbn,
     }] : [];
   }
@@ -1769,6 +1838,7 @@ async function olSearch(query) {
   const data = await res.json();
 
   const mapped = (data.docs || []).map(d => ({
+    source: 'ol',
     title: String(d.title || ''),
     author: (d.author_name || [])[0] || '',
     year: d.first_publish_year ? String(d.first_publish_year) : '',
@@ -1797,17 +1867,21 @@ function olAC() {
 
   _olTimer = setTimeout(async () => {
     const seq = ++_olSeq;
-    olHint(isIsbnQuery(query) ? 'Looking up ISBN…' : 'Searching…');
+    olHint(isAsinQuery(query) ? 'Looking up ASIN on Audible…'
+         : isIsbnQuery(query)   ? 'Looking up ISBN…'
+         : 'Searching…');
     try {
       const results = await olSearch(query);
       if (seq !== _olSeq) return;          // a newer keystroke already won
       _olResults = results;
       renderOlAC();
-      olHint(results.length ? '' : 'No matches on Open Library.');
+      olHint(results.length ? ''
+        : isAsinQuery(query) ? `No Audible book with that ASIN (tried ${audnexusRegion()}${audnexusRegion() === 'us' ? '' : ' and us'}).`
+        : 'No matches on Open Library.');
     } catch (err) {
       if (seq !== _olSeq) return;
       closeOlAC();
-      olHint(err.message || 'Open Library search failed.', true);
+      olHint(err.message || 'Lookup failed.', true);
     }
   }, 350);   // Open Library throttles anonymous callers at ~1 req/sec
 }
@@ -1823,8 +1897,9 @@ function renderOlAC() {
         ? `<img class="tmdb-thumb" src="${esc(r.coverUrl)}" alt="" loading="lazy">`
         : `<div class="tmdb-thumb tmdb-thumb-empty">📚</div>`}
       <div class="tmdb-meta">
-        <div class="tmdb-title">${esc(r.title)}</div>
+        <div class="tmdb-title">${esc(r.title)}${r.source === 'audible' ? ' <span class="src-badge">Audible</span>' : ''}</div>
         <div class="tmdb-sub">${[r.author, r.year].filter(Boolean).map(esc).join(' · ')}</div>
+        ${r.narrator ? `<div class="tmdb-sub">Read by ${esc(r.narrator)}</div>` : ''}
       </div>
     </div>`).join('');
   ac.style.display = 'block';
@@ -1852,10 +1927,26 @@ function olPick(i) {
   document.getElementById('f-author').value = r.author || '';
   if (r.coverUrl) document.getElementById('f-coverUrl').value = r.coverUrl;
   if (r.isbn)     document.getElementById('f-isbn').value = r.isbn;
+  if (r.asin)     document.getElementById('f-asin').value = r.asin;
+  if (r.series)   setSeriesFields(r.series);
+
+  if (r.source === 'audible') {
+    // An Audible result is an audiobook by definition, and its ASIN is
+    // enough to build the ownership link — both land in visible fields the
+    // user can undo before saving, rather than being applied at save time.
+    tickFormat('audio');
+    const links = document.getElementById('f-links');
+    if (links && !links.value.trim() && r.asin) {
+      links.value = `https://www.audible.com/pd/${r.asin}`;
+      previewLinks('f');
+    }
+  }
+
   closeOlAC();
   document.getElementById('f-ol').value = '';
-  olHint(`Filled from Open Library: ${r.title}${r.year ? ' (' + r.year + ')' : ''}`);
+  olHint(`Filled from ${r.source === 'audible' ? 'Audible' : 'Open Library'}: ${r.title}${r.year ? ' (' + r.year + ')' : ''}`);
 }
+
 
 
 // ─── HEADER CAMERA BUTTON ─────────────────────────────────────────────

@@ -130,9 +130,9 @@
     <div class="modal-title" id="modalTitle">Add a book</div>
 
     <div class="form-group" id="olSearchGroup">
-      <label for="f-ol">Search Open Library <span class="opt">(title, author, or ISBN)</span></label>
+      <label for="f-ol">Look up a book <span class="opt">(title, author, ISBN, or Audible ASIN)</span></label>
       <div style="position:relative">
-        <input type="text" class="plain" id="f-ol" placeholder="e.g. Dune Herbert — or 9780441013593" autocomplete="off"
+        <input type="text" class="plain" id="f-ol" placeholder="e.g. Dune Herbert — or 9780441013593 — or B0036I54I6" autocomplete="off"
                oninput="olAC()" onkeydown="olACKey(event)" onblur="setTimeout(closeOlAC,150)">
         <div id="ol-ac" class="tmdb-ac" style="display:none"></div>
       </div>
@@ -206,6 +206,12 @@
     <div class="form-group">
       <label>ISBN <span class="opt">(optional — enables duplicate detection when scanning)</span></label>
       <input type="text" class="plain" id="f-isbn" placeholder="9780441013593" inputmode="numeric" autocomplete="off">
+    </div>
+
+    <div class="form-group">
+      <label for="f-asin">ASIN <span class="opt">(optional — Amazon / Audible id)</span></label>
+      <input type="text" class="plain" id="f-asin" placeholder="B0036I54I6" autocomplete="off" spellcheck="false">
+      <div class="hint">Audiobooks and Kindle editions have no ISBN, so this is how Amazon identifies them.</div>
     </div>
 
     <div class="form-group">

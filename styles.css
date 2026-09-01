@@ -643,3 +643,11 @@ body.modal-open {
 .links-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.4rem; flex-wrap: wrap; }
 .paste-msg { font-size: 12px; color: var(--text-light); }
 .paste-msg.paste-msg-bad { color: var(--coral-600); }
+
+/* Marks which service a lookup result came from, since the same book can
+   appear from both Open Library and Audible with different metadata. */
+.src-badge {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+  padding: 0.1rem 0.35rem; border-radius: 4px; vertical-align: middle;
+  background: var(--amber-100); color: var(--amber-900);
+}
