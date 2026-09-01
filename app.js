@@ -253,6 +253,56 @@ function setLinksField(prefix, links) {
 }
 
 
+// ─── SORT KEYS ────────────────────────────────────────────────────────
+
+// Libraries file "The Hobbit" under H. Only English articles are stripped:
+// to an English reader "La La Land" and "Der Untergang" are titles in their
+// own right, and reshelving those under L and U would surprise more than it
+// helps. \b is not enough — "An" must not match "Animal Farm" — so the
+// article has to be followed by whitespace.
+const LEADING_ARTICLE = /^(?:the|a|an)\s+/i;
+
+function titleSortKey(title) {
+  const t = String(title || '').trim();
+  // A title that is nothing but an article still has to sort somewhere.
+  return (t.replace(LEADING_ARTICLE, '') || t).toLowerCase();
+}
+
+// Conventionally part of the surname rather than a middle name, and the
+// reason "Ursula K. Le Guin" files under L rather than G. Deliberately
+// excludes Mac/Mc/O/St: those are far more often the start of a surname
+// ("Mac Barnett") than a separate particle.
+const NAME_PARTICLES = new Set([
+  'van', 'von', 'de', 'del', 'della', 'di', 'da', 'dos', 'du', 'des',
+  'la', 'le', 'les', 'den', 'der', 'ten', 'ter', 'bin', 'ibn', 'al',
+  'af', 'av', 'zu', 'ze', 'op',
+]);
+
+const NAME_SUFFIXES = new Set(['jr', 'sr', 'ii', 'iii', 'iv', 'phd', 'md', 'esq']);
+
+// "Frank Herbert" files under H. The author field doubles as a comma-joined
+// list of several authors, so only the first one decides the order — which
+// also means a name already typed inverted ("Herbert, Frank") files
+// correctly, since the text before the comma is the surname either way.
+function authorSortKey(author) {
+  const first = String(author || '').split(',')[0].trim();
+  if (!first) return '';
+
+  const parts = first.split(/\s+/);
+  while (parts.length > 1 &&
+         NAME_SUFFIXES.has(parts[parts.length - 1].toLowerCase().replace(/[.]/g, ''))) {
+    parts.pop();
+  }
+  if (parts.length < 2) return first.toLowerCase();
+
+  // Walk back over any particles so they travel with the surname.
+  let i = parts.length - 1;
+  while (i > 0 && NAME_PARTICLES.has(parts[i - 1].toLowerCase())) i--;
+
+  return `${parts.slice(i).join(' ')}, ${parts.slice(0, i).join(' ')}`.toLowerCase();
+}
+
+
 // ─── DATA NORMALIZATION ───────────────────────────────────────────────
 
 // Unique numeric id — Date.now() alone can collide when two items are
@@ -795,9 +845,9 @@ function render() {
     fresh.sort((a, b) => {
       switch (sort) {
         case 'added-asc':  return a.id - b.id;
-        case 'title-asc':  return (a.title || '').localeCompare(b.title || '');
-        case 'title-desc': return (b.title || '').localeCompare(a.title || '');
-        case 'author-asc': return (a.author || '').localeCompare(b.author || '');
+        case 'title-asc':  return titleSortKey(a.title).localeCompare(titleSortKey(b.title));
+        case 'title-desc': return titleSortKey(b.title).localeCompare(titleSortKey(a.title));
+        case 'author-asc': return authorSortKey(a.author).localeCompare(authorSortKey(b.author));
         case 'rating-desc': return (b.rating || 0) - (a.rating || 0);
         case 'series-asc': return seriesSort(a, b);
         default:           return b.id - a.id;
@@ -956,8 +1006,8 @@ function renderMedia(listOnly = false) {
   // Sort
   items = [...items].sort((a, b) => {
     switch (mediaSort) {
-      case 'title-asc':   return (a.title || '').localeCompare(b.title || '');
-      case 'title-desc':  return (b.title || '').localeCompare(a.title || '');
+      case 'title-asc':   return titleSortKey(a.title).localeCompare(titleSortKey(b.title));
+      case 'title-desc':  return titleSortKey(b.title).localeCompare(titleSortKey(a.title));
       case 'rating-desc': return (b.rating || 0) - (a.rating || 0);
       case 'added-asc':   return a.id - b.id;
       default:            return b.id - a.id; // added-desc
@@ -1151,10 +1201,10 @@ function renderWishlist(listOnly = false) {
   // Sort
   items = [...items].sort((a, b) => {
     switch (wishlistSort) {
-      case 'title-desc':  return (b.title || '').localeCompare(a.title || '');
+      case 'title-desc':  return titleSortKey(b.title).localeCompare(titleSortKey(a.title));
       case 'added-desc':  return b.id - a.id;
       case 'added-asc':   return a.id - b.id;
-      default:            return (a.title || '').localeCompare(b.title || ''); // title-asc
+      default:            return titleSortKey(a.title).localeCompare(titleSortKey(b.title)); // title-asc
     }
   });
 
