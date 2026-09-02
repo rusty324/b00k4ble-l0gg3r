@@ -1367,6 +1367,55 @@ function esc(str) {
 }
 
 
+// ─── COVER LIGHTBOX ───────────────────────────────────────────────────
+
+// Thumbnails are deliberately small — Open Library at -M, TMDb at w342 — so
+// showing that same file full-screen would just be a blurry upscale. Both
+// services key the size off the URL, so ask for a larger variant and fall
+// back to the thumbnail if that variant does not exist.
+function fullSizeCover(url) {
+  return String(url || '')
+    .replace(/^(https:\/\/covers\.openlibrary\.org\/b\/\w+\/[^/]+)-[SML]\.jpg$/i, '$1-L.jpg')
+    .replace(/^(https:\/\/image\.tmdb\.org\/t\/p\/)w\d+\//i, '$1w780/');
+}
+
+function openCover(src, alt) {
+  const box = document.getElementById('lightbox');
+  const img = document.getElementById('lightbox-img');
+  if (!box || !img || !src) return;
+
+  const full = fullSizeCover(src);
+  // If the larger variant 404s, drop back to the thumbnail rather than
+  // leaving a broken image behind. Guarded so a failing thumbnail cannot
+  // loop back onto itself.
+  img.onerror = () => { if (img.src !== src) img.src = src; };
+  img.src = full;
+  img.alt = alt || '';
+  box.classList.add('open');           // MutationObserver takes the scroll lock
+}
+
+function closeCover() {
+  const box = document.getElementById('lightbox');
+  if (box) box.classList.remove('open');
+}
+
+// Delegated, so it covers all four render sites and the covers that arrive
+// later from the lazy-load observer, which builds its <img> in JS.
+document.addEventListener('click', e => {
+  const img = e.target.closest && e.target.closest('.book-card-cover, .book-row-thumb');
+  if (!img) return;
+  e.preventDefault();
+  e.stopPropagation();
+  openCover(img.getAttribute('src'), img.getAttribute('alt'));
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const box = document.getElementById('lightbox');
+  if (box && box.classList.contains('open')) closeCover();
+});
+
+
 // ─── BODY SCROLL LOCK (while a modal is open) ─────────────────────────
 // Driven by a MutationObserver rather than by each open/close function, so
 // every path is covered — buttons, backdrop clicks, Escape, and the

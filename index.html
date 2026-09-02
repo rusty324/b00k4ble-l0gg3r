@@ -531,6 +531,14 @@
   </div>
 </div>
 
+<!-- Tap a cover to see it full size. Closes on a tap anywhere, since on a
+     phone hunting for a small × is worse than tapping the picture again. -->
+<div class="modal-backdrop lightbox" id="lightbox" role="dialog" aria-modal="true"
+     aria-label="Cover image" onclick="closeCover()">
+  <button class="lightbox-close" type="button" aria-label="Close">&times;</button>
+  <img id="lightbox-img" alt="">
+</div>
+
 <button class="scroll-top-btn" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top" aria-label="Scroll to top">↑</button>
 
 <script src="scanner.js"></script>
