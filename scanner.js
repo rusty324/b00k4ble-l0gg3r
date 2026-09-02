@@ -1753,11 +1753,41 @@ function isIsbnQuery(q) {
   return (d.length === 10 || d.length === 13) && /^\d{9}[\dXx]$|^\d{13}$/.test(d);
 }
 
-// An ASIN is ten characters. Amazon reuses ISBN-10s as ASINs for print books,
-// so only the B-prefixed form is claimed here — anything all-digits stays an
-// ISBN, which Open Library answers better anyway.
+// Audnexus validates ids as /B[\dA-Z]{9}|\d{9}(X|\d)/ — both forms Amazon
+// uses for books. The second is an ISBN-10 serving as the product id, which
+// is why a real Audible link can read .../pd/0593343050 with no B in sight.
+const AUDIBLE_ID   = /^(?:B[0-9A-Z]{9}|\d{9}[\dX])$/i;
+// A B-prefixed id is never an ISBN, so it needs no second opinion.
+const AUDIBLE_ONLY = /^B[0-9A-Z]{9}$/i;
+
+function bareId(q) {
+  return String(q).replace(/[^0-9A-Za-z]/g, '').toUpperCase();
+}
+
+// Audible share links carry the id in the path, sometimes behind a title
+// slug (/pd/Dune-Audiobook/B0036I54I6) and sometimes not (/pd/0593343050),
+// with tracking parameters after it. Pulling it out beats making the user
+// find it themselves.
+function asinFromUrl(q) {
+  let u;
+  try { u = new URL(String(q).trim()); } catch { return null; }
+  if (!/(?:^|\.)(?:audible|amazon)\.[a-z.]+$/i.test(u.hostname)) return null;
+  const segs = u.pathname.split('/').filter(Boolean);
+  for (let i = segs.length - 1; i >= 0; i--) {
+    if (AUDIBLE_ID.test(segs[i])) return segs[i].toUpperCase();
+  }
+  return null;
+}
+
+// Does this query reach Audible at all — on its own or alongside Open Library.
 function isAsinQuery(q) {
-  return /^B[0-9A-Z]{9}$/i.test(String(q).replace(/[^0-9A-Za-z]/g, ''));
+  return !!asinFromUrl(q) || AUDIBLE_ID.test(bareId(q));
+}
+
+// Ten digits could be either a print ISBN or an Audible product id, and
+// nothing about the number says which.
+function isAmbiguousId(q) {
+  return !asinFromUrl(q) && AUDIBLE_ID.test(bareId(q)) && !AUDIBLE_ONLY.test(bareId(q));
 }
 
 // Catalogues are per-region and an ASIN in one is usually absent from the
@@ -1815,9 +1845,28 @@ async function olSearch(query) {
   const q = query.trim();
   if (!q) return [];
 
-  if (isAsinQuery(q)) {
-    const book = await lookupASIN(q);
+  const fromUrl = asinFromUrl(q);
+  const id = fromUrl || (AUDIBLE_ID.test(bareId(q)) ? bareId(q) : null);
+
+  // A pasted link, or a B-prefixed id: Audible is the only thing it can mean.
+  if (id && (fromUrl || AUDIBLE_ONLY.test(id))) {
+    const book = await lookupASIN(id);
     return book ? [book] : [];
+  }
+
+  // ISBN-10 shaped: ask both and let the badges tell them apart. allSettled,
+  // so one service being down cannot hide the other's answer.
+  if (id) {
+    const [aud, ol] = await Promise.allSettled([lookupASIN(id), lookupISBN(id)]);
+    const out = [];
+    if (aud.status === 'fulfilled' && aud.value) out.push(aud.value);
+    if (ol.status === 'fulfilled' && ol.value) out.push({
+      source: 'ol', title: ol.value.title, author: ol.value.author, year: '',
+      coverUrl: ol.value.coverUrl || '', isbn: id,
+    });
+    if (out.length) return out;
+    if (aud.status === 'rejected' && ol.status === 'rejected') throw aud.reason;
+    return [];
   }
 
   if (isIsbnQuery(q)) {
@@ -1867,8 +1916,9 @@ function olAC() {
 
   _olTimer = setTimeout(async () => {
     const seq = ++_olSeq;
-    olHint(isAsinQuery(query) ? 'Looking up ASIN on Audible…'
-         : isIsbnQuery(query)   ? 'Looking up ISBN…'
+    olHint(isAmbiguousId(query) ? 'Looking up on Audible and Open Library…'
+         : isAsinQuery(query)     ? 'Looking up ASIN on Audible…'
+         : isIsbnQuery(query)     ? 'Looking up ISBN…'
          : 'Searching…');
     try {
       const results = await olSearch(query);
@@ -1876,6 +1926,7 @@ function olAC() {
       _olResults = results;
       renderOlAC();
       olHint(results.length ? ''
+        : isAmbiguousId(query) ? 'Not found on Audible or Open Library.'
         : isAsinQuery(query) ? `No Audible book with that ASIN (tried ${audnexusRegion()}${audnexusRegion() === 'us' ? '' : ' and us'}).`
         : 'No matches on Open Library.');
     } catch (err) {
