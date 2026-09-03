@@ -316,6 +316,7 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
 .badge-tag      { background: var(--blue-50);  color: var(--blue-600);  font-size: 10px; }
 .badge-watched  { background: var(--teal-50);  color: var(--teal-600);  }
 .badge-media    { background: var(--gray-50);  color: var(--gray-600);  }
+.badge-digital  { background: var(--blue-50);  color: var(--blue-600);  }
 
 .stars { color: var(--amber-200); font-size: 13px; letter-spacing: 1px; }
 .stars .empty { color: var(--gray-100); }
