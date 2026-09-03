@@ -318,6 +318,64 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
 .badge-media    { background: var(--gray-50);  color: var(--gray-600);  }
 .badge-digital  { background: var(--blue-50);  color: var(--blue-600);  }
 
+/* ─── SYNC PANEL (ghsync settings-ui) ────────────────────────────── */
+/* ghsync.css is deliberately NOT loaded: it ships its own light-theme
+   .btn, which would fight this app's. The package emits plain class names
+   precisely so a host can style them, so these are its markup in this
+   app's theme. */
+.sync-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1rem; }
+
+.gh-badge {
+  font-size: 11px; padding: 0.15rem 0.55rem; border-radius: 999px;
+  background: var(--gray-50); color: var(--gray-600); white-space: nowrap;
+}
+.gh-badge.ok      { background: var(--teal-50);  color: var(--teal-600);  }
+.gh-badge.pending { background: var(--amber-50); color: var(--amber-800); }
+.gh-badge.error   { background: var(--coral-50); color: var(--coral-600); }
+
+.gh-panel .field { margin-bottom: 0.75rem; }
+.gh-panel .field-row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: flex-end; }
+.gh-panel .field-row > * { flex: 1 1 110px; min-width: 0; }
+.gh-panel .muted { font-size: 12px; color: var(--text-light); line-height: 1.5; }
+
+/* settings-ui emits bare <input> with no type attribute, so the app's
+   input[type="text"].plain rules do not reach it. */
+.gh-panel input {
+  font-family: 'DM Sans', sans-serif;
+  width: 100%; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 0.6rem 0.875rem; font-size: 14px; color: var(--text);
+  outline: none; transition: border-color 0.15s;
+}
+.gh-panel input:focus { border-color: var(--amber-200); }
+
+.gh-setup { margin-bottom: 1rem; }
+.gh-panel .list-row,
+.gh-panel .check-row {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.5rem 0; border-bottom: 1px solid var(--border);
+}
+.gh-panel .list-row:last-child, .gh-panel .check-row:last-child { border-bottom: none; }
+.gh-panel .row-main { flex: 1; min-width: 0; }
+.gh-panel .row-title { font-size: 13px; color: var(--text); overflow-wrap: anywhere; }
+.gh-panel .row-sub { font-size: 12px; color: var(--text-light); overflow-wrap: anywhere; }
+.gh-panel .check-row .mark { width: 1.2em; text-align: center; }
+.gh-panel .check-row .mark.done { color: var(--teal-600); }
+.gh-panel .tappable { cursor: pointer; }
+
+.gh-panel .settings-section {
+  border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.6rem;
+}
+.gh-panel .settings-section > summary {
+  display: flex; justify-content: space-between; gap: 0.6rem;
+  padding: 0.7rem 0.85rem; cursor: pointer;
+  font-size: 13px; font-weight: 500; color: var(--text);
+}
+.gh-panel .sec-state { font-weight: 400; color: var(--text-light); }
+.gh-panel .settings-body { padding: 0 0.85rem 0.85rem; }
+
+.status-banner.banner-error { background: var(--coral-50); border-color: var(--coral-200); color: var(--coral-600); }
+
 .stars { color: var(--amber-200); font-size: 13px; letter-spacing: 1px; }
 .stars .empty { color: var(--gray-100); }
 
@@ -582,7 +640,8 @@ body.modal-open {
   input[type="email"],
   textarea,
   select.plain,
-  select.sort-select { font-size: 16px; }
+  select.sort-select,
+  .gh-panel input { font-size: 16px; }
 }
 
 /* ─── IDENTIFY FROM COVER ────────────────────────────────────────── */

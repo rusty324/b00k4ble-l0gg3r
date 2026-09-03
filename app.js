@@ -500,6 +500,7 @@ const stripSearchStr = (k, v) => k === '_searchStr' ? undefined : v;
 function save() {
   _booksMutation++;
   localStorage.setItem('myLibrary', JSON.stringify(books, stripSearchStr));
+  syncPush('books');
 }
 
 // Debounced save for background cover discovery — each save() serializes the
@@ -513,14 +514,74 @@ function saveSoon() {
 
 function saveWishlist() {
   localStorage.setItem('bookWishlist', JSON.stringify(bookWishlist));
+  syncPush('wishlist');
 }
 
 function saveMedia() {
   localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary));
+  syncPush('media');
 }
 
 function saveGames() {
   localStorage.setItem('videoGames', JSON.stringify(videoGames));
+  syncPush('games');
+}
+
+
+// ─── SYNC BRIDGE ──────────────────────────────────────────────────────
+// ghsync is an ES module; this file is a classic script, because every
+// inline onclick= in index.html resolves against the global scope. So the
+// two talk through globals rather than imports: sync.js sets window.ghPush,
+// and calls the two functions below. With sync.js absent or sync
+// unconfigured, all of this is inert and the app stays exactly local.
+
+// Records as they should reach the repo — _searchStr is derived on load and
+// would only bloat the file, so it is stripped with the same replacer the
+// localStorage write and the export already use.
+function syncSnapshot(collection) {
+  switch (collection) {
+    case 'books':    return JSON.parse(JSON.stringify(books, stripSearchStr));
+    case 'media':    return mediaLibrary;
+    case 'wishlist': return bookWishlist;
+    case 'games':    return videoGames;
+    default:         return null;
+  }
+}
+
+function syncPush(collection) {
+  if (window.ghPush) window.ghPush(collection, syncSnapshot(collection));
+}
+
+// Called by sync.js when records arrive from the data repo — a background
+// refresh, or another tab. Writes through to this app's own storage rather
+// than going back out through save(), which would bounce straight back to
+// ghsync as a fresh push.
+function applySyncedData(collection, records) {
+  if (!Array.isArray(records)) return false;
+  switch (collection) {
+    case 'books':
+      books = records.map(normalizeBook);
+      localStorage.setItem('myLibrary', JSON.stringify(books, stripSearchStr));
+      // render()'s filter cache is keyed partly on this counter.
+      _booksMutation++;
+      _filteredCache = null;
+      break;
+    case 'media':
+      mediaLibrary = records.map(normalizeMediaItem);
+      localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary));
+      break;
+    case 'wishlist':
+      bookWishlist = records.map(normalizeWishlistItem);
+      localStorage.setItem('bookWishlist', JSON.stringify(bookWishlist));
+      break;
+    case 'games':
+      videoGames = records.map(normalizeVideoGame);
+      localStorage.setItem('videoGames', JSON.stringify(videoGames));
+      break;
+    default:
+      return false;
+  }
+  return true;
 }
 
 

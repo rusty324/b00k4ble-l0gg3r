@@ -35,6 +35,7 @@
           <button class="settings-item" id="settingsImportBtn" onclick="document.getElementById('importFile').click(); closeSettingsMenu()">⬆ Import library</button>
           <button class="settings-item" id="settingsTmdbBtn" onclick="openTmdbKeyModal(); closeSettingsMenu()">🎬 TMDb API key…</button>
           <button class="settings-item" id="settingsGeminiBtn" onclick="openGeminiKeyModal(); closeSettingsMenu()">🔍 Image recognition key…</button>
+          <button class="settings-item" id="settingsSyncBtn" onclick="openSyncModal(); closeSettingsMenu()">🔄 Sync &amp; backup…</button>
         </div>
       </div>
 
@@ -499,6 +500,33 @@
 </div>
 
 
+<!-- ═══════════════════════════════════════════════════════════════════
+     SYNC & BACKUP MODAL
+     The three sections inside are rendered by ghsync's settings-ui.js;
+     everything here is just the chrome the app wraps them in.
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="syncModal" onclick="handleSyncBackdrop(event)">
+  <div class="modal">
+    <div class="sync-head">
+      <div class="modal-title" style="margin-bottom:0">Sync &amp; backup</div>
+      <span class="gh-badge" id="syncBadge">local only</span>
+    </div>
+
+    <div class="hint" style="margin-bottom:1rem">
+      Your library lives in this browser. Point it at a <strong>private</strong>
+      GitHub repo and it syncs across your devices — the app repo is public, so
+      nothing personal is ever written there.
+    </div>
+
+    <div class="gh-panel" id="syncPanel"></div>
+
+    <div class="modal-footer">
+      <button class="btn" onclick="closeSyncModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- ─── TMDb API KEY MODAL ──────────────────────────────────────────── -->
 <div class="modal-backdrop" id="tmdbKeyModal" onclick="handleTmdbKeyBackdrop(event)">
   <div class="modal" style="max-width:440px">
@@ -645,5 +673,8 @@
 
 <script src="scanner.js"></script>
 <script src="app.js"></script>
+<!-- Module, so deferred: app.js has already initialised by the time this
+     runs, which is what lets the app stay standalone and local-first. -->
+<script type="module" src="sync.js"></script>
 </body>
 </html>
