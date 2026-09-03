@@ -48,19 +48,34 @@ let applying = false;   // suppresses the echo of our own write
 
 window.ghPush = (collection, records) => {
   if (applying || !Array.isArray(records)) return;
-  // store.save() swallows push failures into sync status, so a rejection
-  // here would be a bug rather than an offline device — but an unhandled
-  // rejection in a save path is not worth risking.
-  store.save(collection, records).catch(() => {});
+  // store.save() emits 'changed' SYNCHRONOUSLY, before it awaits the network,
+  // so without this guard the app's own write echoes straight back through
+  // applyToApp() — re-normalizing every collection and re-rendering on every
+  // keystroke-sized edit. The guard is dropped again as soon as save() reaches
+  // its first await, so a later 'changed' from a real remote merge still lands.
+  applying = true;
+  try {
+    // store.save() swallows push failures into sync status, so a rejection
+    // here would be a bug rather than an offline device — but an unhandled
+    // rejection in a save path is not worth risking.
+    store.save(collection, records).catch(() => {});
+  } finally {
+    applying = false;
+  }
 };
 
 // ─── repo -> app ──────────────────────────────────────────────────────
-function applyToApp() {
+// `only` names the collection that changed. Anything else — notably the
+// cross-tab 'external' event, which cannot say what moved — re-applies all
+// four, which is correct but far more expensive, so it is not the default
+// for the single-collection case.
+function applyToApp(only) {
   if (!window.applySyncedData) return;
   applying = true;
   try {
     let changed = false;
-    for (const collection of COLLECTIONS) {
+    const list = COLLECTIONS.includes(only) ? [only] : COLLECTIONS;
+    for (const collection of list) {
       if (window.applySyncedData(collection, store.get(collection))) changed = true;
     }
     if (changed) window.renderPage?.();
@@ -72,7 +87,7 @@ function applyToApp() {
 store.onChange((e) => {
   if (e.type === 'sync-status') { paintBadge(); return; }
   if (applying) return;          // our own save() echoing back
-  applyToApp();
+  applyToApp(e.collection);
 });
 
 // ─── settings panel ───────────────────────────────────────────────────

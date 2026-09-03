@@ -136,6 +136,19 @@ function applyLinks(obj, raw) {
   return obj;
 }
 
+// Same idea for the optional text fields. The modals read every input on save
+// whether or not it was touched, so without this a book edited once picks up
+// isbn:"", asin:"", coverUrl:"" and notes:"" for good — carried in every
+// export and every push after that. An empty field is absence, not a value.
+const OPTIONAL_TEXT = ['isbn', 'asin', 'coverUrl', 'posterUrl', 'notes', 'year', 'narrator'];
+
+function dropEmpty(obj) {
+  for (const k of OPTIONAL_TEXT) {
+    if (obj[k] === '' || obj[k] == null) delete obj[k];
+  }
+  return obj;
+}
+
 
 // A real anchor, not a button: a phone only hands a URL to an app when the
 // navigation comes from a genuine tap on an <a>, which a JS-driven
@@ -358,16 +371,16 @@ function normalizeBook(b) {
   // '★'.repeat(5 - rating) to throw a RangeError with a negative count.
   const rating = Number.isFinite(+b.rating) ? Math.max(0, Math.min(5, Math.round(+b.rating))) : 0;
 
-  return applyLinks({
+  return dropEmpty(applyLinks({
     ...b, id: normalizeId(b.id), title, series, author, status, formats, tags, rating, _searchStr,
     ...(b.isbn != null ? { isbn: String(b.isbn) } : {}),
     ...(b.asin != null ? { asin: String(b.asin).toUpperCase() } : {}),
-  }, b.links);
+  }, b.links));
 }
 
 // Normalize wishlist items — adds 'type' (default 'book') and unifies author/creator field
 function normalizeWishlistItem(item) {
-  return applyLinks({
+  return dropEmpty(applyLinks({
     ...item,
     id: normalizeId(item.id),
     type: item.type || 'book',
@@ -375,7 +388,7 @@ function normalizeWishlistItem(item) {
     creator: String(item.creator || item.author || ''),
     notes: item.notes != null ? String(item.notes) : '',
     ...(item.isbn != null ? { isbn: String(item.isbn) } : {}),
-  }, item.links);
+  }, item.links));
 }
 
 // Normalize video game items — same coercion as normalizeMediaItem, with
@@ -392,7 +405,7 @@ function normalizeVideoGame(g) {
     : g.formats ? [String(g.formats)]
     : [];
 
-  return applyLinks({
+  return dropEmpty(applyLinks({
     ...g,
     id: normalizeId(g.id),
     title: g.title != null ? String(g.title) : '',
@@ -402,7 +415,7 @@ function normalizeVideoGame(g) {
     formats,
     rating: Number.isFinite(+g.rating) ? Math.max(0, Math.min(5, Math.round(+g.rating))) : 0,
     ...(g.coverUrl != null ? { coverUrl: String(g.coverUrl) } : {}),
-  }, g.links);
+  }, g.links));
 }
 
 // Normalize media items — coerces every field the render/sort/search paths
@@ -417,7 +430,7 @@ function normalizeMediaItem(m) {
     : m.formats ? [String(m.formats)]
     : [];
 
-  return applyLinks({
+  return dropEmpty(applyLinks({
     ...m,
     id: normalizeId(m.id),
     title: m.title != null ? String(m.title) : '',
@@ -428,7 +441,7 @@ function normalizeMediaItem(m) {
     rating: Number.isFinite(+m.rating) ? Math.max(0, Math.min(5, Math.round(+m.rating))) : 0,
     ...(m.posterUrl != null ? { posterUrl: String(m.posterUrl) } : {}),
     ...(m.tmdbId != null ? { tmdbId: m.tmdbId } : {}),
-  }, m.links);
+  }, m.links));
 }
 
 
@@ -493,19 +506,29 @@ let gameSearchTimer = null;
 // adds ~25% to every localStorage write and export for no benefit.
 const stripSearchStr = (k, v) => k === '_searchStr' ? undefined : v;
 
-function save() {
+// The local half of a save, without the trip out to the data repo.
+function saveLocal() {
   _booksMutation++;
   localStorage.setItem('myLibrary', JSON.stringify(books, stripSearchStr));
+}
+
+function save() {
+  saveLocal();
   syncPush('books');
 }
 
-// Debounced save for background cover discovery — each save() serializes the
+// Debounced save for background cover discovery — each save serializes the
 // whole library, so coalesce the burst of writes while scrolling a page of
 // uncached covers into one.
+//
+// Local only, deliberately: a discovered cover is derived data that any
+// device can find again for itself, and scrolling a few screens would
+// otherwise spend a run of GitHub commits on artwork. The next real edit
+// carries whatever has been found up with everything else.
 let _coverSaveTimer = null;
 function saveSoon() {
   clearTimeout(_coverSaveTimer);
-  _coverSaveTimer = setTimeout(save, 1000);
+  _coverSaveTimer = setTimeout(saveLocal, 1000);
 }
 
 function saveWishlist() {
@@ -548,34 +571,42 @@ function syncPush(collection) {
   if (window.ghPush) window.ghPush(collection, syncSnapshot(collection));
 }
 
+// Where each collection lives locally, and how a raw record becomes one.
+const SYNC_COLLECTIONS = {
+  books:    { key: 'myLibrary',    normalize: b => normalizeBook(b),         replacer: stripSearchStr },
+  media:    { key: 'mediaLibrary', normalize: m => normalizeMediaItem(m) },
+  wishlist: { key: 'bookWishlist', normalize: w => normalizeWishlistItem(w) },
+  games:    { key: 'videoGames',   normalize: g => normalizeVideoGame(g) },
+};
+
 // Called by sync.js when records arrive from the data repo — a background
 // refresh, or another tab. Writes through to this app's own storage rather
 // than going back out through save(), which would bounce straight back to
 // ghsync as a fresh push.
+//
+// Returns whether anything actually moved. The normalizers are idempotent, so
+// re-serializing and comparing is a sound test, and it is what stops a repo
+// that agrees with us from costing a full re-render.
 function applySyncedData(collection, records) {
   if (!Array.isArray(records)) return false;
+  const spec = SYNC_COLLECTIONS[collection];
+  if (!spec) return false;
+
+  const next = records.map(spec.normalize);
+  const json = JSON.stringify(next, spec.replacer);
+  if (json === localStorage.getItem(spec.key)) return false;
+  localStorage.setItem(spec.key, json);
+
   switch (collection) {
     case 'books':
-      books = records.map(normalizeBook);
-      localStorage.setItem('myLibrary', JSON.stringify(books, stripSearchStr));
+      books = next;
       // render()'s filter cache is keyed partly on this counter.
       _booksMutation++;
       _filteredCache = null;
       break;
-    case 'media':
-      mediaLibrary = records.map(normalizeMediaItem);
-      localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary));
-      break;
-    case 'wishlist':
-      bookWishlist = records.map(normalizeWishlistItem);
-      localStorage.setItem('bookWishlist', JSON.stringify(bookWishlist));
-      break;
-    case 'games':
-      videoGames = records.map(normalizeVideoGame);
-      localStorage.setItem('videoGames', JSON.stringify(videoGames));
-      break;
-    default:
-      return false;
+    case 'media':    mediaLibrary = next; break;
+    case 'wishlist': bookWishlist = next; break;
+    case 'games':    videoGames   = next; break;
   }
   return true;
 }
