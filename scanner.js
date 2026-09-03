@@ -658,6 +658,10 @@ async function acceptScannedCode(rawCode) {
 async function openScanner() {
   _scanCount = 0;
   _scanLastAdded = null;
+  // An undo suppresses the code still sitting in front of the camera, but only
+  // for that session: without this, reopening the scanner and deliberately
+  // rescanning the book you just removed is a silent no-op.
+  _scanSuppress = null;
 
   const modal = document.getElementById('scanModal');
   modal.classList.add('open');

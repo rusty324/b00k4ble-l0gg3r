@@ -11,8 +11,17 @@ step) a private, synced, offline-capable data store, by reading and writing
 JSON files in a *separate private GitHub repo* through the Contents API.
 
 **Scope of this doc:** integrating the package, extending it, and testing it.
-If you are changing the fitness tracker's own features, the app-specific layer
-is `js/storage/store.js` and `js/app.js` in the parent repo, not this folder.
+If you are changing this app's own features, the app-specific layer is
+`app.js` and `scanner.js` at the repo root — plus `sync.js`, the module that
+creates the store and bridges it to those classic scripts — not this folder.
+
+**Provenance:** this package was vendored in from another project (a fitness
+tracker) and its docs still describe that project in places. Where they did,
+they have been corrected to this repo. What did *not* come across is the test
+suite it refers to: `tests/run.mjs`, `tests/lib.mjs`, `tests/ghsync-package.mjs`
+and `tests/crypto-drift.mjs` do not exist here. This repo keeps its Playwright
+suites outside the repository entirely, so there is no committed regression net
+for the core — see Testing below before changing `store.js`.
 
 ## Files
 
@@ -23,8 +32,8 @@ is `js/storage/store.js` and `js/app.js` in the parent repo, not this folder.
 | `github-api.js` | Touching auth, error types, or adding an API call. |
 | `cache.js` | Rarely. Namespaced localStorage, no logic. |
 | `crypto.js` | Never edit casually — see invariant 5. |
-| `example/` | Copy this as the starting point for a new app. |
-| `../tests/ghsync-package.mjs` | Before changing the core: it drives `example/` and is the only regression net. |
+| `example/` | Copy this as the starting point for a new app. Runs standalone from any static server. |
+| `../sync.js` | Wiring this app to the store: the bridge, and which collections map to which repo paths. |
 
 ## Integration recipe
 
@@ -114,7 +123,8 @@ It is isomorphic (WebCrypto only), so Node workflows can import the same file.
    put it in a URL.
 5. **`crypto.js` copies must stay byte-identical.** If a workflow in the data
    repo also encrypts, it imports its own copy of this exact file. Change one,
-   change both, and keep a test asserting equality (`../tests/crypto-drift.mjs`).
+   change both, and keep a test asserting equality (there is no such test in
+   this repo — the original lived in the project this package came from).
    Drift means one side silently cannot read the other's files.
 6. **No build step, no CDN, no dependencies.** Pages serves these files
    verbatim. Vendor anything you need instead of adding `<script src=cdn>`.
@@ -129,7 +139,8 @@ It is isomorphic (WebCrypto only), so Node workflows can import the same file.
   `onRefresh` hook, read/write individual paths with `readFile`/`writeFile`,
   claim them in `encryptPath` if they are personal, and list them in
   `extraPaths()` so encryption migrations and `pushAllData()` cover them.
-  `js/storage/store.js` in the parent repo is a worked example.
+  `sync.js` at this repo's root is a worked example of the bridge, though this
+  app has no sharded or workflow-written data yet.
 - **New collection**: add it to `files`, add it to `encrypted` if personal,
   and that's it — the queue, merge, refresh, and seeding all pick it up.
 - **New GitHub call**: add it to `makeClient` so it inherits `headers()`,
@@ -142,15 +153,14 @@ It is isomorphic (WebCrypto only), so Node workflows can import the same file.
 ## Testing
 
 There is no build and no unit-testable seam worth mocking; test through the
-real page in Chromium. `../tests/lib.mjs` gives you `stubGithub(page)`, which
-intercepts `https://api.github.com/**`, records every call, 404s reads (so
-writes create), and 201s writes. Assert on `gh.calls` / `gh.puts()` /
-`gh.putBody(path)`.
+real page in Chromium.
 
-```sh
-node tests/run.mjs                 # everything; starts its own static server
-node tests/run.mjs ghsync-package  # one suite
-```
+**This repo has no committed tests** — not for ghsync, not for the app. Its
+Playwright suites are written and run outside the repository, so nothing here
+guards `store.js` against a regression. If you change the core, write a suite
+that drives a real page with `page.route('https://api.github.com/**', …)`
+stubbed: 404 reads so writes create, 201 writes, and record every call so you
+can assert on the request bodies.
 
 Whatever else you change, keep these covered: nothing is sent to GitHub before
 a repo *and* a token exist; every request targets the private repo and never

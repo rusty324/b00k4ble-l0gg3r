@@ -5,10 +5,6 @@
 */
 
 // ─── CONFIGURATION ────────────────────────────────────────────────────
-const REPO_JSON_URL          = 'data/books.json';
-const REPO_MEDIA_JSON_URL    = 'data/media.json';
-const REPO_WISHLIST_JSON_URL = 'data/wishlist.json';
-const REPO_GAMES_JSON_URL    = 'data/games.json';
 const PAGE_SIZE = 48;
 
 
@@ -72,7 +68,12 @@ const LINK_SERVICES = [
   ['goodreads.com',     'Goodreads'],    ['thestorygraph.com', 'StoryGraph'],
   ['spotify.com',       'Spotify'],      ['storytel.com',      'Storytel'],
   ['steampowered.com',  'Steam'],        ['playstation.com',   'PlayStation'],
-  ['xbox.com',           'Xbox'],
+  ['xbox.com',          'Xbox'],         ['steamcommunity.com', 'Steam'],
+  // Valve's own URL shortener — what the Steam mobile app's share sheet
+  // actually copies, so without this a shared game reads as "s.team".
+  ['s.team',            'Steam'],
+  // Xbox store pages live under both hosts; the Store app shares this one.
+  ['microsoft.com',     'Xbox'],
 ];
 
 // Most app schemes are just the service's name (`youtube:`, `spotify:`), so
@@ -89,6 +90,10 @@ const SCHEME_ALIASES = {
   // earliest days — a real, long-documented protocol, unlike the
   // undocumented youtube: scheme.
   'steam': 'steampowered.com',
+  // The PlayStation App's own scheme, which its share sheet can emit.
+  'com.scee.psxandroid': 'playstation.com',
+  'playstation': 'playstation.com', 'psns': 'playstation.com',
+  'ms-windows-store': 'xbox.com', 'msxbox': 'xbox.com',
 };
 
 function serviceForDomain(domain) {
@@ -137,6 +142,19 @@ function applyLinks(obj, raw) {
   const links = normalizeLinks(raw);
   if (links.length) obj.links = links;
   else delete obj.links;
+  return obj;
+}
+
+// Same idea for the optional text fields. The modals read every input on save
+// whether or not it was touched, so without this a book edited once picks up
+// isbn:"", asin:"", coverUrl:"" and notes:"" for good — carried in every
+// export and every push after that. An empty field is absence, not a value.
+const OPTIONAL_TEXT = ['isbn', 'asin', 'coverUrl', 'posterUrl', 'notes', 'year', 'narrator'];
+
+function dropEmpty(obj) {
+  for (const k of OPTIONAL_TEXT) {
+    if (obj[k] === '' || obj[k] == null) delete obj[k];
+  }
   return obj;
 }
 
@@ -242,6 +260,9 @@ async function pasteLink(prefix) {
   ta.value = raw ? `${raw}\n${url}` : url;
   previewLinks(prefix);
   pasteMsg(prefix, `Added ${linkServiceName(url)}.`, false);
+  // A store link is the games form's one source of metadata, so act on it
+  // immediately rather than waiting for the debounced input path.
+  if (prefix === 'g') gameAutofillFromLinks();
 }
 
 function readLinksField(prefix) {
@@ -362,16 +383,16 @@ function normalizeBook(b) {
   // '★'.repeat(5 - rating) to throw a RangeError with a negative count.
   const rating = Number.isFinite(+b.rating) ? Math.max(0, Math.min(5, Math.round(+b.rating))) : 0;
 
-  return applyLinks({
+  return dropEmpty(applyLinks({
     ...b, id: normalizeId(b.id), title, series, author, status, formats, tags, rating, _searchStr,
     ...(b.isbn != null ? { isbn: String(b.isbn) } : {}),
     ...(b.asin != null ? { asin: String(b.asin).toUpperCase() } : {}),
-  }, b.links);
+  }, b.links));
 }
 
 // Normalize wishlist items — adds 'type' (default 'book') and unifies author/creator field
 function normalizeWishlistItem(item) {
-  return applyLinks({
+  return dropEmpty(applyLinks({
     ...item,
     id: normalizeId(item.id),
     type: item.type || 'book',
@@ -379,7 +400,7 @@ function normalizeWishlistItem(item) {
     creator: String(item.creator || item.author || ''),
     notes: item.notes != null ? String(item.notes) : '',
     ...(item.isbn != null ? { isbn: String(item.isbn) } : {}),
-  }, item.links);
+  }, item.links));
 }
 
 // Normalize video game items — same coercion as normalizeMediaItem, with
@@ -396,17 +417,17 @@ function normalizeVideoGame(g) {
     : g.formats ? [String(g.formats)]
     : [];
 
-  return applyLinks({
+  return dropEmpty(applyLinks({
     ...g,
     id: normalizeId(g.id),
     title: g.title != null ? String(g.title) : '',
-    platform: g.platform || 'ps5',
+    platform: g.platform ? String(g.platform) : '',
     status: g.status || 'want',
     genre,
     formats,
     rating: Number.isFinite(+g.rating) ? Math.max(0, Math.min(5, Math.round(+g.rating))) : 0,
     ...(g.coverUrl != null ? { coverUrl: String(g.coverUrl) } : {}),
-  }, g.links);
+  }, g.links));
 }
 
 // Normalize media items — coerces every field the render/sort/search paths
@@ -421,7 +442,7 @@ function normalizeMediaItem(m) {
     : m.formats ? [String(m.formats)]
     : [];
 
-  return applyLinks({
+  return dropEmpty(applyLinks({
     ...m,
     id: normalizeId(m.id),
     title: m.title != null ? String(m.title) : '',
@@ -432,7 +453,7 @@ function normalizeMediaItem(m) {
     rating: Number.isFinite(+m.rating) ? Math.max(0, Math.min(5, Math.round(+m.rating))) : 0,
     ...(m.posterUrl != null ? { posterUrl: String(m.posterUrl) } : {}),
     ...(m.tmdbId != null ? { tmdbId: m.tmdbId } : {}),
-  }, m.links);
+  }, m.links));
 }
 
 
@@ -497,30 +518,109 @@ let gameSearchTimer = null;
 // adds ~25% to every localStorage write and export for no benefit.
 const stripSearchStr = (k, v) => k === '_searchStr' ? undefined : v;
 
-function save() {
+// The local half of a save, without the trip out to the data repo.
+function saveLocal() {
   _booksMutation++;
   localStorage.setItem('myLibrary', JSON.stringify(books, stripSearchStr));
 }
 
-// Debounced save for background cover discovery — each save() serializes the
+function save() {
+  saveLocal();
+  syncPush('books');
+}
+
+// Debounced save for background cover discovery — each save serializes the
 // whole library, so coalesce the burst of writes while scrolling a page of
 // uncached covers into one.
+//
+// Local only, deliberately: a discovered cover is derived data that any
+// device can find again for itself, and scrolling a few screens would
+// otherwise spend a run of GitHub commits on artwork. The next real edit
+// carries whatever has been found up with everything else.
 let _coverSaveTimer = null;
 function saveSoon() {
   clearTimeout(_coverSaveTimer);
-  _coverSaveTimer = setTimeout(save, 1000);
+  _coverSaveTimer = setTimeout(saveLocal, 1000);
 }
 
 function saveWishlist() {
   localStorage.setItem('bookWishlist', JSON.stringify(bookWishlist));
+  syncPush('wishlist');
 }
 
 function saveMedia() {
   localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary));
+  syncPush('media');
 }
 
 function saveGames() {
   localStorage.setItem('videoGames', JSON.stringify(videoGames));
+  syncPush('games');
+}
+
+
+// ─── SYNC BRIDGE ──────────────────────────────────────────────────────
+// ghsync is an ES module; this file is a classic script, because every
+// inline onclick= in index.html resolves against the global scope. So the
+// two talk through globals rather than imports: sync.js sets window.ghPush,
+// and calls the two functions below. With sync.js absent or sync
+// unconfigured, all of this is inert and the app stays exactly local.
+
+// Records as they should reach the repo — _searchStr is derived on load and
+// would only bloat the file, so it is stripped with the same replacer the
+// localStorage write and the export already use.
+function syncSnapshot(collection) {
+  switch (collection) {
+    case 'books':    return JSON.parse(JSON.stringify(books, stripSearchStr));
+    case 'media':    return mediaLibrary;
+    case 'wishlist': return bookWishlist;
+    case 'games':    return videoGames;
+    default:         return null;
+  }
+}
+
+function syncPush(collection) {
+  if (window.ghPush) window.ghPush(collection, syncSnapshot(collection));
+}
+
+// Where each collection lives locally, and how a raw record becomes one.
+const SYNC_COLLECTIONS = {
+  books:    { key: 'myLibrary',    normalize: b => normalizeBook(b),         replacer: stripSearchStr },
+  media:    { key: 'mediaLibrary', normalize: m => normalizeMediaItem(m) },
+  wishlist: { key: 'bookWishlist', normalize: w => normalizeWishlistItem(w) },
+  games:    { key: 'videoGames',   normalize: g => normalizeVideoGame(g) },
+};
+
+// Called by sync.js when records arrive from the data repo — a background
+// refresh, or another tab. Writes through to this app's own storage rather
+// than going back out through save(), which would bounce straight back to
+// ghsync as a fresh push.
+//
+// Returns whether anything actually moved. The normalizers are idempotent, so
+// re-serializing and comparing is a sound test, and it is what stops a repo
+// that agrees with us from costing a full re-render.
+function applySyncedData(collection, records) {
+  if (!Array.isArray(records)) return false;
+  const spec = SYNC_COLLECTIONS[collection];
+  if (!spec) return false;
+
+  const next = records.map(spec.normalize);
+  const json = JSON.stringify(next, spec.replacer);
+  if (json === localStorage.getItem(spec.key)) return false;
+  localStorage.setItem(spec.key, json);
+
+  switch (collection) {
+    case 'books':
+      books = next;
+      // render()'s filter cache is keyed partly on this counter.
+      _booksMutation++;
+      _filteredCache = null;
+      break;
+    case 'media':    mediaLibrary = next; break;
+    case 'wishlist': bookWishlist = next; break;
+    case 'games':    videoGames   = next; break;
+  }
+  return true;
 }
 
 
@@ -714,86 +814,6 @@ function getCoverObserver() {
 }
 
 
-// ─── REPO JSON SYNC ───────────────────────────────────────────────────
-
-// 'no-cache' revalidates with the server (If-None-Match / If-Modified-Since)
-// instead of bypassing HTTP caching entirely — a ?t=Date.now() cache-buster
-// forced a full re-download of books.json (~350 KB) on every page load.
-async function _fetchRepoJson(url) {
-  const res = await fetch(url, { cache: 'no-cache' });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
-  // Items without a stable id can't be deduped across visits — normalizing
-  // would mint a fresh id each load and re-add them forever, so skip them.
-  return data.filter(x => hasValidId(x.id));
-}
-
-async function _syncBooks() {
-  const data = await _fetchRepoJson(REPO_JSON_URL);
-  const existingIds = new Set(books.map(b => b.id));
-  const newItems = data.map(normalizeBook).filter(b => !existingIds.has(b.id));
-  if (newItems.length) { books = [...books, ...newItems]; save(); }
-  return { added: newItems.length, total: books.length, noun: 'book' };
-}
-
-async function _syncMedia() {
-  const data = await _fetchRepoJson(REPO_MEDIA_JSON_URL);
-  const existingIds = new Set(mediaLibrary.map(m => m.id));
-  const newItems = data.map(normalizeMediaItem).filter(m => !existingIds.has(m.id));
-  if (newItems.length) { mediaLibrary = [...mediaLibrary, ...newItems]; saveMedia(); }
-  return { added: newItems.length, total: mediaLibrary.length, noun: 'title' };
-}
-
-async function _syncWishlist() {
-  const data = await _fetchRepoJson(REPO_WISHLIST_JSON_URL);
-  const existingIds = new Set(bookWishlist.map(w => w.id));
-  const newItems = data.map(normalizeWishlistItem).filter(w => !existingIds.has(w.id));
-  if (newItems.length) { bookWishlist = [...bookWishlist, ...newItems]; saveWishlist(); }
-  return { added: newItems.length, total: bookWishlist.length, noun: 'wishlist item' };
-}
-
-async function _syncGames() {
-  const data = await _fetchRepoJson(REPO_GAMES_JSON_URL);
-  const existingIds = new Set(videoGames.map(g => g.id));
-  const newItems = data.map(normalizeVideoGame).filter(g => !existingIds.has(g.id));
-  if (newItems.length) { videoGames = [...videoGames, ...newItems]; saveGames(); }
-  return { added: newItems.length, total: videoGames.length, noun: 'game' };
-}
-
-async function fetchRepoData() {
-  const banner = document.getElementById('statusBanner');
-  const results = await Promise.allSettled([_syncBooks(), _syncMedia(), _syncWishlist(), _syncGames()]);
-
-  const synced = results
-    .filter(r => r.status === 'fulfilled' && r.value.added > 0)
-    .map(r => `${r.value.added} new ${r.value.noun}${r.value.added !== 1 ? 's' : ''}`);
-
-  const succeeded = results.filter(r => r.status === 'fulfilled').length;
-  const isEmpty   = books.length === 0 && mediaLibrary.length === 0 &&
-                     bookWishlist.length === 0 && videoGames.length === 0;
-
-  if (synced.length) {
-    banner.textContent = `✓ Synced ${synced.join(', ')} from repo.`;
-    banner.classList.add('visible');
-    setTimeout(() => banner.classList.remove('visible'), 4000);
-  } else if (succeeded > 0) {
-    const total = results
-      .filter(r => r.status === 'fulfilled')
-      .reduce((s, r) => s + r.value.total, 0);
-    banner.textContent = `✓ All libraries up to date (${total} item${total !== 1 ? 's' : ''}).`;
-    banner.classList.add('visible');
-    setTimeout(() => banner.classList.remove('visible'), 4000);
-  } else if (isEmpty) {
-    banner.textContent = 'Could not reach data files — add items manually or import JSON files.';
-    banner.classList.add('visible');
-  }
-
-  // switchTab() already rendered at startup — only re-render if a sync
-  // actually added items.
-  if (synced.length) renderPage();
-}
-
-
 // ─── FILTERS (books tab) ──────────────────────────────────────────────
 function setFilter(type, val, el) {
   filters[type] = val;
@@ -934,7 +954,7 @@ function render() {
         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
       </svg>
       <h3>${books.length === 0 ? 'Your library is empty' : 'No books match your filters'}</h3>
-      <p style="font-size:14px">${books.length === 0 ? 'Add a book or import a JSON file.' : 'Try adjusting your search or filters.'}</p>
+      <p style="font-size:14px">${books.length === 0 ? 'Add a book, import a JSON file, or set up Sync &amp; backup under ⋯ to pull your library from your data repo.' : 'Try adjusting your search or filters.'}</p>
     </div>`;
     document.getElementById('pagination').innerHTML = '';
     return;
@@ -1350,7 +1370,7 @@ function renderGames(listOnly = false) {
     </div>`;
   } else if (viewMode === 'list') {
     const rows = items.map(g => {
-      const plat    = GAME_PLATFORM_LABEL[g.platform] || g.platform;
+      const plat    = GAME_PLATFORM_LABEL[g.platform] || g.platform || 'Unknown platform';
       const formats = (g.formats || []).map(f => fmtIcons[f] || '').join(' ');
       return `<div class="book-row">
         ${g.coverUrl
@@ -1376,7 +1396,7 @@ function renderGames(listOnly = false) {
     contentHtml = `<div class="books-list">${rows}</div>`;
   } else {
     const cards = items.map(g => {
-      const plat      = GAME_PLATFORM_LABEL[g.platform] || g.platform;
+      const plat      = GAME_PLATFORM_LABEL[g.platform] || g.platform || 'Unknown platform';
       const genreTags = (g.genre || []).map(x =>
         `<span class="badge badge-tag">${esc(x)}</span>`).join('');
       const fmtBadges = (g.formats || []).map(f =>
@@ -2184,6 +2204,165 @@ function deleteMediaItem(id) {
 }
 
 
+// ─── GAME AUTOFILL FROM A STORE LINK ──────────────────────────────────
+// Every game database and storefront API — RAWG, IGDB, Giant Bomb, Steam's
+// own store API — refuses cross-origin browser requests, so there is nothing
+// to *ask*. What is left is what the link itself carries, which is more than
+// nothing: Steam and Xbox URLs embed a title slug, Steam embeds an app id,
+// and PlayStation product codes still say which console generation they are.
+//
+// Year and genre are genuinely not derivable this way. They stay manual until
+// there is a proxy to ask a real database through (issue #32).
+
+// Steam serves box art from a deterministic path that needs no API call, and
+// an <img> is not subject to CORS at all — so this one field really can be
+// filled from the id alone.
+const STEAM_HEADER = id => `https://cdn.cloudflare.steamstatic.com/steam/apps/${id}/header.jpg`;
+
+// A PlayStation product id reads <publisher>-<titleId>_<ver>-<sku>, e.g.
+// UP2074-CUSA24024_00-HADES0000000000. The console lives in the *title id*,
+// the middle segment — not at the front, which is the publisher.
+//
+//   NPUB/NPEB/BLUS/BLES/BCUS/BCES → PS3
+//   PPSA                          → PS5 (native)
+//   CUSA                          → PS4, and PS5 plays it too, so it cannot
+//                                   decide between the two and says nothing
+function psPlatformFromCode(productId) {
+  const titleId = String(productId || '').toUpperCase().split('-')[1] || '';
+  if (/^(NP[UEHJK][ABC]|BL[UE]S|BC[UE]S)/.test(titleId)) return 'ps3';
+  if (/^PPSA/.test(titleId)) return 'ps5';
+  return '';
+}
+
+// "Half_Life_2" -> "Half Life 2", "forza-horizon-5" -> "Forza Horizon 5".
+// Lossy by construction: Steam strips apostrophes and punctuation out of its
+// slugs, so this is a starting point to correct, not an authority.
+function titleFromSlug(slug) {
+  const words = decodeURIComponent(String(slug || ''))
+    .replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!words) return '';
+  return /[a-z]/.test(words) && words === words.toLowerCase()
+    ? words.replace(/\b[a-z]/g, c => c.toUpperCase())   // an all-lowercase slug
+    : words;                                            // already cased
+}
+
+// -> { platform, title, coverUrl, store } — every field optional.
+function parseGameStoreLink(raw) {
+  const url = safeUrl(raw);
+  if (!url) return null;
+  let u;
+  try { u = new URL(url); } catch { return null; }
+
+  const host = u.hostname.toLowerCase().replace(/^www\./, '');
+  const segs = u.pathname.split('/').filter(Boolean);
+  const scheme = u.protocol.slice(0, -1);
+
+  // steam://store/<id>, steam://run/<id>
+  if (scheme === 'steam') {
+    const id = (segs[segs.length - 1] || u.host || '').match(/^\d+$/);
+    return { store: 'Steam', platform: 'steam', title: '',
+             coverUrl: id ? STEAM_HEADER(id[0]) : '' };
+  }
+
+  // store.steampowered.com/app/<id>/<Slug>/  — the slug is often absent
+  if (host === 'steampowered.com' || host.endsWith('.steampowered.com')) {
+    const i = segs.indexOf('app');
+    const id = i !== -1 ? segs[i + 1] : null;
+    return { store: 'Steam', platform: 'steam',
+             title: i !== -1 ? titleFromSlug(segs[i + 2]) : '',
+             coverUrl: /^\d+$/.test(id || '') ? STEAM_HEADER(id) : '' };
+  }
+  // s.team/a/<id> is Valve's shortener for the same page.
+  if (host === 's.team' || host === 'steamcommunity.com') {
+    const id = segs.find(s => /^\d+$/.test(s));
+    return { store: 'Steam', platform: 'steam', title: '',
+             coverUrl: id ? STEAM_HEADER(id) : '' };
+  }
+
+  if (host === 'playstation.com' || host.endsWith('.playstation.com')
+      || scheme === 'com.scee.psxandroid' || scheme === 'playstation') {
+    const i = segs.indexOf('product');
+    return { store: 'PlayStation', platform: i !== -1 ? psPlatformFromCode(segs[i + 1]) : '',
+             title: '', coverUrl: '' };
+  }
+
+  if (host === 'xbox.com' || host.endsWith('.xbox.com')
+      || host === 'microsoft.com' || host.endsWith('.microsoft.com')) {
+    const i = segs.indexOf('store');
+    // .../games/store/<slug>/<productId>
+    const slug = i !== -1 && segs[i - 1] === 'games' ? segs[i + 1] : '';
+    return { store: 'Xbox', platform: 'xbox', title: titleFromSlug(slug), coverUrl: '' };
+  }
+
+  return null;
+}
+
+// Only fill a field the user has left empty — a link should never overwrite
+// something typed by hand.
+function gameFillHint(msg) {
+  const el = document.getElementById('g-fillHint');
+  if (el) el.textContent = msg || '';
+}
+
+// An <img> load is the only way to ask whether Steam has art for an id
+// without an API, and it is free of CORS. Resolves false rather than throwing.
+function imageLoads(url, ms = 6000) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const done = ok => { clearTimeout(timer); img.onload = img.onerror = null; resolve(ok); };
+    const timer = setTimeout(() => done(false), ms);
+    img.onload  = () => done(img.naturalWidth > 0);
+    img.onerror = () => done(false);
+    img.src = url;
+  });
+}
+
+let _gameFillTimer = null;
+let _gameFillSeq = 0;
+
+async function gameAutofillFromLinks() {
+  const seq = ++_gameFillSeq;
+  const links = readLinksField('g');
+  let info = null;
+  for (const l of links) { info = parseGameStoreLink(l); if (info) break; }
+  if (!info) { gameFillHint(''); return; }
+
+  const titleEl = document.getElementById('g-title');
+  const coverEl = document.getElementById('g-coverUrl');
+  const filled = [];
+
+  if (info.title && titleEl && !titleEl.value.trim()) {
+    titleEl.value = info.title;
+    filled.push('title');
+  }
+  if (info.platform && !document.querySelector('input[name="g-platform"]:checked')) {
+    setRadio('g-platform', info.platform);
+    document.getElementById('g-plat-error').style.display = 'none';
+    filled.push('platform');
+  }
+
+  if (info.coverUrl && coverEl && !coverEl.value.trim()) {
+    gameFillHint(filled.length
+      ? `Filled ${filled.join(' and ')} from the ${info.store} link — checking for cover art…`
+      : `Checking ${info.store} for cover art…`);
+    const ok = await imageLoads(info.coverUrl);
+    if (seq !== _gameFillSeq) return;              // the field changed again
+    if (ok && !coverEl.value.trim()) { coverEl.value = info.coverUrl; filled.push('cover'); }
+  }
+  if (seq !== _gameFillSeq) return;
+
+  gameFillHint(filled.length
+    ? `Filled ${filled.join(', ')} from the ${info.store} link. `
+      + 'Year and genre are not in the link — no game database allows a browser to ask.'
+    : `Recognised a ${info.store} link, but nothing left to fill in.`);
+}
+
+function gameAutofillSoon() {
+  clearTimeout(_gameFillTimer);
+  _gameFillTimer = setTimeout(gameAutofillFromLinks, 350);
+}
+
+
 // ─── GAME MODAL ──────────────────────────────────────────────────────
 function setGameFormats(vals) {
   document.querySelectorAll('#g-format-group input[type="checkbox"]').forEach(cb => {
@@ -2229,9 +2408,13 @@ function openGameModal(id) {
     setLinksField('g', []);
     setGameFormats([]);
     updateGameStars(0);
-    setRadio('g-platform', 'ps5');
+    // No default platform: picking one is the point of the field, and a
+    // pre-selected PS5 quietly mislabels anything saved without touching it.
+    setRadio('g-platform', '');
     setRadio('g-status',   'want');
   }
+  document.getElementById('g-plat-error').style.display = 'none';
+  gameFillHint('');
   document.getElementById('gameModal').classList.add('open');
   // Only when adding: focusing on edit raises the phone keyboard over the
   // form the user opened in order to read it.
@@ -2255,7 +2438,14 @@ function saveGameItem() {
   const notes    = document.getElementById('g-notes').value.trim();
   const coverUrl = document.getElementById('g-coverUrl').value.trim();
   const links    = readLinksField('g');
-  const platform = document.querySelector('input[name="g-platform"]:checked')?.value || 'ps5';
+  const platformEl = document.querySelector('input[name="g-platform"]:checked');
+  if (!platformEl) {
+    document.getElementById('g-plat-error').style.display = 'block';
+    document.getElementById('g-platform-group').scrollIntoView({ block: 'center' });
+    return;
+  }
+  document.getElementById('g-plat-error').style.display = 'none';
+  const platform = platformEl.value;
   const status   = document.querySelector('input[name="g-status"]:checked')?.value   || 'want';
   const formats  = [...document.querySelectorAll('#g-format-group input[type="checkbox"]:checked')]
     .map(cb => cb.value);
@@ -2376,4 +2566,3 @@ window.addEventListener('scroll', () => {
 applyTheme(localStorage.getItem('theme') || 'dark');
 document.getElementById('viewToggleBtn').textContent = viewMode === 'card' ? '⊞' : '☰';
 switchTab(activeTab);
-fetchRepoData();
