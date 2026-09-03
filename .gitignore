@@ -16,3 +16,8 @@ _site/
 # counterproductive to check this file into the repository.
 # Details at https://github.com/github/pages-gem/issues/768
 Gemfile.lock
+
+# Personal library data. It lives in a separate PRIVATE repo, reached from
+# the browser through ghsync (⋯ → Sync & backup) — see ghsync/README.md.
+# This repo is public, so nothing personal belongs in it.
+data/

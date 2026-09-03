@@ -5,10 +5,6 @@
 */
 
 // ─── CONFIGURATION ────────────────────────────────────────────────────
-const REPO_JSON_URL          = 'data/books.json';
-const REPO_MEDIA_JSON_URL    = 'data/media.json';
-const REPO_WISHLIST_JSON_URL = 'data/wishlist.json';
-const REPO_GAMES_JSON_URL    = 'data/games.json';
 const PAGE_SIZE = 48;
 
 
@@ -775,86 +771,6 @@ function getCoverObserver() {
 }
 
 
-// ─── REPO JSON SYNC ───────────────────────────────────────────────────
-
-// 'no-cache' revalidates with the server (If-None-Match / If-Modified-Since)
-// instead of bypassing HTTP caching entirely — a ?t=Date.now() cache-buster
-// forced a full re-download of books.json (~350 KB) on every page load.
-async function _fetchRepoJson(url) {
-  const res = await fetch(url, { cache: 'no-cache' });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
-  // Items without a stable id can't be deduped across visits — normalizing
-  // would mint a fresh id each load and re-add them forever, so skip them.
-  return data.filter(x => hasValidId(x.id));
-}
-
-async function _syncBooks() {
-  const data = await _fetchRepoJson(REPO_JSON_URL);
-  const existingIds = new Set(books.map(b => b.id));
-  const newItems = data.map(normalizeBook).filter(b => !existingIds.has(b.id));
-  if (newItems.length) { books = [...books, ...newItems]; save(); }
-  return { added: newItems.length, total: books.length, noun: 'book' };
-}
-
-async function _syncMedia() {
-  const data = await _fetchRepoJson(REPO_MEDIA_JSON_URL);
-  const existingIds = new Set(mediaLibrary.map(m => m.id));
-  const newItems = data.map(normalizeMediaItem).filter(m => !existingIds.has(m.id));
-  if (newItems.length) { mediaLibrary = [...mediaLibrary, ...newItems]; saveMedia(); }
-  return { added: newItems.length, total: mediaLibrary.length, noun: 'title' };
-}
-
-async function _syncWishlist() {
-  const data = await _fetchRepoJson(REPO_WISHLIST_JSON_URL);
-  const existingIds = new Set(bookWishlist.map(w => w.id));
-  const newItems = data.map(normalizeWishlistItem).filter(w => !existingIds.has(w.id));
-  if (newItems.length) { bookWishlist = [...bookWishlist, ...newItems]; saveWishlist(); }
-  return { added: newItems.length, total: bookWishlist.length, noun: 'wishlist item' };
-}
-
-async function _syncGames() {
-  const data = await _fetchRepoJson(REPO_GAMES_JSON_URL);
-  const existingIds = new Set(videoGames.map(g => g.id));
-  const newItems = data.map(normalizeVideoGame).filter(g => !existingIds.has(g.id));
-  if (newItems.length) { videoGames = [...videoGames, ...newItems]; saveGames(); }
-  return { added: newItems.length, total: videoGames.length, noun: 'game' };
-}
-
-async function fetchRepoData() {
-  const banner = document.getElementById('statusBanner');
-  const results = await Promise.allSettled([_syncBooks(), _syncMedia(), _syncWishlist(), _syncGames()]);
-
-  const synced = results
-    .filter(r => r.status === 'fulfilled' && r.value.added > 0)
-    .map(r => `${r.value.added} new ${r.value.noun}${r.value.added !== 1 ? 's' : ''}`);
-
-  const succeeded = results.filter(r => r.status === 'fulfilled').length;
-  const isEmpty   = books.length === 0 && mediaLibrary.length === 0 &&
-                     bookWishlist.length === 0 && videoGames.length === 0;
-
-  if (synced.length) {
-    banner.textContent = `✓ Synced ${synced.join(', ')} from repo.`;
-    banner.classList.add('visible');
-    setTimeout(() => banner.classList.remove('visible'), 4000);
-  } else if (succeeded > 0) {
-    const total = results
-      .filter(r => r.status === 'fulfilled')
-      .reduce((s, r) => s + r.value.total, 0);
-    banner.textContent = `✓ All libraries up to date (${total} item${total !== 1 ? 's' : ''}).`;
-    banner.classList.add('visible');
-    setTimeout(() => banner.classList.remove('visible'), 4000);
-  } else if (isEmpty) {
-    banner.textContent = 'Could not reach data files — add items manually or import JSON files.';
-    banner.classList.add('visible');
-  }
-
-  // switchTab() already rendered at startup — only re-render if a sync
-  // actually added items.
-  if (synced.length) renderPage();
-}
-
-
 // ─── FILTERS (books tab) ──────────────────────────────────────────────
 function setFilter(type, val, el) {
   filters[type] = val;
@@ -995,7 +911,7 @@ function render() {
         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
       </svg>
       <h3>${books.length === 0 ? 'Your library is empty' : 'No books match your filters'}</h3>
-      <p style="font-size:14px">${books.length === 0 ? 'Add a book or import a JSON file.' : 'Try adjusting your search or filters.'}</p>
+      <p style="font-size:14px">${books.length === 0 ? 'Add a book, import a JSON file, or set up Sync &amp; backup under ⋯ to pull your library from your data repo.' : 'Try adjusting your search or filters.'}</p>
     </div>`;
     document.getElementById('pagination').innerHTML = '';
     return;
@@ -2437,4 +2353,3 @@ window.addEventListener('scroll', () => {
 applyTheme(localStorage.getItem('theme') || 'dark');
 document.getElementById('viewToggleBtn').textContent = viewMode === 'card' ? '⊞' : '☰';
 switchTab(activeTab);
-fetchRepoData();
