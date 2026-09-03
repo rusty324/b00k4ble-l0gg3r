@@ -8,6 +8,7 @@
 const REPO_JSON_URL          = 'data/books.json';
 const REPO_MEDIA_JSON_URL    = 'data/media.json';
 const REPO_WISHLIST_JSON_URL = 'data/wishlist.json';
+const REPO_GAMES_JSON_URL    = 'data/games.json';
 const PAGE_SIZE = 48;
 
 
@@ -70,6 +71,8 @@ const LINK_SERVICES = [
   ['overdrive.com',     'Libby'],        ['hoopladigital.com', 'hoopla'],
   ['goodreads.com',     'Goodreads'],    ['thestorygraph.com', 'StoryGraph'],
   ['spotify.com',       'Spotify'],      ['storytel.com',      'Storytel'],
+  ['steampowered.com',  'Steam'],        ['playstation.com',   'PlayStation'],
+  ['xbox.com',           'Xbox'],
 ];
 
 // Most app schemes are just the service's name (`youtube:`, `spotify:`), so
@@ -81,6 +84,11 @@ const SCHEME_ALIASES = {
   'ibooks': 'books.apple.com',  'itms-books': 'books.apple.com',
   'com.audible.application': 'audible.com',
   'overdrive': 'overdrive.com', 'videos': 'tv.apple.com',
+  // Valve's own store buttons have used steam://run/<appid> and
+  // steam://store/<appid> to launch straight into the client since Steam's
+  // earliest days — a real, long-documented protocol, unlike the
+  // undocumented youtube: scheme.
+  'steam': 'steampowered.com',
 };
 
 function serviceForDomain(domain) {
@@ -374,6 +382,33 @@ function normalizeWishlistItem(item) {
   }, item.links);
 }
 
+// Normalize video game items — same coercion as normalizeMediaItem, with
+// platform standing in for type. No whitelist on platform, matching how
+// media's own type is handled: an unrecognised value passes through rather
+// than being rejected, since a future console is a config change away.
+function normalizeVideoGame(g) {
+  const genre = Array.isArray(g.genre) ? g.genre.map(String)
+    : (g.genre && typeof g.genre === 'string')
+      ? g.genre.split(',').map(x => x.trim()).filter(Boolean)
+    : [];
+
+  const formats = Array.isArray(g.formats) ? g.formats.map(String)
+    : g.formats ? [String(g.formats)]
+    : [];
+
+  return applyLinks({
+    ...g,
+    id: normalizeId(g.id),
+    title: g.title != null ? String(g.title) : '',
+    platform: g.platform || 'ps5',
+    status: g.status || 'want',
+    genre,
+    formats,
+    rating: Number.isFinite(+g.rating) ? Math.max(0, Math.min(5, Math.round(+g.rating))) : 0,
+    ...(g.coverUrl != null ? { coverUrl: String(g.coverUrl) } : {}),
+  }, g.links);
+}
+
 // Normalize media items — coerces every field the render/sort/search paths
 // call string or array methods on, so malformed imports can't freeze the tab
 function normalizeMediaItem(m) {
@@ -424,7 +459,7 @@ const _coverCache = {};
 // Tab state
 let activeTab = localStorage.getItem('activeTab') || 'books';
 // Migrate old tab IDs that no longer exist
-if (!['books', 'media', 'wishlist'].includes(activeTab)) activeTab = 'books';
+if (!['books', 'media', 'wishlist', 'games'].includes(activeTab)) activeTab = 'books';
 
 // Book wishlist (combined: books, movies, TV — lightweight scratch-pad)
 let bookWishlist = JSON.parse(localStorage.getItem('bookWishlist') || '[]')
@@ -444,6 +479,16 @@ let mediaFilters = { type: 'all', status: 'all', format: 'all' };
 let mediaSort = 'added-desc';
 let mediaSearch = '';
 let mediaSearchTimer = null;
+
+// Video game library (all platforms and statuses)
+let videoGames = JSON.parse(localStorage.getItem('videoGames') || '[]')
+  .map(normalizeVideoGame);
+let gameEditingId = null;
+let gameRating = 0;
+let gameFilters = { platform: 'all', status: 'all', format: 'all' };
+let gameSort = 'added-desc';
+let gameSearch = '';
+let gameSearchTimer = null;
 
 
 // ─── PERSISTENCE ──────────────────────────────────────────────────────
@@ -472,6 +517,10 @@ function saveWishlist() {
 
 function saveMedia() {
   localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary));
+}
+
+function saveGames() {
+  localStorage.setItem('videoGames', JSON.stringify(videoGames));
 }
 
 
@@ -550,14 +599,15 @@ function switchTab(tab) {
     b.classList.toggle('active', b.dataset.tab === tab);
   });
 
-  // View toggle visible on books and media tabs
+  // View toggle visible on books, media, and games tabs
   document.getElementById('viewToggleBtn').style.display =
-    (tab === 'books' || tab === 'media') ? '' : 'none';
+    (tab === 'books' || tab === 'media' || tab === 'games') ? '' : 'none';
 
   const labels = {
     'books':    'Add book',
     'media':    'Add title',
-    'wishlist': 'Add to wishlist'
+    'wishlist': 'Add to wishlist',
+    'games':    'Add game'
   };
   document.getElementById('addBtnLabel').textContent = labels[tab] || 'Add';
 
@@ -568,6 +618,7 @@ function switchTab(tab) {
     books:    { exp: '⬇ Export library',     imp: '⬆ Import library' },
     media:    { exp: '⬇ Export movies & TV', imp: '⬆ Import movies & TV' },
     wishlist: { exp: '⬇ Export wishlist',    imp: '⬆ Import wishlist' },
+    games:    { exp: '⬇ Export games',       imp: '⬆ Import games' },
   };
   const io = ioLabels[tab] || ioLabels.books;
   const expEl = document.getElementById('settingsExportBtn');
@@ -583,6 +634,7 @@ function switchTab(tab) {
   // Reset search state when switching tabs
   mediaSearch = '';
   wishlistSearch = '';
+  gameSearch = '';
 
   renderPage();
 }
@@ -592,6 +644,7 @@ function handleAddClick() {
   if (activeTab === 'books')        openAddModal();
   else if (activeTab === 'media')   openMediaModal(null);
   else if (activeTab === 'wishlist') openWishlistModal(null);
+  else if (activeTab === 'games')   openGameModal(null);
 }
 
 function renderPage() {
@@ -599,6 +652,7 @@ function renderPage() {
     case 'books':    render();          break;
     case 'media':    renderMedia();     break;
     case 'wishlist': renderWishlist();  break;
+    case 'games':    renderGames();     break;
   }
 }
 
@@ -698,16 +752,25 @@ async function _syncWishlist() {
   return { added: newItems.length, total: bookWishlist.length, noun: 'wishlist item' };
 }
 
+async function _syncGames() {
+  const data = await _fetchRepoJson(REPO_GAMES_JSON_URL);
+  const existingIds = new Set(videoGames.map(g => g.id));
+  const newItems = data.map(normalizeVideoGame).filter(g => !existingIds.has(g.id));
+  if (newItems.length) { videoGames = [...videoGames, ...newItems]; saveGames(); }
+  return { added: newItems.length, total: videoGames.length, noun: 'game' };
+}
+
 async function fetchRepoData() {
   const banner = document.getElementById('statusBanner');
-  const results = await Promise.allSettled([_syncBooks(), _syncMedia(), _syncWishlist()]);
+  const results = await Promise.allSettled([_syncBooks(), _syncMedia(), _syncWishlist(), _syncGames()]);
 
   const synced = results
     .filter(r => r.status === 'fulfilled' && r.value.added > 0)
     .map(r => `${r.value.added} new ${r.value.noun}${r.value.added !== 1 ? 's' : ''}`);
 
   const succeeded = results.filter(r => r.status === 'fulfilled').length;
-  const isEmpty   = books.length === 0 && mediaLibrary.length === 0 && bookWishlist.length === 0;
+  const isEmpty   = books.length === 0 && mediaLibrary.length === 0 &&
+                     bookWishlist.length === 0 && videoGames.length === 0;
 
   if (synced.length) {
     banner.textContent = `✓ Synced ${synced.join(', ')} from repo.`;
@@ -1179,12 +1242,219 @@ function debouncedMediaRender(val) {
 }
 
 
+// ─── GAMES RENDERING (Video Games tab) ─────────────────────────────────
+// No lookup API is wired up here — RAWG, IGDB, Giant Bomb and Steam's own
+// endpoints all decline browser CORS, so every field below is typed by
+// hand rather than searched, unlike the books/media tabs.
+const GAME_PLATFORM_LABEL = { ps3: 'PS3', ps4: 'PS4', ps5: 'PS5', xbox: 'Xbox', steam: 'Steam' };
+
+// listOnly: replace just the results container, leaving the toolbar (and
+// the focused search input inside it) intact — used by the search path.
+function renderGames(listOnly = false) {
+  const alt = document.getElementById('altContent');
+
+  // Apply filters
+  let items = videoGames;
+  if (gameFilters.platform !== 'all') items = items.filter(g => g.platform === gameFilters.platform);
+  if (gameFilters.status !== 'all') items = items.filter(g => g.status === gameFilters.status);
+  // An item can hold several formats, so this is "has it", not "is it".
+  if (gameFilters.format !== 'all')
+    items = items.filter(g => (g.formats || []).includes(gameFilters.format));
+  if (gameSearch.trim()) {
+    const q = gameSearch.toLowerCase().trim();
+    items = items.filter(g =>
+      (g.title || '').toLowerCase().includes(q) ||
+      (GAME_PLATFORM_LABEL[g.platform] || g.platform || '').toLowerCase().includes(q) ||
+      (g.year ? String(g.year) : '').includes(q) ||
+      (g.genre || []).some(x => x.toLowerCase().includes(q))
+    );
+  }
+
+  // Sort
+  items = [...items].sort((a, b) => {
+    switch (gameSort) {
+      case 'title-asc':   return titleSortKey(a.title).localeCompare(titleSortKey(b.title));
+      case 'title-desc':  return titleSortKey(b.title).localeCompare(titleSortKey(a.title));
+      case 'rating-desc': return (b.rating || 0) - (a.rating || 0);
+      case 'added-asc':   return a.id - b.id;
+      default:            return b.id - a.id; // added-desc
+    }
+  });
+
+  const stCls    = { want: 'badge-want', playing: 'badge-reading', completed: 'badge-watched' };
+  const stLabel  = { want: 'Want to Play', playing: 'Playing', completed: 'Completed' };
+  const fmtIcons = { physical: '📀', digital: '💾' };
+  const fmtCls   = { physical: 'badge-physical', digital: 'badge-digital' };
+
+  // Filter toolbar
+  const platformPills = [['all','All'],['ps3','PS3'],['ps4','PS4'],['ps5','PS5'],
+                         ['xbox','Xbox'],['steam','Steam']].map(([v,l]) =>
+    `<button class="pill${gameFilters.platform===v?' active':''}" onclick="setGameFilter('platform','${v}')">${l}</button>`
+  ).join('');
+  const statusPills = [['all','All'],['want','Want to Play'],['playing','Playing'],
+                       ['completed','Completed']].map(([v,l]) =>
+    `<button class="pill${gameFilters.status===v?' active':''}" onclick="setGameFilter('status','${v}')">${l}</button>`
+  ).join('');
+  // Same values and icons as the form's format checkboxes.
+  const formatPills = [['all','All'],['physical','📀 Physical'],['digital','💾 Digital']].map(([v,l]) =>
+    `<button class="pill${gameFilters.format===v?' active':''}" onclick="setGameFilter('format','${v}')">${l}</button>`
+  ).join('');
+  const sortSelect = `<select class="sort-select" aria-label="Sort video games" onchange="setGameSort(this.value)">
+    <option value="added-desc"${gameSort==='added-desc'?' selected':''}>Newest added</option>
+    <option value="added-asc"${gameSort==='added-asc'?' selected':''}>Oldest added</option>
+    <option value="title-asc"${gameSort==='title-asc'?' selected':''}>Title A–Z</option>
+    <option value="title-desc"${gameSort==='title-desc'?' selected':''}>Title Z–A</option>
+    <option value="rating-desc"${gameSort==='rating-desc'?' selected':''}>Rating ↓</option>
+  </select>`;
+
+  const toolbar = `<div style="margin-bottom:1rem">
+    <div class="search-wrap" style="margin-bottom:0.6rem">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" id="gameSearchInput" placeholder="Search title, platform, year, or genre…" aria-label="Search video games" value="${esc(gameSearch)}" oninput="debouncedGameRender(this.value)">
+    </div>
+    <div class="filter-row">
+      <span class="filter-label">Platform</span>
+      <div class="pill-group">${platformPills}</div>
+    </div>
+    <div class="filter-row">
+      <span class="filter-label">Status</span>
+      <div class="pill-group">${statusPills}</div>
+    </div>
+    <div class="filter-row">
+      <span class="filter-label">Format</span>
+      <div class="pill-group">${formatPills}</div>
+    </div>
+    <div class="filter-row">
+      <span class="filter-label">Sort</span>
+      ${sortSelect}
+    </div>
+  </div>`;
+
+  let contentHtml;
+  if (!items.length) {
+    const narrowed = gameFilters.platform !== 'all' || gameFilters.status !== 'all' ||
+                     gameFilters.format !== 'all';
+    const emptyMsg = gameSearch.trim()
+      ? { h: 'No results', p: 'Try a different search term or clear the search.' }
+      : narrowed
+      ? { h: 'No matches', p: 'Nothing here has that combination — try clearing a filter.' }
+      : { h: 'Nothing here yet', p: 'Click "Add game" to track what you own.' };
+    contentHtml = `<div class="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <rect x="3" y="8" width="18" height="10" rx="4"/>
+        <path d="M8 11v4M6 13h4"/>
+        <circle cx="15.5" cy="11.5" r="1"/><circle cx="18" cy="13.5" r="1"/>
+      </svg>
+      <h3>${emptyMsg.h}</h3>
+      <p style="font-size:14px">${emptyMsg.p}</p>
+    </div>`;
+  } else if (viewMode === 'list') {
+    const rows = items.map(g => {
+      const plat    = GAME_PLATFORM_LABEL[g.platform] || g.platform;
+      const formats = (g.formats || []).map(f => fmtIcons[f] || '').join(' ');
+      return `<div class="book-row">
+        ${g.coverUrl
+          ? `<img class="book-row-thumb" src="${esc(g.coverUrl)}" alt="" loading="lazy">`
+          : `<div class="book-row-initial" style="font-size:18px;background:none;color:var(--text)">🎮</div>`}
+        <div class="book-row-content">
+          <div class="book-row-title">${esc(g.title)}</div>
+          <div class="book-row-meta">
+            <div class="book-row-author">${esc(plat)}</div>
+            <div class="book-row-badges">
+              <span class="badge ${stCls[g.status] || 'badge-want'}">${stLabel[g.status] || esc(g.status)}</span>
+              ${formats ? `<span class="badge badge-media">${formats}</span>` : ''}
+            </div>
+            <div class="book-row-actions">
+              ${renderLinkButtons(g.links, true)}
+              <button class="btn btn-sm" onclick="openGameModal(${g.id})" title="Edit">✏</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteGameItem(${g.id})" title="Delete">🗑</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    contentHtml = `<div class="books-list">${rows}</div>`;
+  } else {
+    const cards = items.map(g => {
+      const plat      = GAME_PLATFORM_LABEL[g.platform] || g.platform;
+      const genreTags = (g.genre || []).map(x =>
+        `<span class="badge badge-tag">${esc(x)}</span>`).join('');
+      const fmtBadges = (g.formats || []).map(f =>
+        `<span class="badge ${fmtCls[f] || 'badge-media'}" title="${esc(f)}">${fmtIcons[f] || esc(f)}</span>`).join('');
+      const gr = Math.max(0, Math.min(5, g.rating || 0));
+      const stars = gr > 0
+        ? `<span class="stars">${'★'.repeat(gr)}<span class="empty">${'★'.repeat(5-gr)}</span></span>`
+        : '';
+      return `<div class="book-card">
+        ${g.coverUrl
+          ? `<img class="book-card-cover" src="${esc(g.coverUrl)}" alt="" loading="lazy">`
+          : `<div class="media-card-placeholder">🎮</div>`}
+        <div class="book-title">${esc(g.title)}</div>
+        <div class="book-author">${esc(plat)}${g.year ? ' · ' + esc(String(g.year)) : ''}</div>
+        <div class="book-meta">
+          <span class="badge ${stCls[g.status] || 'badge-want'}">${stLabel[g.status] || esc(g.status)}</span>
+          ${fmtBadges}
+          ${stars}
+        </div>
+        ${genreTags ? `<div class="book-tags">${genreTags}</div>` : ''}
+        ${g.notes ? `<div class="book-notes">${esc(g.notes)}</div>` : ''}
+        <div class="book-actions">
+          ${renderLinkButtons(g.links)}
+          <button class="btn btn-sm" onclick="openGameModal(${g.id})">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Edit
+          </button>
+          <button class="btn btn-sm btn-danger" onclick="deleteGameItem(${g.id})">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6"/><path d="M14 11v6"/>
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+            Delete
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+    contentHtml = `<div class="books-grid">${cards}</div>`;
+  }
+
+  const wrap = document.getElementById('gameListWrap');
+  if (listOnly && wrap) {
+    wrap.innerHTML = contentHtml;
+    return;
+  }
+  alt.innerHTML = toolbar + `<div id="gameListWrap">${contentHtml}</div>`;
+}
+
+function setGameFilter(key, val) {
+  gameFilters[key] = val;
+  renderGames();
+}
+
+function setGameSort(val) {
+  gameSort = val;
+  renderGames();
+}
+
+function debouncedGameRender(val) {
+  gameSearch = val;
+  clearTimeout(gameSearchTimer);
+  // Guard on activeTab: a timer firing after a tab switch would otherwise
+  // paint game content into the pane the new tab just rendered.
+  gameSearchTimer = setTimeout(() => { if (activeTab === 'games') renderGames(true); }, 200);
+}
+
+
 // ─── WISHLIST RENDERING ───────────────────────────────────────────────
 // listOnly: replace just the results container, leaving the toolbar (and
 // the focused search input inside it) intact — used by the search path.
 function renderWishlist(listOnly = false) {
   const alt = document.getElementById('altContent');
-  const typeIcon = { book: '📚', movie: '🎬', tv: '📺' };
+  const typeIcon = { book: '📚', movie: '🎬', tv: '📺', game: '🎮' };
 
   // Apply filters
   let items = bookWishlist;
@@ -1209,7 +1479,8 @@ function renderWishlist(listOnly = false) {
   });
 
   // Filter toolbar
-  const typePills = [['all','All'],['book','📚 Books'],['movie','🎬 Movies'],['tv','📺 TV Shows']].map(([v,l]) =>
+  const typePills = [['all','All'],['book','📚 Books'],['movie','🎬 Movies'],
+                     ['tv','📺 TV Shows'],['game','🎮 Games']].map(([v,l]) =>
     `<button class="pill${wishlistFilters.type===v?' active':''}" onclick="setWishlistFilter('type','${v}')">${l}</button>`
   ).join('');
   const sortSelect = `<select class="sort-select" aria-label="Sort wishlist" onchange="setWishlistSort(this.value)">
@@ -1241,7 +1512,7 @@ function renderWishlist(listOnly = false) {
       heading = 'No results';
       subtext = 'Try a different search term or clear the search.';
     } else {
-      const typeLabel = { book: 'books', movie: 'movies', tv: 'TV shows' }[wishlistFilters.type] || 'items';
+      const typeLabel = { book: 'books', movie: 'movies', tv: 'TV shows', game: 'games' }[wishlistFilters.type] || 'items';
       heading = wishlistFilters.type === 'all' ? 'Your wishlist is empty' : `No ${typeLabel} in your wishlist`;
       subtext = 'Click "Add to wishlist" to track things you want to read or watch.';
     }
@@ -1484,6 +1755,11 @@ document.querySelectorAll('.radio-btn input[type="radio"]').forEach(r => {
   r.addEventListener('change', function() {
     this.closest('.radio-group').querySelectorAll('.radio-btn').forEach(l => l.classList.remove('active'));
     this.closest('.radio-btn').classList.add('active');
+    // Picking Game live-hides the identify button. Opening the modal sets
+    // the type via setRadio(), which assigns .checked directly and so does
+    // not fire this event — openWishlistModal() calls syncIdentifyButtons()
+    // itself right after, covering that path separately.
+    if (this.name === 'wl-type') syncIdentifyButtons();
   });
 });
 
@@ -1496,6 +1772,13 @@ document.querySelectorAll('#f-format-group input[type="checkbox"]').forEach(cb =
 
 // Sync media format checkbox styling
 document.querySelectorAll('#m-format-group input[type="checkbox"]').forEach(cb => {
+  cb.addEventListener('change', function() {
+    this.closest('.radio-btn').classList.toggle('active', this.checked);
+  });
+});
+
+// Sync game format checkbox styling
+document.querySelectorAll('#g-format-group input[type="checkbox"]').forEach(cb => {
   cb.addEventListener('change', function() {
     this.closest('.radio-btn').classList.toggle('active', this.checked);
   });
@@ -1901,6 +2184,106 @@ function deleteMediaItem(id) {
 }
 
 
+// ─── GAME MODAL ──────────────────────────────────────────────────────
+function setGameFormats(vals) {
+  document.querySelectorAll('#g-format-group input[type="checkbox"]').forEach(cb => {
+    cb.checked = vals.includes(cb.value);
+    cb.closest('.radio-btn').classList.toggle('active', cb.checked);
+  });
+}
+
+// ─── STAR RATING (game modal) ──────────────────────────────────────────
+function setGameRating(val) {
+  gameRating = (gameRating === val) ? 0 : val;
+  updateGameStars(gameRating);
+}
+
+function updateGameStars(val) {
+  document.querySelectorAll('#gameModal .star-btn').forEach(btn => {
+    btn.classList.toggle('lit', parseInt(btn.dataset.val) <= val);
+  });
+}
+
+function openGameModal(id) {
+  if (id !== null && id !== undefined) {
+    const g = videoGames.find(x => x.id === id);
+    if (!g) return;
+    gameEditingId = id;
+    gameRating    = g.rating || 0;
+    document.getElementById('gameModalTitle').textContent = 'Edit game';
+    document.getElementById('g-title').value    = g.title || '';
+    document.getElementById('g-year').value     = g.year  || '';
+    document.getElementById('g-genre').value    = (g.genre || []).join(', ');
+    document.getElementById('g-notes').value    = g.notes || '';
+    document.getElementById('g-coverUrl').value = g.coverUrl || '';
+    setLinksField('g', g.links);
+    setRadio('g-platform', g.platform || 'ps5');
+    setRadio('g-status',   g.status   || 'want');
+    setGameFormats(g.formats || []);
+    updateGameStars(gameRating);
+  } else {
+    gameEditingId = null;
+    gameRating    = 0;
+    document.getElementById('gameModalTitle').textContent = 'Add game';
+    ['g-title', 'g-year', 'g-genre', 'g-notes', 'g-coverUrl'].forEach(fid => document.getElementById(fid).value = '');
+    setLinksField('g', []);
+    setGameFormats([]);
+    updateGameStars(0);
+    setRadio('g-platform', 'ps5');
+    setRadio('g-status',   'want');
+  }
+  document.getElementById('gameModal').classList.add('open');
+  // Only when adding: focusing on edit raises the phone keyboard over the
+  // form the user opened in order to read it.
+  if (gameEditingId === null) document.getElementById('g-title').focus();
+}
+
+function closeGameModal() {
+  document.getElementById('gameModal').classList.remove('open');
+}
+
+function handleGameBackdrop(e) {
+  if (e.target === document.getElementById('gameModal')) closeGameModal();
+}
+
+function saveGameItem() {
+  const title = document.getElementById('g-title').value.trim();
+  if (!title) { document.getElementById('g-title').focus(); return; }
+
+  const year     = document.getElementById('g-year').value.trim();
+  const genre    = document.getElementById('g-genre').value.split(',').map(x => x.trim()).filter(Boolean);
+  const notes    = document.getElementById('g-notes').value.trim();
+  const coverUrl = document.getElementById('g-coverUrl').value.trim();
+  const links    = readLinksField('g');
+  const platform = document.querySelector('input[name="g-platform"]:checked')?.value || 'ps5';
+  const status   = document.querySelector('input[name="g-status"]:checked')?.value   || 'want';
+  const formats  = [...document.querySelectorAll('#g-format-group input[type="checkbox"]:checked')]
+    .map(cb => cb.value);
+
+  if (gameEditingId !== null) {
+    const i = videoGames.findIndex(x => x.id === gameEditingId);
+    if (i !== -1) {
+      videoGames[i] = normalizeVideoGame({ ...videoGames[i], title, platform, year, genre, formats, status, notes, coverUrl, rating: gameRating, links });
+    }
+  } else {
+    videoGames.push(normalizeVideoGame({ id: newId(), title, platform, year, genre, formats, status, notes, coverUrl, rating: gameRating, links }));
+  }
+
+  saveGames();
+  closeGameModal();
+  renderPage();
+}
+
+function deleteGameItem(id) {
+  const g = videoGames.find(x => x.id === id);
+  if (!g) return;
+  if (!confirm(`Delete "${g.title}"?`)) return;
+  videoGames = videoGames.filter(x => x.id !== id);
+  saveGames();
+  renderPage();
+}
+
+
 // ─── IMPORT / EXPORT ─────────────────────────────────────────────────
 function exportData() {
   let data, filename;
@@ -1908,6 +2291,8 @@ function exportData() {
     data = mediaLibrary; filename = 'my-media-library.json';
   } else if (activeTab === 'wishlist') {
     data = bookWishlist; filename = 'my-wishlist.json';
+  } else if (activeTab === 'games') {
+    data = videoGames; filename = 'my-games-library.json';
   } else {
     data = books; filename = 'my-library.json';
   }
@@ -1948,6 +2333,16 @@ function importData(e) {
         saveWishlist();
         renderPage();
         alert(`Imported ${newItems.length} new items (${data.length - newItems.length} duplicates skipped).`);
+      } else if (activeTab === 'games') {
+        if (!confirm(`Import ${data.length} games? Duplicates (by ID) will be skipped.`)) return;
+        const existingIds = new Set(videoGames.map(g => g.id));
+        const newItems = data
+          .map(normalizeVideoGame)
+          .filter(g => !existingIds.has(g.id));
+        videoGames = [...videoGames, ...newItems];
+        saveGames();
+        renderPage();
+        alert(`Imported ${newItems.length} new games (${data.length - newItems.length} duplicates skipped).`);
       } else {
         if (!confirm(`Import ${data.length} books? Duplicates (by ID) will be skipped.`)) return;
         const existingIds = new Set(books.map(b => b.id));

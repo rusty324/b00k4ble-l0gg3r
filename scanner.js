@@ -835,10 +835,18 @@ function tmdbPick(i) {
 // to add one otherwise.
 function syncIdentifyButtons() {
   const on = geminiEnabled();
-  ['mediaIdentifyBtn', 'wishlistIdentifyBtn', 'bookIdentifyBtn', 'scanIdentifyBtn'].forEach(id => {
+  ['mediaIdentifyBtn', 'bookIdentifyBtn', 'scanIdentifyBtn'].forEach(id => {
     const b = document.getElementById(id);
     if (b) b.style.display = on ? '' : 'none';
   });
+  // The wishlist button covers book and screen identification, both
+  // verified against a real source (Open Library, TMDb). There is no such
+  // source for games, so it hides for that type rather than guessing.
+  const wlBtn = document.getElementById('wishlistIdentifyBtn');
+  if (wlBtn) {
+    const wlType = document.querySelector('input[name="wl-type"]:checked')?.value;
+    wlBtn.style.display = (on && wlType !== 'game') ? '' : 'none';
+  }
 }
 
 // From the barcode scanner, hand off to cover identification without making
@@ -2002,9 +2010,14 @@ function olPick(i) {
 
 // ─── HEADER CAMERA BUTTON ─────────────────────────────────────────────
 // Books and Wishlist scan a barcode; Movies & TV identifies a cover, which
-// needs a key, so the button is hidden there without one.
+// needs a key, so the button is hidden there without one. Games has neither
+// — no CORS-accessible game database exists to look a barcode or cover up
+// against (RAWG, IGDB, Giant Bomb and Steam's own API all decline browser
+// CORS) — so the button is hidden rather than opening a scanner that can
+// only ever fail to identify anything.
 function scanButtonMode() {
   if (activeTab === 'media') return geminiEnabled() ? 'identify' : 'none';
+  if (activeTab === 'games') return 'none';
   return 'scan';
 }
 

@@ -53,6 +53,7 @@
   <div class="tab-bar">
     <button class="tab active" data-tab="books"    onclick="switchTab('books')">📚 Books</button>
     <button class="tab"        data-tab="media"    onclick="switchTab('media')">🎬 Movies & TV</button>
+    <button class="tab"        data-tab="games"    onclick="switchTab('games')">🎮 Games</button>
     <button class="tab"        data-tab="wishlist" onclick="switchTab('wishlist')">📋 Wishlist</button>
   </div>
 </header>
@@ -258,6 +259,7 @@
         <label class="radio-btn active" for="wl-type-book">📚 Book<input type="radio" name="wl-type" id="wl-type-book" value="book" checked></label>
         <label class="radio-btn" for="wl-type-movie">🎬 Movie<input type="radio" name="wl-type" id="wl-type-movie" value="movie"></label>
         <label class="radio-btn" for="wl-type-tv">📺 TV Show<input type="radio" name="wl-type" id="wl-type-tv" value="tv"></label>
+        <label class="radio-btn" for="wl-type-game">🎮 Game<input type="radio" name="wl-type" id="wl-type-game" value="game"></label>
       </div>
     </div>
 
@@ -396,6 +398,106 @@
     </div>
   </div>
 </div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     VIDEO GAME MODAL
+     ═══════════════════════════════════════════════════════════════════ -->
+<div class="modal-backdrop" id="gameModal" onclick="handleGameBackdrop(event)">
+  <div class="modal">
+
+    <div class="modal-title" id="gameModalTitle">Add game</div>
+
+    <div class="hint" style="margin-bottom:1rem">
+      No game database here works from a browser without a server to proxy
+      through — RAWG, IGDB, Giant Bomb and Steam's own API all decline
+      cross-origin requests — so this is filled in by hand.
+    </div>
+
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" class="plain" id="g-title" placeholder="Game title">
+    </div>
+
+    <div class="form-group">
+      <label>Platform</label>
+      <div class="radio-group" id="g-platform-group">
+        <label class="radio-btn" for="g-plat-ps3">PS3<input type="radio" name="g-platform" id="g-plat-ps3" value="ps3"></label>
+        <label class="radio-btn" for="g-plat-ps4">PS4<input type="radio" name="g-platform" id="g-plat-ps4" value="ps4"></label>
+        <label class="radio-btn active" for="g-plat-ps5">PS5<input type="radio" name="g-platform" id="g-plat-ps5" value="ps5" checked></label>
+        <label class="radio-btn" for="g-plat-xbox">Xbox<input type="radio" name="g-platform" id="g-plat-xbox" value="xbox"></label>
+        <label class="radio-btn" for="g-plat-steam">Steam<input type="radio" name="g-platform" id="g-plat-steam" value="steam"></label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Year <span class="opt">(optional)</span></label>
+      <input type="text" class="plain" id="g-year" placeholder="e.g. 2024" style="max-width:120px">
+    </div>
+
+    <div class="form-group">
+      <label>Genre <span class="opt">(optional)</span></label>
+      <input type="text" class="plain" id="g-genre" placeholder="Action, RPG, Platformer…">
+      <div class="hint">Comma-separated.</div>
+    </div>
+
+    <div class="form-group">
+      <label>Format <span class="opt">(select all that apply)</span></label>
+      <div class="radio-group" id="g-format-group">
+        <label class="radio-btn" for="g-fmt-physical">📀 Physical<input type="checkbox" id="g-fmt-physical" value="physical"></label>
+        <label class="radio-btn" for="g-fmt-digital">💾 Digital<input type="checkbox" id="g-fmt-digital" value="digital"></label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Status</label>
+      <div class="radio-group">
+        <label class="radio-btn active" for="g-st-want">Want to Play<input type="radio" name="g-status" id="g-st-want" value="want" checked></label>
+        <label class="radio-btn" for="g-st-playing">Playing<input type="radio" name="g-status" id="g-st-playing" value="playing"></label>
+        <label class="radio-btn" for="g-st-completed">Completed<input type="radio" name="g-status" id="g-st-completed" value="completed"></label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Rating <span class="opt">(optional)</span></label>
+      <div class="star-picker">
+        <button class="star-btn" type="button" data-val="1" aria-label="Rate 1 star" onclick="setGameRating(1)">★</button>
+        <button class="star-btn" type="button" data-val="2" aria-label="Rate 2 stars" onclick="setGameRating(2)">★</button>
+        <button class="star-btn" type="button" data-val="3" aria-label="Rate 3 stars" onclick="setGameRating(3)">★</button>
+        <button class="star-btn" type="button" data-val="4" aria-label="Rate 4 stars" onclick="setGameRating(4)">★</button>
+        <button class="star-btn" type="button" data-val="5" aria-label="Rate 5 stars" onclick="setGameRating(5)">★</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="g-links">Where I own this <span class="opt">(optional — one link per line)</span></label>
+      <textarea id="g-links" class="links-input" placeholder="https://store.steampowered.com/app/…" oninput="previewLinks('g')"></textarea>
+      <div class="links-row">
+        <button type="button" class="btn btn-sm" id="g-links-paste" onclick="pasteLink('g')">Paste link</button>
+        <span class="paste-msg" id="g-links-msg"></span>
+      </div>
+      <div class="hint">Copy the store page link, then tap Paste. A Steam link also works as <code>steam://store/&lt;appid&gt;</code> or <code>steam://run/&lt;appid&gt;</code> to launch straight into the client.</div>
+      <div class="link-preview" id="g-links-preview"></div>
+    </div>
+
+    <div class="form-group">
+      <label>Notes <span class="opt">(optional)</span></label>
+      <textarea id="g-notes" placeholder="Thoughts, progress, recommendations…"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Cover URL <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light)">(optional)</span></label>
+      <input type="text" class="plain" id="g-coverUrl" placeholder="https://…">
+      <div class="hint">Paste a direct image URL — box art or a store screenshot.</div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn" onclick="closeGameModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveGameItem()">Save</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- ─── TMDb API KEY MODAL ──────────────────────────────────────────── -->
 <div class="modal-backdrop" id="tmdbKeyModal" onclick="handleTmdbKeyBackdrop(event)">
