@@ -609,6 +609,9 @@ input[type="radio"], input[type="checkbox"] { display: none; }
 .tmdb-sub { font-size: 11px; color: var(--text-muted); margin-top: 0.1rem; }
 
 .hint-error { color: var(--coral-600); }
+/* What a pasted store link managed to fill in — reads as a result, not
+   as instructions, so it is coloured like the rest of the app's feedback. */
+.hint-fill:not(:empty) { color: var(--amber-800); margin-top: 0.45rem; }
 
 /* ─── MODAL SCROLL CONTAINMENT ───────────────────────────────────── */
 /* Stops a scroll gesture inside a modal from chaining to the page behind

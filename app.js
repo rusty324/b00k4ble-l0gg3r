@@ -68,7 +68,12 @@ const LINK_SERVICES = [
   ['goodreads.com',     'Goodreads'],    ['thestorygraph.com', 'StoryGraph'],
   ['spotify.com',       'Spotify'],      ['storytel.com',      'Storytel'],
   ['steampowered.com',  'Steam'],        ['playstation.com',   'PlayStation'],
-  ['xbox.com',           'Xbox'],
+  ['xbox.com',          'Xbox'],         ['steamcommunity.com', 'Steam'],
+  // Valve's own URL shortener — what the Steam mobile app's share sheet
+  // actually copies, so without this a shared game reads as "s.team".
+  ['s.team',            'Steam'],
+  // Xbox store pages live under both hosts; the Store app shares this one.
+  ['microsoft.com',     'Xbox'],
 ];
 
 // Most app schemes are just the service's name (`youtube:`, `spotify:`), so
@@ -85,6 +90,10 @@ const SCHEME_ALIASES = {
   // earliest days — a real, long-documented protocol, unlike the
   // undocumented youtube: scheme.
   'steam': 'steampowered.com',
+  // The PlayStation App's own scheme, which its share sheet can emit.
+  'com.scee.psxandroid': 'playstation.com',
+  'playstation': 'playstation.com', 'psns': 'playstation.com',
+  'ms-windows-store': 'xbox.com', 'msxbox': 'xbox.com',
 };
 
 function serviceForDomain(domain) {
@@ -251,6 +260,9 @@ async function pasteLink(prefix) {
   ta.value = raw ? `${raw}\n${url}` : url;
   previewLinks(prefix);
   pasteMsg(prefix, `Added ${linkServiceName(url)}.`, false);
+  // A store link is the games form's one source of metadata, so act on it
+  // immediately rather than waiting for the debounced input path.
+  if (prefix === 'g') gameAutofillFromLinks();
 }
 
 function readLinksField(prefix) {
@@ -409,7 +421,7 @@ function normalizeVideoGame(g) {
     ...g,
     id: normalizeId(g.id),
     title: g.title != null ? String(g.title) : '',
-    platform: g.platform || 'ps5',
+    platform: g.platform ? String(g.platform) : '',
     status: g.status || 'want',
     genre,
     formats,
@@ -1358,7 +1370,7 @@ function renderGames(listOnly = false) {
     </div>`;
   } else if (viewMode === 'list') {
     const rows = items.map(g => {
-      const plat    = GAME_PLATFORM_LABEL[g.platform] || g.platform;
+      const plat    = GAME_PLATFORM_LABEL[g.platform] || g.platform || 'Unknown platform';
       const formats = (g.formats || []).map(f => fmtIcons[f] || '').join(' ');
       return `<div class="book-row">
         ${g.coverUrl
@@ -1384,7 +1396,7 @@ function renderGames(listOnly = false) {
     contentHtml = `<div class="books-list">${rows}</div>`;
   } else {
     const cards = items.map(g => {
-      const plat      = GAME_PLATFORM_LABEL[g.platform] || g.platform;
+      const plat      = GAME_PLATFORM_LABEL[g.platform] || g.platform || 'Unknown platform';
       const genreTags = (g.genre || []).map(x =>
         `<span class="badge badge-tag">${esc(x)}</span>`).join('');
       const fmtBadges = (g.formats || []).map(f =>
@@ -2192,6 +2204,165 @@ function deleteMediaItem(id) {
 }
 
 
+// ─── GAME AUTOFILL FROM A STORE LINK ──────────────────────────────────
+// Every game database and storefront API — RAWG, IGDB, Giant Bomb, Steam's
+// own store API — refuses cross-origin browser requests, so there is nothing
+// to *ask*. What is left is what the link itself carries, which is more than
+// nothing: Steam and Xbox URLs embed a title slug, Steam embeds an app id,
+// and PlayStation product codes still say which console generation they are.
+//
+// Year and genre are genuinely not derivable this way. They stay manual until
+// there is a proxy to ask a real database through (issue #32).
+
+// Steam serves box art from a deterministic path that needs no API call, and
+// an <img> is not subject to CORS at all — so this one field really can be
+// filled from the id alone.
+const STEAM_HEADER = id => `https://cdn.cloudflare.steamstatic.com/steam/apps/${id}/header.jpg`;
+
+// A PlayStation product id reads <publisher>-<titleId>_<ver>-<sku>, e.g.
+// UP2074-CUSA24024_00-HADES0000000000. The console lives in the *title id*,
+// the middle segment — not at the front, which is the publisher.
+//
+//   NPUB/NPEB/BLUS/BLES/BCUS/BCES → PS3
+//   PPSA                          → PS5 (native)
+//   CUSA                          → PS4, and PS5 plays it too, so it cannot
+//                                   decide between the two and says nothing
+function psPlatformFromCode(productId) {
+  const titleId = String(productId || '').toUpperCase().split('-')[1] || '';
+  if (/^(NP[UEHJK][ABC]|BL[UE]S|BC[UE]S)/.test(titleId)) return 'ps3';
+  if (/^PPSA/.test(titleId)) return 'ps5';
+  return '';
+}
+
+// "Half_Life_2" -> "Half Life 2", "forza-horizon-5" -> "Forza Horizon 5".
+// Lossy by construction: Steam strips apostrophes and punctuation out of its
+// slugs, so this is a starting point to correct, not an authority.
+function titleFromSlug(slug) {
+  const words = decodeURIComponent(String(slug || ''))
+    .replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!words) return '';
+  return /[a-z]/.test(words) && words === words.toLowerCase()
+    ? words.replace(/\b[a-z]/g, c => c.toUpperCase())   // an all-lowercase slug
+    : words;                                            // already cased
+}
+
+// -> { platform, title, coverUrl, store } — every field optional.
+function parseGameStoreLink(raw) {
+  const url = safeUrl(raw);
+  if (!url) return null;
+  let u;
+  try { u = new URL(url); } catch { return null; }
+
+  const host = u.hostname.toLowerCase().replace(/^www\./, '');
+  const segs = u.pathname.split('/').filter(Boolean);
+  const scheme = u.protocol.slice(0, -1);
+
+  // steam://store/<id>, steam://run/<id>
+  if (scheme === 'steam') {
+    const id = (segs[segs.length - 1] || u.host || '').match(/^\d+$/);
+    return { store: 'Steam', platform: 'steam', title: '',
+             coverUrl: id ? STEAM_HEADER(id[0]) : '' };
+  }
+
+  // store.steampowered.com/app/<id>/<Slug>/  — the slug is often absent
+  if (host === 'steampowered.com' || host.endsWith('.steampowered.com')) {
+    const i = segs.indexOf('app');
+    const id = i !== -1 ? segs[i + 1] : null;
+    return { store: 'Steam', platform: 'steam',
+             title: i !== -1 ? titleFromSlug(segs[i + 2]) : '',
+             coverUrl: /^\d+$/.test(id || '') ? STEAM_HEADER(id) : '' };
+  }
+  // s.team/a/<id> is Valve's shortener for the same page.
+  if (host === 's.team' || host === 'steamcommunity.com') {
+    const id = segs.find(s => /^\d+$/.test(s));
+    return { store: 'Steam', platform: 'steam', title: '',
+             coverUrl: id ? STEAM_HEADER(id) : '' };
+  }
+
+  if (host === 'playstation.com' || host.endsWith('.playstation.com')
+      || scheme === 'com.scee.psxandroid' || scheme === 'playstation') {
+    const i = segs.indexOf('product');
+    return { store: 'PlayStation', platform: i !== -1 ? psPlatformFromCode(segs[i + 1]) : '',
+             title: '', coverUrl: '' };
+  }
+
+  if (host === 'xbox.com' || host.endsWith('.xbox.com')
+      || host === 'microsoft.com' || host.endsWith('.microsoft.com')) {
+    const i = segs.indexOf('store');
+    // .../games/store/<slug>/<productId>
+    const slug = i !== -1 && segs[i - 1] === 'games' ? segs[i + 1] : '';
+    return { store: 'Xbox', platform: 'xbox', title: titleFromSlug(slug), coverUrl: '' };
+  }
+
+  return null;
+}
+
+// Only fill a field the user has left empty — a link should never overwrite
+// something typed by hand.
+function gameFillHint(msg) {
+  const el = document.getElementById('g-fillHint');
+  if (el) el.textContent = msg || '';
+}
+
+// An <img> load is the only way to ask whether Steam has art for an id
+// without an API, and it is free of CORS. Resolves false rather than throwing.
+function imageLoads(url, ms = 6000) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const done = ok => { clearTimeout(timer); img.onload = img.onerror = null; resolve(ok); };
+    const timer = setTimeout(() => done(false), ms);
+    img.onload  = () => done(img.naturalWidth > 0);
+    img.onerror = () => done(false);
+    img.src = url;
+  });
+}
+
+let _gameFillTimer = null;
+let _gameFillSeq = 0;
+
+async function gameAutofillFromLinks() {
+  const seq = ++_gameFillSeq;
+  const links = readLinksField('g');
+  let info = null;
+  for (const l of links) { info = parseGameStoreLink(l); if (info) break; }
+  if (!info) { gameFillHint(''); return; }
+
+  const titleEl = document.getElementById('g-title');
+  const coverEl = document.getElementById('g-coverUrl');
+  const filled = [];
+
+  if (info.title && titleEl && !titleEl.value.trim()) {
+    titleEl.value = info.title;
+    filled.push('title');
+  }
+  if (info.platform && !document.querySelector('input[name="g-platform"]:checked')) {
+    setRadio('g-platform', info.platform);
+    document.getElementById('g-plat-error').style.display = 'none';
+    filled.push('platform');
+  }
+
+  if (info.coverUrl && coverEl && !coverEl.value.trim()) {
+    gameFillHint(filled.length
+      ? `Filled ${filled.join(' and ')} from the ${info.store} link — checking for cover art…`
+      : `Checking ${info.store} for cover art…`);
+    const ok = await imageLoads(info.coverUrl);
+    if (seq !== _gameFillSeq) return;              // the field changed again
+    if (ok && !coverEl.value.trim()) { coverEl.value = info.coverUrl; filled.push('cover'); }
+  }
+  if (seq !== _gameFillSeq) return;
+
+  gameFillHint(filled.length
+    ? `Filled ${filled.join(', ')} from the ${info.store} link. `
+      + 'Year and genre are not in the link — no game database allows a browser to ask.'
+    : `Recognised a ${info.store} link, but nothing left to fill in.`);
+}
+
+function gameAutofillSoon() {
+  clearTimeout(_gameFillTimer);
+  _gameFillTimer = setTimeout(gameAutofillFromLinks, 350);
+}
+
+
 // ─── GAME MODAL ──────────────────────────────────────────────────────
 function setGameFormats(vals) {
   document.querySelectorAll('#g-format-group input[type="checkbox"]').forEach(cb => {
@@ -2237,9 +2408,13 @@ function openGameModal(id) {
     setLinksField('g', []);
     setGameFormats([]);
     updateGameStars(0);
-    setRadio('g-platform', 'ps5');
+    // No default platform: picking one is the point of the field, and a
+    // pre-selected PS5 quietly mislabels anything saved without touching it.
+    setRadio('g-platform', '');
     setRadio('g-status',   'want');
   }
+  document.getElementById('g-plat-error').style.display = 'none';
+  gameFillHint('');
   document.getElementById('gameModal').classList.add('open');
   // Only when adding: focusing on edit raises the phone keyboard over the
   // form the user opened in order to read it.
@@ -2263,7 +2438,14 @@ function saveGameItem() {
   const notes    = document.getElementById('g-notes').value.trim();
   const coverUrl = document.getElementById('g-coverUrl').value.trim();
   const links    = readLinksField('g');
-  const platform = document.querySelector('input[name="g-platform"]:checked')?.value || 'ps5';
+  const platformEl = document.querySelector('input[name="g-platform"]:checked');
+  if (!platformEl) {
+    document.getElementById('g-plat-error').style.display = 'block';
+    document.getElementById('g-platform-group').scrollIntoView({ block: 'center' });
+    return;
+  }
+  document.getElementById('g-plat-error').style.display = 'none';
+  const platform = platformEl.value;
   const status   = document.querySelector('input[name="g-status"]:checked')?.value   || 'want';
   const formats  = [...document.querySelectorAll('#g-format-group input[type="checkbox"]:checked')]
     .map(cb => cb.value);

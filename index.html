@@ -409,10 +409,30 @@
 
     <div class="modal-title" id="gameModalTitle">Add game</div>
 
-    <div class="hint" style="margin-bottom:1rem">
-      No game database here works from a browser without a server to proxy
-      through — RAWG, IGDB, Giant Bomb and Steam's own API all decline
-      cross-origin requests — so this is filled in by hand.
+    <!-- First, not last: a store link is the fastest way to start a game, so
+         it sits above the fields it fills in rather than below them. -->
+    <div class="form-group">
+      <label for="g-links">Where I own this <span class="opt">(optional — one link per line)</span></label>
+      <textarea id="g-links" class="links-input" placeholder="https://store.steampowered.com/app/…" oninput="previewLinks('g'); gameAutofillSoon()"></textarea>
+      <div class="links-row">
+        <button type="button" class="btn btn-sm" id="g-links-paste" onclick="pasteLink('g')">Paste link</button>
+        <span class="paste-msg" id="g-links-msg"></span>
+      </div>
+      <div class="hint">
+        Copy the store page link, then tap Paste — a Steam, PlayStation or Xbox
+        link fills in what it can. A Steam link also works as
+        <code>steam://store/&lt;appid&gt;</code> or <code>steam://run/&lt;appid&gt;</code>
+        to launch straight into the client.
+      </div>
+      <div class="link-preview" id="g-links-preview"></div>
+      <div class="hint hint-fill" id="g-fillHint"></div>
+      <div class="hint" id="g-noSearchHint">
+        There is no search box here because no game database works from a
+        browser without a server to proxy through — RAWG, IGDB, Giant Bomb and
+        Steam's own API all decline cross-origin requests. A store link is the
+        one thing that can be read without asking anyone, so the rest is
+        filled in by hand.
+      </div>
     </div>
 
     <div class="form-group">
@@ -425,10 +445,11 @@
       <div class="radio-group" id="g-platform-group">
         <label class="radio-btn" for="g-plat-ps3">PS3<input type="radio" name="g-platform" id="g-plat-ps3" value="ps3"></label>
         <label class="radio-btn" for="g-plat-ps4">PS4<input type="radio" name="g-platform" id="g-plat-ps4" value="ps4"></label>
-        <label class="radio-btn active" for="g-plat-ps5">PS5<input type="radio" name="g-platform" id="g-plat-ps5" value="ps5" checked></label>
+        <label class="radio-btn" for="g-plat-ps5">PS5<input type="radio" name="g-platform" id="g-plat-ps5" value="ps5"></label>
         <label class="radio-btn" for="g-plat-xbox">Xbox<input type="radio" name="g-platform" id="g-plat-xbox" value="xbox"></label>
         <label class="radio-btn" for="g-plat-steam">Steam<input type="radio" name="g-platform" id="g-plat-steam" value="steam"></label>
       </div>
+      <div class="hint hint-error" id="g-plat-error" style="display:none">Pick a platform.</div>
     </div>
 
     <div class="form-group">
@@ -468,17 +489,6 @@
         <button class="star-btn" type="button" data-val="4" aria-label="Rate 4 stars" onclick="setGameRating(4)">★</button>
         <button class="star-btn" type="button" data-val="5" aria-label="Rate 5 stars" onclick="setGameRating(5)">★</button>
       </div>
-    </div>
-
-    <div class="form-group">
-      <label for="g-links">Where I own this <span class="opt">(optional — one link per line)</span></label>
-      <textarea id="g-links" class="links-input" placeholder="https://store.steampowered.com/app/…" oninput="previewLinks('g')"></textarea>
-      <div class="links-row">
-        <button type="button" class="btn btn-sm" id="g-links-paste" onclick="pasteLink('g')">Paste link</button>
-        <span class="paste-msg" id="g-links-msg"></span>
-      </div>
-      <div class="hint">Copy the store page link, then tap Paste. A Steam link also works as <code>steam://store/&lt;appid&gt;</code> or <code>steam://run/&lt;appid&gt;</code> to launch straight into the client.</div>
-      <div class="link-preview" id="g-links-preview"></div>
     </div>
 
     <div class="form-group">
