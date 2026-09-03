@@ -640,6 +640,35 @@ body.modal-open {
 .link-btn.link-btn-app:hover { background: var(--amber-50); border-color: var(--amber-200); }
 .link-chip.link-chip-app { background: var(--amber-50); color: var(--amber-800); }
 
+/* ─── COVER LIGHTBOX ─────────────────────────────────────────────── */
+/* A cover is a tap target now, so suppress the two things iOS otherwise
+   does to a long press on it: the Save Image / Copy callout, and starting
+   a text selection when the touch lands slightly off the picture. Scoped
+   to the images themselves, so card text stays selectable. */
+.book-card-cover, .book-row-thumb {
+  cursor: zoom-in;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.lightbox { padding: 1rem; background: rgba(0,0,0,0.94); z-index: 300; }
+.lightbox img {
+  max-width: 100%; max-height: 92vh;
+  object-fit: contain; border-radius: 8px;
+  /* The picture is the dismiss target too, so it must not offer its own
+     long-press menu either. */
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+}
+.lightbox-close {
+  position: absolute; top: max(0.75rem, env(safe-area-inset-top)); right: 0.75rem;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(0,0,0,0.5); color: #fff;
+  border: 1px solid rgba(255,255,255,0.35);
+  font-size: 22px; line-height: 1; cursor: pointer;
+}
+.lightbox-close:hover { background: rgba(0,0,0,0.75); }
+
 .links-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.4rem; flex-wrap: wrap; }
 .paste-msg { font-size: 12px; color: var(--text-light); }
 .paste-msg.paste-msg-bad { color: var(--coral-600); }
