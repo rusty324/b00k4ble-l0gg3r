@@ -12,8 +12,12 @@ JSON files in a *separate private GitHub repo* through the Contents API.
 
 **Scope of this doc:** integrating the package, extending it, and testing it.
 If you are changing this app's own features, the app-specific layer is
-`app.js` and `scanner.js` at the repo root — plus `sync.js`, the module that
-creates the store and bridges it to those classic scripts — not this folder.
+`js/app/` and `js/scanner/` — plus `sync.js` at the repo root, the module
+that creates the store and bridges it to those classic scripts — not this
+folder. (Those two directories used to be single files, `app.js` and
+`scanner.js`; they were split into several smaller classic scripts each for
+readability, with no change to how any of it runs — see the header comment
+in `js/app/app-init.js` for how the pieces fit together.)
 
 **Provenance:** this package was vendored in from another project (a fitness
 tracker) and its docs still describe that project in places. Where they did,

@@ -1,0 +1,188 @@
+/* base.css — design tokens, resets, and the app shell: header,
+   settings dropdown, tab bar, main content area, status banner.
+   Split out of styles.css; loaded first so every other file's
+   var(--...) references resolve. */
+
+/*
+  ─── DESIGN TOKENS (CSS Custom Properties) ───────────────────────────
+*/
+
+:root {
+  --amber-50: #FAEEDA;
+  --amber-100: #FAC775;
+  --amber-200: #EF9F27;
+  --amber-600: #854F0B;
+  --amber-800: #633806;
+  --amber-900: #412402;
+
+  --gray-50: #F1EFE8;
+  --gray-100: #D3D1C7;
+  --gray-200: #B4B2A9;
+  --gray-400: #888780;
+  --gray-600: #5F5E5A;
+  --gray-800: #444441;
+  --gray-900: #2C2C2A;
+
+  --teal-50: #E1F5EE;
+  --teal-600: #0F6E56;
+
+  --coral-50: #FAECE7;
+  --coral-200: #F0997B;
+  --coral-600: #993C1D;
+
+  --blue-50: #E6F1FB;
+  --blue-200: #85B7EB;
+  --blue-600: #185FA5;
+
+  --bg: #FAF8F4;
+  --surface: #FFFFF8;
+  --border: rgba(66,36,2,0.12);
+  --border-mid: rgba(66,36,2,0.2);
+  --text: #2C2C2A;
+  --text-muted: #888780;
+  --text-light: #B4B2A9;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+[data-theme="dark"] {
+  --amber-50: #3a2200;
+  --amber-100: #7a4500;
+  --amber-200: #EF9F27;
+  --amber-600: #FAC775;
+  --amber-800: #FAEEDA;
+  --amber-900: #fff3dc;
+
+  --gray-50: #1e1d1b;
+  --gray-100: #2e2d2b;
+  --gray-200: #3e3d3a;
+  --gray-400: #888780;
+  --gray-600: #aaa9a3;
+  --gray-800: #d0cfc8;
+  --gray-900: #f0efe8;
+
+  --teal-50: #0a2018;
+  --teal-600: #5DCAA5;
+
+  --coral-50: #2a100a;
+  --coral-200: #993C1D;
+  --coral-600: #F0997B;
+
+  --blue-50: #0a1828;
+  --blue-200: #185FA5;
+  --blue-600: #85B7EB;
+
+  --bg: #161513;
+  --surface: #1f1e1b;
+  --border: rgba(255,220,150,0.1);
+  --border-mid: rgba(255,220,150,0.2);
+  --text: #f0efe8;
+  --text-muted: #888780;
+  --text-light: #555450;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 15px;
+  transition: background 0.2s, color 0.2s;
+}
+
+/* ─── HEADER ─────────────────────────────────────────────────────── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow);
+}
+
+.header-top {
+  padding: 1.25rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.brand { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 500; color: var(--amber-900); letter-spacing: -0.02em; }
+.brand span { color: var(--amber-200); }
+.header-actions { display: flex; gap: 0.5rem; align-items: center; }
+
+/* ─── SETTINGS DROPDOWN ──────────────────────────────────────────── */
+.settings-wrap { position: relative; }
+
+.settings-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border-mid);
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+  z-index: 300;
+  min-width: 180px;
+  overflow: hidden;
+}
+
+.settings-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s;
+  white-space: nowrap;
+}
+.settings-item:hover { background: var(--amber-50); color: var(--amber-900); }
+
+/* ─── TAB BAR ────────────────────────────────────────────────────── */
+.tab-bar {
+  display: flex;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 0 1.5rem;
+  border-top: 1px solid var(--border);
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+
+.tab {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0.55rem 0.9rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.tab:hover { color: var(--amber-900); }
+.tab.active { color: var(--amber-900); border-bottom-color: var(--amber-900); }
+
+/* ─── MAIN CONTENT AREA ──────────────────────────────────────────── */
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+/* ─── STATUS BANNER ──────────────────────────────────────────────── */
+.status-banner { font-size: 13px; color: var(--text-muted); padding: 0.5rem 0.875rem; background: var(--gray-50); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 1.25rem; display: none; }
+.status-banner.visible { display: block; }
+
