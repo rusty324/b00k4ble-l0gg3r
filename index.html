@@ -6,7 +6,15 @@
 <title>My Library</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<!-- Split from one styles.css into five files for readability. Order is
+     load-bearing: each is a straight cut of the original, in the original
+     order, so the cascade is unchanged — responsive.css must come after the
+     component files it overrides, features.css after that. -->
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/library-views.css">
+<link rel="stylesheet" href="css/modals.css">
+<link rel="stylesheet" href="css/responsive.css">
+<link rel="stylesheet" href="css/features.css">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="Library Logger">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -690,10 +698,36 @@
 
 <button class="scroll-top-btn" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top" aria-label="Scroll to top">↑</button>
 
-<script src="scanner.js"></script>
-<script src="app.js"></script>
-<!-- Module, so deferred: app.js has already initialised by the time this
-     runs, which is what lets the app stay standalone and local-first. -->
+<!-- Split from scanner.js and app.js into many smaller classic scripts, for
+     readability and debugging — still one shared global scope, still no
+     build step. Order is load-bearing in one way only: app-init.js must be
+     last, since its startup sequence calls into every render function
+     defined above it. Everything else may forward-reference a function
+     defined in a later file; that already worked within the original two
+     files and works the same way across many, because nothing here runs
+     until a later user action, by which point every script has finished
+     loading. See js/app/app-init.js and js/scanner/scan-core.js for the
+     detailed per-file breakdown. -->
+<script src="js/scanner/scan-core.js"></script>
+<script src="js/scanner/tmdb-client.js"></script>
+<script src="js/scanner/scan-camera.js"></script>
+<script src="js/scanner/tmdb-autocomplete.js"></script>
+<script src="js/scanner/gemini-api.js"></script>
+<script src="js/scanner/identify-modal.js"></script>
+<script src="js/scanner/book-search.js"></script>
+<script src="js/scanner/scan-button.js"></script>
+<script src="js/app/core.js"></script>
+<script src="js/app/state.js"></script>
+<script src="js/app/shell.js"></script>
+<script src="js/app/render-books.js"></script>
+<script src="js/app/render-media.js"></script>
+<script src="js/app/render-games.js"></script>
+<script src="js/app/render-wishlist.js"></script>
+<script src="js/app/ui-chrome.js"></script>
+<script src="js/app/modals.js"></script>
+<script src="js/app/app-init.js"></script>
+<!-- Module, so deferred: app-init.js has already initialised by the time
+     this runs, which is what lets the app stay standalone and local-first. -->
 <script type="module" src="sync.js"></script>
 </body>
 </html>

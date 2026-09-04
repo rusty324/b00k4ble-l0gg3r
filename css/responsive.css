@@ -1,0 +1,47 @@
+/* responsive.css — the three breakpoints (tablet / large phone /
+   small phone). Loaded after every component's base rules, since
+   these are overrides and must win the cascade. Split out of
+   styles.css. */
+
+/* ─── RESPONSIVE: TABLET ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .books-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+  main { padding: 1.5rem 1.25rem; }
+}
+
+/* ─── RESPONSIVE: LARGE PHONE ────────────────────────────────────── */
+@media (max-width: 480px) {
+  .header-top { padding: 0.75rem 1rem; flex-wrap: wrap; gap: 0.5rem; }
+  .tab-bar { padding: 0 1rem; }
+  /* On mobile the ⋯ button is near the left edge; open the dropdown rightward */
+  .settings-menu { left: 0; right: auto; }
+  .brand { font-size: 1.2rem; flex: 1; }
+  .header-actions { width: 100%; justify-content: flex-end; gap: 0.4rem; flex-wrap: nowrap; }
+  .btn, .pill, .genre-pill { min-height: 44px; }
+  .btn-primary { flex: 1; justify-content: center; min-width: 0; }
+  /* Let the "Add book" label truncate so the icon buttons keep 44px targets */
+  #addBtnLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .filter-row { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; scrollbar-width: none; }
+  .filter-row::-webkit-scrollbar { display: none; }
+  /* A row holding a menu must not scroll: overflow-x makes a clipping box, and
+     the absolutely-positioned panel would be cut off at the row's edge. There
+     is only a label and one button in here, so there is nothing to scroll. */
+  .filter-row-menu { overflow: visible; flex-wrap: wrap; }
+  /* Full-width tap targets for the options, like every other control here. */
+  .dropdown-opt { padding: 0.6rem 0.55rem; font-size: 14px; min-height: 44px; box-sizing: border-box; }
+  .dropdown-opt input[type="checkbox"] { width: 18px; height: 18px; }
+  .dropdown-menu { max-height: 50vh; }
+  .pill-group { flex-wrap: nowrap; }
+  .books-grid { grid-template-columns: 1fr; }
+  .book-row-author { display: none; }
+  main { padding: 1rem 0.75rem; }
+  .toolbar { gap: 0.5rem; }
+  .sort-select { width: 100%; }
+}
+
+/* ─── RESPONSIVE: SMALL PHONE ────────────────────────────────────── */
+@media (max-width: 360px) {
+  .brand { font-size: 1.1rem; }
+}
+
+

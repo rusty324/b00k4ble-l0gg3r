@@ -1,0 +1,227 @@
+/* features.css — later-added, more self-contained features: the
+   barcode scanner, TMDb search, modal scroll containment, the
+   iOS focus-zoom fix, cover identification, ownership links, and
+   the cover lightbox. Split out of styles.css; loaded last. */
+
+/* ─── BARCODE SCANNER ────────────────────────────────────────────── */
+.scan-modal { max-width: 460px; }
+
+.scan-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 46vh;
+  background: #000;
+  border: 1px solid var(--border-mid);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+.scan-stage video { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Wide and short — a square QR-style guide hurts 1D barcode scan rates */
+.scan-guide {
+  position: absolute;
+  left: 8%; right: 8%; top: 50%;
+  height: 28%;
+  transform: translateY(-50%);
+  border: 2px solid var(--amber-200);
+  border-radius: 8px;
+  box-shadow: 0 0 0 100vmax rgba(0,0,0,0.35);
+  pointer-events: none;
+}
+
+.scan-torch { position: absolute; top: 0.5rem; right: 0.5rem; z-index: 2; }
+.scan-torch.active { background: var(--amber-200); border-color: var(--amber-200); color: #2C2C2A; }
+
+.scan-status { font-size: 13px; color: var(--text-muted); min-height: 2.4em; line-height: 1.4; margin-bottom: 0.75rem; }
+.scan-status-error { color: var(--coral-600); }
+
+.scan-duplicate {
+  background: var(--amber-50);
+  border: 1px solid var(--amber-100);
+  border-radius: 8px;
+  padding: 0.75rem 0.875rem;
+  margin-bottom: 1rem;
+  font-size: 13px;
+  color: var(--amber-800);
+}
+.scan-duplicate strong { color: var(--amber-900); }
+.scan-duplicate-actions { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
+
+.scan-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 0.75rem; flex-wrap: wrap; margin-top: 0.25rem;
+}
+.scan-toggle { display: flex; align-items: center; gap: 0.5rem; cursor: pointer;
+  font-size: 12px; color: var(--text-muted); text-transform: none; letter-spacing: 0; margin: 0; font-weight: 400; }
+/* Checkboxes are globally hidden for the pill-style format pickers — undo that here */
+.scan-toggle input[type="checkbox"] {
+  display: inline-block; width: 16px; height: 16px; flex-shrink: 0;
+  accent-color: var(--amber-200); cursor: pointer; margin: 0;
+}
+.scan-count { font-size: 12px; color: var(--text-light); white-space: nowrap; }
+
+@media (max-width: 480px) {
+  .scan-stage { aspect-ratio: 1 / 1; max-height: 40vh; }
+}
+
+/* ─── TMDb SEARCH ────────────────────────────────────────────────── */
+.tmdb-ac {
+  position: absolute; top: 100%; left: 0; right: 0;
+  background: var(--surface); border: 1px solid var(--border-mid);
+  border-radius: 8px; margin-top: 3px; z-index: 300;
+  max-height: 260px; overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.tmdb-ac .ac-item {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.4rem 0.6rem; cursor: pointer;
+  color: var(--text); transition: background 0.1s;
+}
+.tmdb-ac .ac-item:hover, .tmdb-ac .ac-item.ac-active { background: var(--amber-50); color: var(--amber-900); }
+
+.tmdb-thumb {
+  width: 34px; height: 51px; flex-shrink: 0;
+  object-fit: cover; border-radius: 4px; background: var(--gray-50);
+}
+.tmdb-thumb-empty { display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.tmdb-meta { min-width: 0; }
+.tmdb-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tmdb-sub { font-size: 11px; color: var(--text-muted); margin-top: 0.1rem; }
+
+.hint-error { color: var(--coral-600); }
+/* What a pasted store link managed to fill in — reads as a result, not
+   as instructions, so it is coloured like the rest of the app's feedback. */
+.hint-fill:not(:empty) { color: var(--amber-800); margin-top: 0.45rem; }
+
+/* ─── MODAL SCROLL CONTAINMENT ───────────────────────────────────── */
+/* Stops a scroll gesture inside a modal from chaining to the page behind
+   it once the modal hits its top or bottom. */
+.modal,
+.tmdb-ac,
+.ac-box { overscroll-behavior: contain; }
+
+/* While any modal is open the body is pinned. position:fixed is used
+   rather than overflow:hidden because iOS Safari ignores the latter on
+   body; the scroll offset is held in `top` and restored on close. */
+body.modal-open {
+  position: fixed;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ─── PREVENT iOS FOCUS ZOOM ─────────────────────────────────────── */
+/* Mobile Safari zooms toward any form control with a font smaller than
+   16px. Bumping touch devices to 16px avoids that without resorting to
+   maximum-scale, which would also block deliberate pinch-zoom. */
+/* Selectors mirror the originals: media queries add no specificity, so
+   `input[type=text]` alone would lose to `input[type=text].plain`. */
+@media (pointer: coarse) {
+  input[type="text"].plain,
+  input[type="search"],
+  input[type="number"],
+  input[type="tel"],
+  input[type="email"],
+  textarea,
+  select.plain,
+  select.sort-select,
+  .gh-panel input { font-size: 16px; }
+}
+
+/* ─── IDENTIFY FROM COVER ────────────────────────────────────────── */
+/* Portrait guide — a disc case is taller than it is wide, unlike the
+   wide-and-short reticle the 1D barcode scanner uses. */
+.identify-guide {
+  position: absolute;
+  top: 6%; bottom: 6%;
+  left: 50%;
+  width: 46%;
+  transform: translateX(-50%);
+  border: 2px solid var(--amber-200);
+  border-radius: 8px;
+  box-shadow: 0 0 0 100vmax rgba(0,0,0,0.35);
+  pointer-events: none;
+}
+
+.identify-results {
+  border: 1px solid var(--border-mid);
+  border-radius: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin-bottom: 0.75rem;
+}
+.identify-results .ac-item {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.4rem 0.6rem; cursor: pointer;
+  color: var(--text); transition: background 0.1s;
+}
+.identify-results .ac-item:hover { background: var(--amber-50); color: var(--amber-900); }
+
+.identify-btn { margin-top: 0.5rem; }
+
+/* ─── OWNERSHIP LINKS ────────────────────────────────────────────── */
+.link-btn {
+  text-decoration: none;
+  color: var(--blue-600);
+  border-color: var(--border);
+}
+.link-btn:hover { background: var(--blue-50); border-color: var(--blue-200); }
+
+/* No font-size override: anything under 16px makes iOS zoom the page on focus. */
+.links-input { min-height: 52px; }
+
+.link-preview { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; }
+.link-chip {
+  font-size: 11px; padding: 0.2rem 0.5rem; border-radius: 999px;
+  background: var(--blue-50); color: var(--blue-600); border: 1px solid var(--border);
+}
+.link-chip.link-chip-bad { background: var(--coral-50); color: var(--coral-600); }
+
+/* App-scheme links open nothing without the app, so they read differently
+   from a web link that always has somewhere to land. */
+.link-btn.link-btn-app { color: var(--amber-800); }
+.link-btn.link-btn-app:hover { background: var(--amber-50); border-color: var(--amber-200); }
+.link-chip.link-chip-app { background: var(--amber-50); color: var(--amber-800); }
+
+/* ─── COVER LIGHTBOX ─────────────────────────────────────────────── */
+/* A cover is a tap target now, so suppress the two things iOS otherwise
+   does to a long press on it: the Save Image / Copy callout, and starting
+   a text selection when the touch lands slightly off the picture. Scoped
+   to the images themselves, so card text stays selectable. */
+.book-card-cover, .book-row-thumb {
+  cursor: zoom-in;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.lightbox { padding: 1rem; background: rgba(0,0,0,0.94); z-index: 300; }
+.lightbox img {
+  max-width: 100%; max-height: 92vh;
+  object-fit: contain; border-radius: 8px;
+  /* The picture is the dismiss target too, so it must not offer its own
+     long-press menu either. */
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+}
+.lightbox-close {
+  position: absolute; top: max(0.75rem, env(safe-area-inset-top)); right: 0.75rem;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: rgba(0,0,0,0.5); color: #fff;
+  border: 1px solid rgba(255,255,255,0.35);
+  font-size: 22px; line-height: 1; cursor: pointer;
+}
+.lightbox-close:hover { background: rgba(0,0,0,0.75); }
+
+.links-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.4rem; flex-wrap: wrap; }
+.paste-msg { font-size: 12px; color: var(--text-light); }
+.paste-msg.paste-msg-bad { color: var(--coral-600); }
+
+/* Marks which service a lookup result came from, since the same book can
+   appear from both Open Library and Audible with different metadata. */
+.src-badge {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+  padding: 0.1rem 0.35rem; border-radius: 4px; vertical-align: middle;
+  background: var(--amber-100); color: var(--amber-900);
+}

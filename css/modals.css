@@ -1,0 +1,202 @@
+/* modals.css — the Sync & backup panel, buttons, the modal shell,
+   radio/checkbox groups, the star picker, empty states, and the two
+   autocomplete/pill widgets (tags dropdown, genre pills). Split out
+   of styles.css. */
+
+/* ─── SYNC PANEL (ghsync settings-ui) ────────────────────────────── */
+/* ghsync.css is deliberately NOT loaded: it ships its own light-theme
+   .btn, which would fight this app's. The package emits plain class names
+   precisely so a host can style them, so these are its markup in this
+   app's theme. */
+.sync-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1rem; }
+
+.gh-badge {
+  font-size: 11px; padding: 0.15rem 0.55rem; border-radius: 999px;
+  background: var(--gray-50); color: var(--gray-600); white-space: nowrap;
+}
+.gh-badge.ok      { background: var(--teal-50);  color: var(--teal-600);  }
+.gh-badge.pending { background: var(--amber-50); color: var(--amber-800); }
+.gh-badge.error   { background: var(--coral-50); color: var(--coral-600); }
+
+.gh-panel .field { margin-bottom: 0.75rem; }
+.gh-panel .field-row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: flex-end; }
+.gh-panel .field-row > * { flex: 1 1 110px; min-width: 0; }
+.gh-panel .muted { font-size: 12px; color: var(--text-light); line-height: 1.5; }
+
+/* settings-ui emits bare <input> with no type attribute, so the app's
+   input[type="text"].plain rules do not reach it. */
+.gh-panel input {
+  font-family: 'DM Sans', sans-serif;
+  width: 100%; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 0.6rem 0.875rem; font-size: 14px; color: var(--text);
+  outline: none; transition: border-color 0.15s;
+}
+.gh-panel input:focus { border-color: var(--amber-200); }
+
+.gh-setup { margin-bottom: 1rem; }
+.gh-panel .list-row,
+.gh-panel .check-row {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.5rem 0; border-bottom: 1px solid var(--border);
+}
+.gh-panel .list-row:last-child, .gh-panel .check-row:last-child { border-bottom: none; }
+.gh-panel .row-main { flex: 1; min-width: 0; }
+.gh-panel .row-title { font-size: 13px; color: var(--text); overflow-wrap: anywhere; }
+.gh-panel .row-sub { font-size: 12px; color: var(--text-light); overflow-wrap: anywhere; }
+.gh-panel .check-row .mark { width: 1.2em; text-align: center; }
+.gh-panel .check-row .mark.done { color: var(--teal-600); }
+.gh-panel .tappable { cursor: pointer; }
+
+.gh-panel .settings-section {
+  border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.6rem;
+}
+.gh-panel .settings-section > summary {
+  display: flex; justify-content: space-between; gap: 0.6rem;
+  padding: 0.7rem 0.85rem; cursor: pointer;
+  font-size: 13px; font-weight: 500; color: var(--text);
+}
+.gh-panel .sec-state { font-weight: 400; color: var(--text-light); }
+.gh-panel .settings-body { padding: 0 0.85rem 0.85rem; }
+
+.status-banner.banner-error { background: var(--coral-50); border-color: var(--coral-200); color: var(--coral-600); }
+
+.stars { color: var(--amber-200); font-size: 13px; letter-spacing: 1px; }
+.stars .empty { color: var(--gray-100); }
+
+/* ─── BUTTONS ────────────────────────────────────────────────────── */
+.btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.btn:hover { border-color: var(--border-mid); background: var(--gray-50); }
+.btn-primary { background: var(--amber-900); border-color: var(--amber-900); color: var(--amber-50); }
+.btn-primary:hover { background: var(--amber-800); border-color: var(--amber-800); }
+.btn-danger { color: var(--coral-600); }
+.btn-danger:hover { background: var(--coral-50); border-color: var(--coral-200); }
+.btn-sm { font-size: 12px; padding: 0.3rem 0.65rem; }
+
+/* ─── MODAL ──────────────────────────────────────────────────────── */
+.modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; padding: 1.5rem; }
+.modal-backdrop.open { display: flex; }
+
+.modal { background: var(--surface); border-radius: 14px; border: 1px solid var(--border-mid); width: 100%; max-width: 520px; padding: 1.75rem; max-height: 90vh; overflow-y: auto; }
+.modal-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 500; color: var(--amber-900); margin-bottom: 1.25rem; }
+.form-group { margin-bottom: 1rem; }
+
+label { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* Utility for "(optional)" spans inside labels */
+.opt { font-size: 11px; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-light); }
+
+input[type="text"].plain, textarea, select.plain {
+  font-family: 'DM Sans', sans-serif;
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.875rem;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+input[type="text"].plain:focus, textarea:focus, select.plain:focus { border-color: var(--amber-200); }
+textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+
+/* ─── RADIO/CHECKBOX BUTTON GROUPS ───────────────────────────────── */
+.radio-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.radio-btn { font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 0.4rem 0.9rem; border-radius: 999px; border: 1px solid var(--border); background: var(--bg); color: var(--text-muted); cursor: pointer; transition: all 0.15s; user-select: none; }
+.radio-btn.active { background: var(--amber-900); border-color: var(--amber-900); color: var(--amber-50); }
+input[type="radio"], input[type="checkbox"] { display: none; }
+
+/* ─── STAR PICKER ────────────────────────────────────────────────── */
+.star-picker { display: flex; gap: 4px; }
+.star-btn { font-size: 22px; cursor: pointer; color: var(--gray-100); background: none; border: none; transition: color 0.1s, transform 0.1s; line-height: 1; padding: 0; }
+.star-btn.lit { color: var(--amber-200); }
+.star-btn:hover { transform: scale(1.2); }
+
+.modal-footer { display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1.25rem; }
+.hint { font-size: 11px; color: var(--text-light); margin-top: 0.3rem; }
+
+/* ─── EMPTY STATE ────────────────────────────────────────────────── */
+.empty-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); grid-column: 1/-1; }
+.empty-state svg { margin-bottom: 1rem; opacity: 0.3; }
+.empty-state h3 { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--amber-900); margin-bottom: 0.5rem; }
+
+/* ─── TAGS AUTOCOMPLETE DROPDOWN ─────────────────────────────────── */
+/* Suggestion dropdown shared by the book tags and game genre fields. Its
+   parent must be position:relative. */
+.ac-box {
+  display: none; position: absolute; top: 100%; left: 0; right: 0;
+  background: var(--surface); border: 1px solid var(--border-mid);
+  border-radius: 8px; margin-top: 3px; z-index: 300;
+  max-height: 180px; overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+.ac-box .ac-item { padding: 0.45rem 0.875rem; font-size: 13px; cursor: pointer; color: var(--text); transition: background 0.1s; }
+.ac-box .ac-item:hover, .ac-box .ac-item.ac-active { background: var(--amber-50); color: var(--amber-900); }
+
+/* ─── GENRE PILLS (committed genre entries) ─────────────────────────
+   A tap arms a pill (shows ×) rather than deleting it outright — the
+   coral danger color doubles as the "this is about to go" cue the delete
+   button already uses elsewhere, so the second tap reads as a confirm. */
+.genre-pills { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
+.genre-pill {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-family: 'DM Sans', sans-serif; font-size: 12px;
+  padding: 0.3rem 0.7rem; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+}
+.genre-pill:hover { border-color: var(--amber-100); color: var(--amber-800); }
+.genre-pill-x { display: none; font-weight: 600; line-height: 1; }
+.genre-pill.armed {
+  background: var(--coral-50); border-color: var(--coral-200); color: var(--coral-600);
+}
+.genre-pill.armed .genre-pill-x { display: inline; }
+
+#importFile { display: none; }
+
+/* ─── CUSTOM SCROLLBAR ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gray-100); border-radius: 3px; }
+
+/* ─── SCROLL TO TOP ──────────────────────────────────────────────── */
+.scroll-top-btn {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--amber-900);
+  color: var(--amber-50);
+  border: none;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.15s, opacity 0.2s;
+  z-index: 150;
+  opacity: 0;
+}
+.scroll-top-btn.visible { display: flex; opacity: 1; }
+.scroll-top-btn:hover { background: var(--amber-800); transform: translateY(-2px); }
+
