@@ -511,6 +511,25 @@ input[type="radio"], input[type="checkbox"] { display: none; }
 .ac-box .ac-item { padding: 0.45rem 0.875rem; font-size: 13px; cursor: pointer; color: var(--text); transition: background 0.1s; }
 .ac-box .ac-item:hover, .ac-box .ac-item.ac-active { background: var(--amber-50); color: var(--amber-900); }
 
+/* ─── GENRE PILLS (committed genre entries) ─────────────────────────
+   A tap arms a pill (shows ×) rather than deleting it outright — the
+   coral danger color doubles as the "this is about to go" cue the delete
+   button already uses elsewhere, so the second tap reads as a confirm. */
+.genre-pills { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem; }
+.genre-pill {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-family: 'DM Sans', sans-serif; font-size: 12px;
+  padding: 0.3rem 0.7rem; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+}
+.genre-pill:hover { border-color: var(--amber-100); color: var(--amber-800); }
+.genre-pill-x { display: none; font-weight: 600; line-height: 1; }
+.genre-pill.armed {
+  background: var(--coral-50); border-color: var(--coral-200); color: var(--coral-600);
+}
+.genre-pill.armed .genre-pill-x { display: inline; }
+
 #importFile { display: none; }
 
 /* ─── CUSTOM SCROLLBAR ───────────────────────────────────────────── */
@@ -557,7 +576,7 @@ input[type="radio"], input[type="checkbox"] { display: none; }
   .settings-menu { left: 0; right: auto; }
   .brand { font-size: 1.2rem; flex: 1; }
   .header-actions { width: 100%; justify-content: flex-end; gap: 0.4rem; flex-wrap: nowrap; }
-  .btn, .pill { min-height: 44px; }
+  .btn, .pill, .genre-pill { min-height: 44px; }
   .btn-primary { flex: 1; justify-content: center; min-width: 0; }
   /* Let the "Add book" label truncate so the icon buttons keep 44px targets */
   #addBtnLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

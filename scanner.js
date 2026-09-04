@@ -826,7 +826,7 @@ function tmdbPick(i) {
   if (!r) return;
   document.getElementById('m-title').value = r.title;
   document.getElementById('m-year').value  = r.year || '';
-  if (r.genre && r.genre.length) document.getElementById('m-genre').value = r.genre.join(', ');
+  if (r.genre && r.genre.length) setGenreValues('m-genre', r.genre);
   setMediaRadio('m-type', r.type);
   // Carried through saveMediaItem, which builds a fresh object on insert.
   pendingTmdb = { tmdbId: r.tmdbId, posterUrl: r.posterUrl || '' };
@@ -1612,7 +1612,7 @@ function pickIdentifyResult(i) {
   openMediaModal(null);
   document.getElementById('m-title').value = r.title;
   document.getElementById('m-year').value  = r.year || '';
-  if (r.genre && r.genre.length) document.getElementById('m-genre').value = r.genre.join(', ');
+  if (r.genre && r.genre.length) setGenreValues('m-genre', r.genre);
   setMediaRadio('m-type', r.type);
   // Same handoff tmdbPick uses, so posters and the save path work unchanged.
   pendingTmdb = { tmdbId: r.tmdbId, posterUrl: r.posterUrl || '' };

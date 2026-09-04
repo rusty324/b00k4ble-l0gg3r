@@ -166,11 +166,12 @@
     <div class="form-group">
       <label>Genre <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light)">(optional)</span></label>
       <div style="position:relative">
-        <input type="text" class="plain" id="f-genre" placeholder="Sci-Fi, Fantasy, Biography…" autocomplete="off"
+        <input type="text" class="plain" id="f-genre" placeholder="Type a genre, press Enter…" autocomplete="off"
                oninput="bookGenreAC()" onkeydown="bookGenreACKey(event)" onblur="setTimeout(closeBookGenreAC,150)">
         <div class="ac-box" id="f-genre-ac"></div>
       </div>
-      <div class="hint">Comma-separated. Genres you have already used are suggested as you type.</div>
+      <div class="genre-pills" id="f-genre-pills"></div>
+      <div class="hint">Press Enter (or a comma) to add a genre. Tap a pill, then tap it again to remove it.</div>
     </div>
 
     <div class="form-group">
@@ -337,17 +338,18 @@
 
     <div class="form-group">
       <label>Year <span class="opt">(optional)</span></label>
-      <input type="text" class="plain" id="m-year" placeholder="e.g. 2024" style="max-width:120px">
+      <input type="text" class="plain" id="m-year" placeholder="e.g. 2024" style="max-width:120px" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)">
     </div>
 
     <div class="form-group">
       <label>Genre <span class="opt">(optional)</span></label>
       <div style="position:relative">
-        <input type="text" class="plain" id="m-genre" placeholder="Action, Drama, Sci-Fi…" autocomplete="off"
+        <input type="text" class="plain" id="m-genre" placeholder="Type a genre, press Enter…" autocomplete="off"
                oninput="mediaGenreAC()" onkeydown="mediaGenreACKey(event)" onblur="setTimeout(closeMediaGenreAC,150)">
         <div class="ac-box" id="m-genre-ac"></div>
       </div>
-      <div class="hint">Comma-separated. Genres you have already used are suggested as you type.</div>
+      <div class="genre-pills" id="m-genre-pills"></div>
+      <div class="hint">Press Enter (or a comma) to add a genre. Tap a pill, then tap it again to remove it.</div>
     </div>
 
     <div class="form-group">
@@ -456,17 +458,18 @@
 
     <div class="form-group">
       <label>Year <span class="opt">(optional)</span></label>
-      <input type="text" class="plain" id="g-year" placeholder="e.g. 2024" style="max-width:120px">
+      <input type="text" class="plain" id="g-year" placeholder="e.g. 2024" style="max-width:120px" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)">
     </div>
 
     <div class="form-group">
       <label>Genre <span class="opt">(optional)</span></label>
       <div style="position:relative">
-        <input type="text" class="plain" id="g-genre" placeholder="Action, RPG, Platformer…" autocomplete="off"
+        <input type="text" class="plain" id="g-genre" placeholder="Type a genre, press Enter…" autocomplete="off"
                oninput="gameGenreAC()" onkeydown="gameGenreACKey(event)" onblur="setTimeout(closeGameGenreAC,150)">
         <div class="ac-box" id="g-genre-ac"></div>
       </div>
-      <div class="hint">Comma-separated. Genres you have already used are suggested as you type.</div>
+      <div class="genre-pills" id="g-genre-pills"></div>
+      <div class="hint">Press Enter (or a comma) to add a genre. Tap a pill, then tap it again to remove it.</div>
     </div>
 
     <div class="form-group">
