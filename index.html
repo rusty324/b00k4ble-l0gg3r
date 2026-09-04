@@ -72,7 +72,7 @@
     <div class="toolbar">
       <div class="search-wrap">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="search" id="searchInput" placeholder="Search title, author, series, or tag…" aria-label="Search books" oninput="debouncedRender()">
+        <input type="search" id="searchInput" placeholder="Search title, author, series, or genre…" aria-label="Search books" oninput="debouncedRender()">
       </div>
       <select class="sort-select" id="sortSelect" aria-label="Sort books" onchange="render()">
         <option value="added-desc">Newest added</option>
@@ -107,11 +107,9 @@
       </div>
     </div>
 
-    <!-- Tag filter row — shown by JS only when books have tags -->
-    <div class="filter-row" id="tagFilterRow" style="display:none;">
-      <span class="filter-label">Tag</span>
-      <div id="tagPills" class="pill-group"></div>
-    </div>
+    <!-- Genre filter — the shared multi-select menu, built by JS and empty
+         until some book has a genre -->
+    <div id="bookGenreFilter"></div>
 
     <!-- Book cards / list rows injected here -->
     <div class="books-grid" id="booksGrid"></div>
@@ -166,13 +164,13 @@
     </div>
 
     <div class="form-group">
-      <label>Tags <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light)">(optional)</span></label>
+      <label>Genre <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light)">(optional)</span></label>
       <div style="position:relative">
-        <input type="text" class="plain" id="f-tags" placeholder="sci-fi, favorites, gift…" autocomplete="off"
-               oninput="tagsAC()" onkeydown="tagsACKey(event)" onblur="setTimeout(closeTagsAC,150)">
-        <div class="ac-box" id="f-tags-ac"></div>
+        <input type="text" class="plain" id="f-genre" placeholder="Sci-Fi, Fantasy, Biography…" autocomplete="off"
+               oninput="bookGenreAC()" onkeydown="bookGenreACKey(event)" onblur="setTimeout(closeBookGenreAC,150)">
+        <div class="ac-box" id="f-genre-ac"></div>
       </div>
-      <div class="hint">Comma-separated. e.g. sci-fi, favorites</div>
+      <div class="hint">Comma-separated. Genres you have already used are suggested as you type.</div>
     </div>
 
     <div class="form-group">

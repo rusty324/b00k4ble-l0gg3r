@@ -370,24 +370,30 @@ function normalizeBook(b) {
     : b.format               ? [b.format]
     : ['physical'];
 
-  const tags = Array.isArray(b.tags) ? b.tags
-    : (b.tags && typeof b.tags === 'string')
-      ? b.tags.split(',').map(t => t.trim()).filter(Boolean)
+  // Renamed from `tags`, which is still read so that older exports, older
+  // repo files and a device running an older copy of this page all keep
+  // working. Only the new name is ever written.
+  const raw = b.genre != null ? b.genre : b.tags;
+  const genre = Array.isArray(raw) ? raw.map(String)
+    : (raw && typeof raw === 'string')
+      ? raw.split(',').map(t => t.trim()).filter(Boolean)
     : [];
 
   const title  = b.title  != null ? String(b.title)  : '';
   const series = b.series ? String(b.series) : '';
-  const _searchStr = [title, author, series, b.isbn || '', b.asin || '', ...tags].join(' ').toLowerCase();
+  const _searchStr = [title, author, series, b.isbn || '', b.asin || '', ...genre].join(' ').toLowerCase();
 
   // Clamp rating to 0–5; out-of-range values (e.g. from imported JSON) cause
   // '★'.repeat(5 - rating) to throw a RangeError with a negative count.
   const rating = Number.isFinite(+b.rating) ? Math.max(0, Math.min(5, Math.round(+b.rating))) : 0;
 
-  return dropEmpty(applyLinks({
-    ...b, id: normalizeId(b.id), title, series, author, status, formats, tags, rating, _searchStr,
+  const book = dropEmpty(applyLinks({
+    ...b, id: normalizeId(b.id), title, series, author, status, formats, genre, rating, _searchStr,
     ...(b.isbn != null ? { isbn: String(b.isbn) } : {}),
     ...(b.asin != null ? { asin: String(b.asin).toUpperCase() } : {}),
   }, b.links));
+  delete book.tags;   // the spread carried the old name in; only `genre` is stored
+  return book;
 }
 
 // Normalize wishlist items — adds 'type' (default 'book') and unifies author/creator field
@@ -463,7 +469,7 @@ function normalizeMediaItem(m) {
 let books = JSON.parse(localStorage.getItem('myLibrary') || '[]').map(normalizeBook);
 
 // Book filters / pagination
-let filters = { format: 'all', status: 'all', tag: 'all' };
+let filters = { format: 'all', status: 'all', genres: [] };
 let currentPage = 1;
 let editingId = null;
 let currentRating = 0;
@@ -817,7 +823,7 @@ function getCoverObserver() {
 // ─── FILTERS (books tab) ──────────────────────────────────────────────
 function setFilter(type, val, el) {
   filters[type] = val;
-  const groupId = { format: 'formatPills', status: 'statusPills', tag: 'tagPills' }[type];
+  const groupId = { format: 'formatPills', status: 'statusPills' }[type];
   document.querySelectorAll('#' + groupId + ' .pill').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
   currentPage = 1;
@@ -836,27 +842,14 @@ function debouncedRender() {
 
 
 // ─── TAG INDEX ────────────────────────────────────────────────────────
-function allTags() {
-  const set = new Set();
-  books.forEach(b => (b.tags || []).forEach(t => set.add(t)));
-  return [...set].sort();
-}
+function allBookGenres() { return distinctGenres(books); }
 
-function renderTagFilter() {
-  const tags = allTags();
-  const row = document.getElementById('tagFilterRow');
-  const container = document.getElementById('tagPills');
-
-  if (!tags.length) { row.style.display = 'none'; return; }
-  row.style.display = 'flex';
-
-  const current = filters.tag;
-  container.innerHTML = [
-    `<button class="pill tag-pill ${current === 'all' ? 'active' : ''}" onclick="setFilter('tag','all',this)">All</button>`,
-    ...tags.map(t =>
-      `<button class="pill tag-pill ${current === t ? 'active' : ''}" data-tag="${esc(t)}" onclick="setFilter('tag',this.dataset.tag,this)">${esc(t)}</button>`
-    )
-  ].join('');
+// The same multi-select menu the other two tabs use, in place of the single
+// -select pill row this tab had — so several genres can be shown at once,
+// and a long genre list no longer stretches across the screen.
+function renderBookGenreFilter() {
+  const host = document.getElementById('bookGenreFilter');
+  if (host) host.innerHTML = genreFilterRow('books');
 }
 
 
@@ -908,19 +901,22 @@ function render() {
   // filter/page state — skip the six full-library passes unless it changed.
   if (_statsRenderedAt !== _booksMutation) {
     renderStats();
-    renderTagFilter();
+    renderBookGenreFilter();
     _statsRenderedAt = _booksMutation;
   }
 
   const query = document.getElementById('searchInput').value.toLowerCase().trim();
   const sort  = document.getElementById('sortSelect').value;
 
-  const key = `${query}|${sort}|${filters.format}|${filters.status}|${filters.tag}|${_booksMutation}`;
+  const key = `${query}|${sort}|${filters.format}|${filters.status}|${filters.genres.join('\u0000')}|${_booksMutation}`;
   if (_filteredCacheKey !== key || _filteredCache === null) {
+    // Several genres widen rather than narrow — see GENRE_FILTERS.
+    const bookGenreFilter = filters.genres.length
+      ? new Set(filters.genres.map(x => x.toLowerCase())) : null;
     const fresh = books.filter(b => {
       if (filters.format !== 'all' && !b.formats.includes(filters.format)) return false;
       if (filters.status !== 'all' && b.status !== filters.status) return false;
-      if (filters.tag !== 'all' && !(b.tags || []).includes(filters.tag)) return false;
+      if (bookGenreFilter && !(b.genre || []).some(g => bookGenreFilter.has(g.toLowerCase()))) return false;
       if (query && !b._searchStr.includes(query)) return false;
       return true;
     });
@@ -1000,7 +996,7 @@ function render() {
     html = page.map(b => {
       const fmtBadges = b.formats.map(f =>
         `<span class="badge ${fmtCls[f] || ''}">${fmtLabels[f] || esc(f)}</span>`).join('');
-      const tagBadges = (b.tags || []).map(t =>
+      const tagBadges = (b.genre || []).map(t =>
         `<span class="badge badge-tag">${esc(t)}</span>`).join('');
       const r = Math.max(0, Math.min(5, b.rating || 0));
       const stars = r > 0
@@ -1480,6 +1476,10 @@ function setGameFilter(key, val) {
 // titles that are either. That is what a list of checkboxes reads as, and
 // the menu header says so rather than leaving it to be inferred.
 const GENRE_FILTERS = {
+  // Books paginate, so a narrowed result has to go back to page one; the
+  // other two render everything at once and have no page to reset.
+  books: { state: () => filters,      all: () => allBookGenres(),
+           repaint: () => { currentPage = 1; render(); } },
   games: { state: () => gameFilters,  all: () => allGameGenres(),  repaint: () => renderGames(true) },
   media: { state: () => mediaFilters, all: () => allMediaGenres(), repaint: () => renderMedia(true) },
 };
@@ -1962,15 +1962,15 @@ function populateDataLists() {
 
 
 // ─── COMMA-LIST AUTOCOMPLETE ──────────────────────────────────────────
-// One implementation behind two fields. Book tags have had this since long
-// before the games tab existed, and genres are the same shape of problem: a
+// One implementation behind all three genre fields. The books tab has had
+// this since it was a tags field, and genres are the same shape of problem: a
 // comma-separated field whose vocabulary should converge on what is already
 // in the library instead of being retyped from memory each time.
 //
 // Every suggestion comes from the user's own records. Nothing is seeded, so
 // the list can never offer a word they did not choose themselves.
 const LIST_AC_OPTIONS = {
-  'f-tags':  () => allTags(),
+  'f-genre': () => allBookGenres(),
   'g-genre': () => allGameGenres(),
   'm-genre': () => allMediaGenres(),
 };
@@ -2072,10 +2072,10 @@ function closeListAC(inputId) {
 }
 
 // Named wrappers, because the inline handlers in index.html read better as
-// tagsAC() than as listAC('f-tags').
-function tagsAC()      { listAC('f-tags'); }
-function tagsACKey(e)  { listACKey('f-tags', e); }
-function closeTagsAC() { closeListAC('f-tags'); }
+// bookGenreAC() than as listAC('f-genre').
+function bookGenreAC()      { listAC('f-genre'); }
+function bookGenreACKey(e)  { listACKey('f-genre', e); }
+function closeBookGenreAC() { closeListAC('f-genre'); }
 
 function gameGenreAC()      { listAC('g-genre'); }
 function gameGenreACKey(e)  { listACKey('g-genre', e); }
@@ -2092,7 +2092,7 @@ function openAddModal() {
   currentRating = 0;
   document.getElementById('modalTitle').textContent = 'Add a book';
 
-  ['f-title', 'f-author', 'f-series', 'f-seriesIndex', 'f-tags', 'f-notes', 'f-coverUrl', 'f-isbn', 'f-asin', 'f-ol']
+  ['f-title', 'f-author', 'f-series', 'f-seriesIndex', 'f-genre', 'f-notes', 'f-coverUrl', 'f-isbn', 'f-asin', 'f-ol']
     .forEach(id => document.getElementById(id).value = '');
   setLinksField('f', []);
   closeOlAC();
@@ -2119,7 +2119,7 @@ function openEditModal(id) {
   document.getElementById('f-title').value  = b.title;
   document.getElementById('f-author').value = b.author || '';
   setSeriesFields(b.series);
-  document.getElementById('f-tags').value   = (b.tags || []).join(', ');
+  document.getElementById('f-genre').value  = (b.genre || []).join(', ');
   document.getElementById('f-notes').value  = b.notes || '';
   document.getElementById('f-coverUrl').value = b.coverUrl || '';
   document.getElementById('f-isbn').value = b.isbn || '';
@@ -2188,7 +2188,7 @@ function saveBook() {
   const asin       = document.getElementById('f-asin').value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
   const links      = readLinksField('f');
 
-  const tags = document.getElementById('f-tags').value
+  const genre = document.getElementById('f-genre').value
     .split(',').map(t => t.trim()).filter(Boolean);
 
   const formats = [...document.querySelectorAll('#f-format-group input[type="checkbox"]:checked')]
@@ -2206,11 +2206,11 @@ function saveBook() {
   if (editingId !== null) {
     const i = books.findIndex(b => b.id === editingId);
     if (i !== -1) {
-      books[i] = normalizeBook({ ...books[i], title, author, series, tags, formats, status, notes, rating: currentRating, coverUrl, links,
+      books[i] = normalizeBook({ ...books[i], title, author, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
         isbn: isbn || pendingScanCode || books[i].isbn || '', asin });
     }
   } else {
-    books.push(normalizeBook({ id: newId(), title, author, series, tags, formats, status, notes, rating: currentRating, coverUrl, links,
+    books.push(normalizeBook({ id: newId(), title, author, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
       ...(isbn || pendingScanCode ? { isbn: isbn || pendingScanCode } : {}),
       ...(asin ? { asin } : {}) }));
   }

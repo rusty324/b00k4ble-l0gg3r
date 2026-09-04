@@ -555,7 +555,7 @@ function quickAddScanned(code, info, isBookPath) {
   if (activeTab === 'books') {
     const b = normalizeBook({
       id: newId(), title: info.title, author: info.author || '', series: '',
-      tags: [], formats: ['physical'], status: 'want', notes: '',
+      genre: [], formats: ['physical'], status: 'want', notes: '',
       rating: 0, coverUrl: info.coverUrl || '', isbn: code,
     });
     books.push(b);
