@@ -506,7 +506,7 @@ let videoGames = JSON.parse(localStorage.getItem('videoGames') || '[]')
   .map(normalizeVideoGame);
 let gameEditingId = null;
 let gameRating = 0;
-let gameFilters = { platform: 'all', status: 'all', format: 'all' };
+let gameFilters = { platform: 'all', status: 'all', format: 'all', genres: [] };
 let gameSort = 'added-desc';
 let gameSearch = '';
 let gameSearchTimer = null;
@@ -1280,6 +1280,13 @@ function renderGames(listOnly = false) {
   // An item can hold several formats, so this is "has it", not "is it".
   if (gameFilters.format !== 'all')
     items = items.filter(g => (g.formats || []).includes(gameFilters.format));
+  // Several genres widen rather than narrow: ticking Adventure and RPG shows
+  // games that are either, which is what a list of checkboxes reads as. The
+  // menu says so, so it is never left to guess.
+  if (gameFilters.genres.length) {
+    const wanted = new Set(gameFilters.genres.map(x => x.toLowerCase()));
+    items = items.filter(g => (g.genre || []).some(x => wanted.has(String(x).toLowerCase())));
+  }
   if (gameSearch.trim()) {
     const q = gameSearch.toLowerCase().trim();
     items = items.filter(g =>
@@ -1319,6 +1326,31 @@ function renderGames(listOnly = false) {
   const formatPills = [['all','All'],['physical','📀 Physical'],['digital','💾 Digital']].map(([v,l]) =>
     `<button class="pill${gameFilters.format===v?' active':''}" onclick="setGameFilter('format','${v}')">${l}</button>`
   ).join('');
+  // Genres are open-ended, unlike the fixed platform/status/format sets, so
+  // this is a menu rather than a row of pills that would grow without bound.
+  const genres = allGameGenres();
+  const genreRow = genres.length ? `<div class="filter-row filter-row-menu">
+      <span class="filter-label">Genre</span>
+      <div class="dropdown-wrap">
+        <button class="pill dropdown-btn${gameFilters.genres.length ? ' active' : ''}"
+                id="gameGenreBtn" aria-haspopup="true" aria-expanded="false"
+                onclick="toggleGameGenreMenu(event)">${esc(gameGenreLabel())} <span aria-hidden="true">▾</span></button>
+        <div class="dropdown-menu" id="gameGenreMenu" role="group" aria-label="Filter by genre">
+          <div class="dropdown-head">
+            <span>Games matching <strong>any</strong> of these</span>
+            <button type="button" class="dropdown-clear" onclick="clearGameGenreFilter()"
+                    ${gameFilters.genres.length ? '' : 'disabled'}>Clear</button>
+          </div>
+          ${genres.map(g => `<label class="dropdown-opt">
+            <input type="checkbox" value="${esc(g)}"
+                   ${gameFilters.genres.some(x => x.toLowerCase() === g.toLowerCase()) ? 'checked' : ''}
+                   onchange="toggleGameGenre(this.value)">
+            <span>${esc(g)}</span>
+          </label>`).join('')}
+        </div>
+      </div>
+    </div>` : '';
+
   const sortSelect = `<select class="sort-select" aria-label="Sort video games" onchange="setGameSort(this.value)">
     <option value="added-desc"${gameSort==='added-desc'?' selected':''}>Newest added</option>
     <option value="added-asc"${gameSort==='added-asc'?' selected':''}>Oldest added</option>
@@ -1344,6 +1376,7 @@ function renderGames(listOnly = false) {
       <span class="filter-label">Format</span>
       <div class="pill-group">${formatPills}</div>
     </div>
+    ${genreRow}
     <div class="filter-row">
       <span class="filter-label">Sort</span>
       ${sortSelect}
@@ -1353,7 +1386,7 @@ function renderGames(listOnly = false) {
   let contentHtml;
   if (!items.length) {
     const narrowed = gameFilters.platform !== 'all' || gameFilters.status !== 'all' ||
-                     gameFilters.format !== 'all';
+                     gameFilters.format !== 'all' || gameFilters.genres.length > 0;
     const emptyMsg = gameSearch.trim()
       ? { h: 'No results', p: 'Try a different search term or clear the search.' }
       : narrowed
@@ -1454,6 +1487,78 @@ function setGameFilter(key, val) {
   gameFilters[key] = val;
   renderGames();
 }
+
+// What the closed button reads. Two are spelled out with "or" so the widening
+// behaviour is legible without opening the menu; beyond that it would not fit.
+function gameGenreLabel() {
+  const n = gameFilters.genres.length;
+  if (!n) return 'All';
+  if (n === 1) return gameFilters.genres[0];
+  if (n === 2) return gameFilters.genres.join(' or ');
+  return `${n} genres`;
+}
+
+function toggleGameGenreMenu(e) {
+  if (e) e.stopPropagation();          // don't trip the close-on-outside handler
+  const menu = document.getElementById('gameGenreMenu');
+  const btn  = document.getElementById('gameGenreBtn');
+  if (!menu || !btn) return;
+  const open = menu.classList.toggle('open');
+  btn.setAttribute('aria-expanded', String(open));
+}
+
+function closeGameGenreMenu() {
+  const menu = document.getElementById('gameGenreMenu');
+  const btn  = document.getElementById('gameGenreBtn');
+  if (menu) menu.classList.remove('open');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+
+// Repaints the list only. A full renderGames() would rebuild the toolbar and
+// take the open menu down with it, so ticking a second genre would be
+// impossible without reopening — the same reason the search box uses listOnly.
+function toggleGameGenre(value) {
+  const i = gameFilters.genres.findIndex(x => x.toLowerCase() === String(value).toLowerCase());
+  if (i === -1) gameFilters.genres.push(value);
+  else gameFilters.genres.splice(i, 1);
+
+  const btn = document.getElementById('gameGenreBtn');
+  if (btn) {
+    btn.firstChild.nodeValue = gameGenreLabel() + ' ';
+    btn.classList.toggle('active', gameFilters.genres.length > 0);
+  }
+  const clear = document.querySelector('#gameGenreMenu .dropdown-clear');
+  if (clear) clear.disabled = gameFilters.genres.length === 0;
+
+  renderGames(true);
+}
+
+function clearGameGenreFilter() {
+  gameFilters.genres = [];
+  document.querySelectorAll('#gameGenreMenu input[type="checkbox"]')
+    .forEach(cb => { cb.checked = false; });
+  const btn = document.getElementById('gameGenreBtn');
+  if (btn) {
+    btn.firstChild.nodeValue = 'All ';
+    btn.classList.remove('active');
+  }
+  const clear = document.querySelector('#gameGenreMenu .dropdown-clear');
+  if (clear) clear.disabled = true;
+  renderGames(true);
+}
+
+// Close on a click anywhere else, like the settings menu.
+document.addEventListener('click', e => {
+  const menu = document.getElementById('gameGenreMenu');
+  const btn  = document.getElementById('gameGenreBtn');
+  if (!menu || !menu.classList.contains('open')) return;
+  if (btn && btn.contains(e.target)) return;
+  if (!menu.contains(e.target)) closeGameGenreMenu();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeGameGenreMenu();
+});
 
 function setGameSort(val) {
   gameSort = val;
@@ -1824,67 +1929,121 @@ function populateDataLists() {
 }
 
 
-// ─── TAGS AUTOCOMPLETE ────────────────────────────────────────────────
-let tagsACIndex = -1;
+// ─── COMMA-LIST AUTOCOMPLETE ──────────────────────────────────────────
+// One implementation behind two fields. Book tags have had this since long
+// before the games tab existed, and genres are the same shape of problem: a
+// comma-separated field whose vocabulary should converge on what is already
+// in the library instead of being retyped from memory each time.
+//
+// Every suggestion comes from the user's own records. Nothing is seeded, so
+// the list can never offer a word they did not choose themselves.
+const LIST_AC_OPTIONS = {
+  'f-tags':  () => allTags(),
+  'g-genre': () => allGameGenres(),
+};
 
-function tagsAC() {
-  const input = document.getElementById('f-tags');
-  const ac    = document.getElementById('tags-ac');
+// Genres, deduplicated case-insensitively with the first-seen casing kept —
+// the whole point is that "Adventure" typed once becomes *the* suggestion
+// afterwards, not that "adventure" accumulates alongside it.
+function allGameGenres() {
+  const seen = new Map();
+  videoGames.forEach(g => (g.genre || []).forEach(raw => {
+    const value = String(raw).trim();
+    if (value && !seen.has(value.toLowerCase())) seen.set(value.toLowerCase(), value);
+  }));
+  return [...seen.values()].sort((a, b) => a.localeCompare(b));
+}
 
+let _listACIndex = -1;
+
+// The box always sits immediately after its input, so its id is derivable.
+const listACBox = inputId => document.getElementById(`${inputId}-ac`);
+
+function listAC(inputId) {
+  const input = document.getElementById(inputId);
+  const ac    = listACBox(inputId);
+  if (!input || !ac) return;
+
+  // Only the segment being typed is the query; the ones before it are done.
   const parts = input.value.split(',');
   const query = parts[parts.length - 1].trim().toLowerCase();
+  if (!query) { closeListAC(inputId); return; }
 
-  if (!query) { closeTagsAC(); return; }
+  const already = new Set(parts.slice(0, -1).map(t => t.trim().toLowerCase()));
+  const matches = (LIST_AC_OPTIONS[inputId]?.() || [])
+    .filter(t => t.toLowerCase().includes(query) && !already.has(t.toLowerCase()))
+    // A prefix match is what was meant far more often than a mid-word one,
+    // so "adv" offers "Adventure" before "Point-and-click Adventure".
+    .sort((a, b) => (a.toLowerCase().startsWith(query) ? 0 : 1)
+                  - (b.toLowerCase().startsWith(query) ? 0 : 1)
+                  || a.localeCompare(b));
 
-  const existing = new Set(parts.slice(0, -1).map(t => t.trim().toLowerCase()));
-  const matches = allTags().filter(t =>
-    t.toLowerCase().includes(query) && !existing.has(t.toLowerCase())
-  );
+  if (!matches.length) { closeListAC(inputId); return; }
 
-  if (!matches.length) { closeTagsAC(); return; }
-
-  tagsACIndex = -1;
-  ac.innerHTML = matches
-    .map(t => `<div class="ac-item" data-val="${esc(t)}" onmousedown="pickTag(this.dataset.val)">${esc(t)}</div>`)
-    .join('');
+  _listACIndex = -1;
+  ac.innerHTML = matches.map(t =>
+    `<div class="ac-item" data-val="${esc(t)}" onmousedown="pickListValue('${inputId}', this.dataset.val)">${esc(t)}</div>`
+  ).join('');
   ac.style.display = 'block';
 }
 
-function tagsACKey(e) {
-  const ac    = document.getElementById('tags-ac');
+function listACKey(inputId, e) {
+  const ac = listACBox(inputId);
+  if (!ac || ac.style.display === 'none') return;
   const items = ac.querySelectorAll('.ac-item');
-
-  if (!items.length || ac.style.display === 'none') return;
+  if (!items.length) return;
 
   if (e.key === 'ArrowDown') {
     e.preventDefault();
-    tagsACIndex = Math.min(tagsACIndex + 1, items.length - 1);
-    items.forEach((el, i) => el.classList.toggle('ac-active', i === tagsACIndex));
+    _listACIndex = Math.min(_listACIndex + 1, items.length - 1);
   } else if (e.key === 'ArrowUp') {
     e.preventDefault();
-    tagsACIndex = Math.max(tagsACIndex - 1, 0);
-    items.forEach((el, i) => el.classList.toggle('ac-active', i === tagsACIndex));
-  } else if (e.key === 'Enter' && tagsACIndex >= 0) {
+    _listACIndex = Math.max(_listACIndex - 1, 0);
+  } else if (e.key === 'Enter' && _listACIndex >= 0) {
     e.preventDefault();
-    pickTag(items[tagsACIndex].dataset.val);
+    pickListValue(inputId, items[_listACIndex].dataset.val);
+    return;
   } else if (e.key === 'Escape') {
-    closeTagsAC();
+    closeListAC(inputId);
+    return;
+  } else {
+    return;
   }
+  items.forEach((el, i) => el.classList.toggle('ac-active', i === _listACIndex));
+  if (items[_listACIndex]) items[_listACIndex].scrollIntoView({ block: 'nearest' });
 }
 
-function pickTag(tag) {
-  const input = document.getElementById('f-tags');
-  const parts = input.value.split(',');
-  parts[parts.length - 1] = ' ' + tag;
-  input.value = parts.join(',').replace(/^,\s*/, '') + ', ';
+// Replaces the segment being typed, and leaves a trailing ", " ready for the
+// next one.
+function pickListValue(inputId, value) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  // Rebuild from trimmed segments rather than splicing into the raw text.
+  // The old tags version prepended a space and then tried to strip a leading
+  // *comma*, which never matched on the first segment — so completing the
+  // very first tag left the field reading " sci-fi, ".
+  const parts = input.value.split(',').map(p => p.trim());
+  parts[parts.length - 1] = value;
+  input.value = parts.filter(Boolean).join(', ') + ', ';
   input.focus();
-  closeTagsAC();
+  closeListAC(inputId);
 }
 
-function closeTagsAC() {
-  document.getElementById('tags-ac').style.display = 'none';
-  tagsACIndex = -1;
+function closeListAC(inputId) {
+  const ac = listACBox(inputId);
+  if (ac) ac.style.display = 'none';
+  _listACIndex = -1;
 }
+
+// Named wrappers, because the inline handlers in index.html read better as
+// tagsAC() than as listAC('f-tags').
+function tagsAC()      { listAC('f-tags'); }
+function tagsACKey(e)  { listACKey('f-tags', e); }
+function closeTagsAC() { closeListAC('f-tags'); }
+
+function gameGenreAC()      { listAC('g-genre'); }
+function gameGenreACKey(e)  { listACKey('g-genre', e); }
+function closeGameGenreAC() { closeListAC('g-genre'); }
 
 
 // ─── BOOK MODAL ───────────────────────────────────────────────────────
