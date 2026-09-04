@@ -344,8 +344,12 @@
 
     <div class="form-group">
       <label>Genre <span class="opt">(optional)</span></label>
-      <input type="text" class="plain" id="m-genre" placeholder="Action, Drama, Sci-Fi…">
-      <div class="hint">Comma-separated.</div>
+      <div style="position:relative">
+        <input type="text" class="plain" id="m-genre" placeholder="Action, Drama, Sci-Fi…" autocomplete="off"
+               oninput="mediaGenreAC()" onkeydown="mediaGenreACKey(event)" onblur="setTimeout(closeMediaGenreAC,150)">
+        <div class="ac-box" id="m-genre-ac"></div>
+      </div>
+      <div class="hint">Comma-separated. Genres you have already used are suggested as you type.</div>
     </div>
 
     <div class="form-group">
