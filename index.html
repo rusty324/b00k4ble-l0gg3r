@@ -170,7 +170,7 @@
       <div style="position:relative">
         <input type="text" class="plain" id="f-tags" placeholder="sci-fi, favorites, gift…" autocomplete="off"
                oninput="tagsAC()" onkeydown="tagsACKey(event)" onblur="setTimeout(closeTagsAC,150)">
-        <div id="tags-ac" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border-mid);border-radius:8px;margin-top:3px;z-index:300;max-height:180px;overflow-y:auto;box-shadow:0 4px 12px rgba(0,0,0,0.12)"></div>
+        <div class="ac-box" id="f-tags-ac"></div>
       </div>
       <div class="hint">Comma-separated. e.g. sci-fi, favorites</div>
     </div>
@@ -459,8 +459,12 @@
 
     <div class="form-group">
       <label>Genre <span class="opt">(optional)</span></label>
-      <input type="text" class="plain" id="g-genre" placeholder="Action, RPG, Platformer…">
-      <div class="hint">Comma-separated.</div>
+      <div style="position:relative">
+        <input type="text" class="plain" id="g-genre" placeholder="Action, RPG, Platformer…" autocomplete="off"
+               oninput="gameGenreAC()" onkeydown="gameGenreACKey(event)" onblur="setTimeout(closeGameGenreAC,150)">
+        <div class="ac-box" id="g-genre-ac"></div>
+      </div>
+      <div class="hint">Comma-separated. Genres you have already used are suggested as you type.</div>
     </div>
 
     <div class="form-group">

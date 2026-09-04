@@ -452,8 +452,17 @@ input[type="radio"], input[type="checkbox"] { display: none; }
 .empty-state h3 { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--amber-900); margin-bottom: 0.5rem; }
 
 /* ─── TAGS AUTOCOMPLETE DROPDOWN ─────────────────────────────────── */
-#tags-ac .ac-item { padding: 0.45rem 0.875rem; font-size: 13px; cursor: pointer; color: var(--text); transition: background 0.1s; }
-#tags-ac .ac-item:hover, #tags-ac .ac-item.ac-active { background: var(--amber-50); color: var(--amber-900); }
+/* Suggestion dropdown shared by the book tags and game genre fields. Its
+   parent must be position:relative. */
+.ac-box {
+  display: none; position: absolute; top: 100%; left: 0; right: 0;
+  background: var(--surface); border: 1px solid var(--border-mid);
+  border-radius: 8px; margin-top: 3px; z-index: 300;
+  max-height: 180px; overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+.ac-box .ac-item { padding: 0.45rem 0.875rem; font-size: 13px; cursor: pointer; color: var(--text); transition: background 0.1s; }
+.ac-box .ac-item:hover, .ac-box .ac-item.ac-active { background: var(--amber-50); color: var(--amber-900); }
 
 #importFile { display: none; }
 
@@ -618,7 +627,7 @@ input[type="radio"], input[type="checkbox"] { display: none; }
    it once the modal hits its top or bottom. */
 .modal,
 .tmdb-ac,
-#tags-ac { overscroll-behavior: contain; }
+.ac-box { overscroll-behavior: contain; }
 
 /* While any modal is open the body is pinned. position:fixed is used
    rather than overflow:hidden because iOS Safari ignores the latter on

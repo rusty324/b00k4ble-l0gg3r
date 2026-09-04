@@ -1824,67 +1824,121 @@ function populateDataLists() {
 }
 
 
-// ─── TAGS AUTOCOMPLETE ────────────────────────────────────────────────
-let tagsACIndex = -1;
+// ─── COMMA-LIST AUTOCOMPLETE ──────────────────────────────────────────
+// One implementation behind two fields. Book tags have had this since long
+// before the games tab existed, and genres are the same shape of problem: a
+// comma-separated field whose vocabulary should converge on what is already
+// in the library instead of being retyped from memory each time.
+//
+// Every suggestion comes from the user's own records. Nothing is seeded, so
+// the list can never offer a word they did not choose themselves.
+const LIST_AC_OPTIONS = {
+  'f-tags':  () => allTags(),
+  'g-genre': () => allGameGenres(),
+};
 
-function tagsAC() {
-  const input = document.getElementById('f-tags');
-  const ac    = document.getElementById('tags-ac');
+// Genres, deduplicated case-insensitively with the first-seen casing kept —
+// the whole point is that "Adventure" typed once becomes *the* suggestion
+// afterwards, not that "adventure" accumulates alongside it.
+function allGameGenres() {
+  const seen = new Map();
+  videoGames.forEach(g => (g.genre || []).forEach(raw => {
+    const value = String(raw).trim();
+    if (value && !seen.has(value.toLowerCase())) seen.set(value.toLowerCase(), value);
+  }));
+  return [...seen.values()].sort((a, b) => a.localeCompare(b));
+}
 
+let _listACIndex = -1;
+
+// The box always sits immediately after its input, so its id is derivable.
+const listACBox = inputId => document.getElementById(`${inputId}-ac`);
+
+function listAC(inputId) {
+  const input = document.getElementById(inputId);
+  const ac    = listACBox(inputId);
+  if (!input || !ac) return;
+
+  // Only the segment being typed is the query; the ones before it are done.
   const parts = input.value.split(',');
   const query = parts[parts.length - 1].trim().toLowerCase();
+  if (!query) { closeListAC(inputId); return; }
 
-  if (!query) { closeTagsAC(); return; }
+  const already = new Set(parts.slice(0, -1).map(t => t.trim().toLowerCase()));
+  const matches = (LIST_AC_OPTIONS[inputId]?.() || [])
+    .filter(t => t.toLowerCase().includes(query) && !already.has(t.toLowerCase()))
+    // A prefix match is what was meant far more often than a mid-word one,
+    // so "adv" offers "Adventure" before "Point-and-click Adventure".
+    .sort((a, b) => (a.toLowerCase().startsWith(query) ? 0 : 1)
+                  - (b.toLowerCase().startsWith(query) ? 0 : 1)
+                  || a.localeCompare(b));
 
-  const existing = new Set(parts.slice(0, -1).map(t => t.trim().toLowerCase()));
-  const matches = allTags().filter(t =>
-    t.toLowerCase().includes(query) && !existing.has(t.toLowerCase())
-  );
+  if (!matches.length) { closeListAC(inputId); return; }
 
-  if (!matches.length) { closeTagsAC(); return; }
-
-  tagsACIndex = -1;
-  ac.innerHTML = matches
-    .map(t => `<div class="ac-item" data-val="${esc(t)}" onmousedown="pickTag(this.dataset.val)">${esc(t)}</div>`)
-    .join('');
+  _listACIndex = -1;
+  ac.innerHTML = matches.map(t =>
+    `<div class="ac-item" data-val="${esc(t)}" onmousedown="pickListValue('${inputId}', this.dataset.val)">${esc(t)}</div>`
+  ).join('');
   ac.style.display = 'block';
 }
 
-function tagsACKey(e) {
-  const ac    = document.getElementById('tags-ac');
+function listACKey(inputId, e) {
+  const ac = listACBox(inputId);
+  if (!ac || ac.style.display === 'none') return;
   const items = ac.querySelectorAll('.ac-item');
-
-  if (!items.length || ac.style.display === 'none') return;
+  if (!items.length) return;
 
   if (e.key === 'ArrowDown') {
     e.preventDefault();
-    tagsACIndex = Math.min(tagsACIndex + 1, items.length - 1);
-    items.forEach((el, i) => el.classList.toggle('ac-active', i === tagsACIndex));
+    _listACIndex = Math.min(_listACIndex + 1, items.length - 1);
   } else if (e.key === 'ArrowUp') {
     e.preventDefault();
-    tagsACIndex = Math.max(tagsACIndex - 1, 0);
-    items.forEach((el, i) => el.classList.toggle('ac-active', i === tagsACIndex));
-  } else if (e.key === 'Enter' && tagsACIndex >= 0) {
+    _listACIndex = Math.max(_listACIndex - 1, 0);
+  } else if (e.key === 'Enter' && _listACIndex >= 0) {
     e.preventDefault();
-    pickTag(items[tagsACIndex].dataset.val);
+    pickListValue(inputId, items[_listACIndex].dataset.val);
+    return;
   } else if (e.key === 'Escape') {
-    closeTagsAC();
+    closeListAC(inputId);
+    return;
+  } else {
+    return;
   }
+  items.forEach((el, i) => el.classList.toggle('ac-active', i === _listACIndex));
+  if (items[_listACIndex]) items[_listACIndex].scrollIntoView({ block: 'nearest' });
 }
 
-function pickTag(tag) {
-  const input = document.getElementById('f-tags');
-  const parts = input.value.split(',');
-  parts[parts.length - 1] = ' ' + tag;
-  input.value = parts.join(',').replace(/^,\s*/, '') + ', ';
+// Replaces the segment being typed, and leaves a trailing ", " ready for the
+// next one.
+function pickListValue(inputId, value) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  // Rebuild from trimmed segments rather than splicing into the raw text.
+  // The old tags version prepended a space and then tried to strip a leading
+  // *comma*, which never matched on the first segment — so completing the
+  // very first tag left the field reading " sci-fi, ".
+  const parts = input.value.split(',').map(p => p.trim());
+  parts[parts.length - 1] = value;
+  input.value = parts.filter(Boolean).join(', ') + ', ';
   input.focus();
-  closeTagsAC();
+  closeListAC(inputId);
 }
 
-function closeTagsAC() {
-  document.getElementById('tags-ac').style.display = 'none';
-  tagsACIndex = -1;
+function closeListAC(inputId) {
+  const ac = listACBox(inputId);
+  if (ac) ac.style.display = 'none';
+  _listACIndex = -1;
 }
+
+// Named wrappers, because the inline handlers in index.html read better as
+// tagsAC() than as listAC('f-tags').
+function tagsAC()      { listAC('f-tags'); }
+function tagsACKey(e)  { listACKey('f-tags', e); }
+function closeTagsAC() { closeListAC('f-tags'); }
+
+function gameGenreAC()      { listAC('g-genre'); }
+function gameGenreACKey(e)  { listACKey('g-genre', e); }
+function closeGameGenreAC() { closeListAC('g-genre'); }
 
 
 // ─── BOOK MODAL ───────────────────────────────────────────────────────
