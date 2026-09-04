@@ -506,7 +506,7 @@ let videoGames = JSON.parse(localStorage.getItem('videoGames') || '[]')
   .map(normalizeVideoGame);
 let gameEditingId = null;
 let gameRating = 0;
-let gameFilters = { platform: 'all', status: 'all', format: 'all' };
+let gameFilters = { platform: 'all', status: 'all', format: 'all', genres: [] };
 let gameSort = 'added-desc';
 let gameSearch = '';
 let gameSearchTimer = null;
@@ -1280,6 +1280,13 @@ function renderGames(listOnly = false) {
   // An item can hold several formats, so this is "has it", not "is it".
   if (gameFilters.format !== 'all')
     items = items.filter(g => (g.formats || []).includes(gameFilters.format));
+  // Several genres widen rather than narrow: ticking Adventure and RPG shows
+  // games that are either, which is what a list of checkboxes reads as. The
+  // menu says so, so it is never left to guess.
+  if (gameFilters.genres.length) {
+    const wanted = new Set(gameFilters.genres.map(x => x.toLowerCase()));
+    items = items.filter(g => (g.genre || []).some(x => wanted.has(String(x).toLowerCase())));
+  }
   if (gameSearch.trim()) {
     const q = gameSearch.toLowerCase().trim();
     items = items.filter(g =>
@@ -1319,6 +1326,31 @@ function renderGames(listOnly = false) {
   const formatPills = [['all','All'],['physical','📀 Physical'],['digital','💾 Digital']].map(([v,l]) =>
     `<button class="pill${gameFilters.format===v?' active':''}" onclick="setGameFilter('format','${v}')">${l}</button>`
   ).join('');
+  // Genres are open-ended, unlike the fixed platform/status/format sets, so
+  // this is a menu rather than a row of pills that would grow without bound.
+  const genres = allGameGenres();
+  const genreRow = genres.length ? `<div class="filter-row filter-row-menu">
+      <span class="filter-label">Genre</span>
+      <div class="dropdown-wrap">
+        <button class="pill dropdown-btn${gameFilters.genres.length ? ' active' : ''}"
+                id="gameGenreBtn" aria-haspopup="true" aria-expanded="false"
+                onclick="toggleGameGenreMenu(event)">${esc(gameGenreLabel())} <span aria-hidden="true">▾</span></button>
+        <div class="dropdown-menu" id="gameGenreMenu" role="group" aria-label="Filter by genre">
+          <div class="dropdown-head">
+            <span>Games matching <strong>any</strong> of these</span>
+            <button type="button" class="dropdown-clear" onclick="clearGameGenreFilter()"
+                    ${gameFilters.genres.length ? '' : 'disabled'}>Clear</button>
+          </div>
+          ${genres.map(g => `<label class="dropdown-opt">
+            <input type="checkbox" value="${esc(g)}"
+                   ${gameFilters.genres.some(x => x.toLowerCase() === g.toLowerCase()) ? 'checked' : ''}
+                   onchange="toggleGameGenre(this.value)">
+            <span>${esc(g)}</span>
+          </label>`).join('')}
+        </div>
+      </div>
+    </div>` : '';
+
   const sortSelect = `<select class="sort-select" aria-label="Sort video games" onchange="setGameSort(this.value)">
     <option value="added-desc"${gameSort==='added-desc'?' selected':''}>Newest added</option>
     <option value="added-asc"${gameSort==='added-asc'?' selected':''}>Oldest added</option>
@@ -1344,6 +1376,7 @@ function renderGames(listOnly = false) {
       <span class="filter-label">Format</span>
       <div class="pill-group">${formatPills}</div>
     </div>
+    ${genreRow}
     <div class="filter-row">
       <span class="filter-label">Sort</span>
       ${sortSelect}
@@ -1353,7 +1386,7 @@ function renderGames(listOnly = false) {
   let contentHtml;
   if (!items.length) {
     const narrowed = gameFilters.platform !== 'all' || gameFilters.status !== 'all' ||
-                     gameFilters.format !== 'all';
+                     gameFilters.format !== 'all' || gameFilters.genres.length > 0;
     const emptyMsg = gameSearch.trim()
       ? { h: 'No results', p: 'Try a different search term or clear the search.' }
       : narrowed
@@ -1454,6 +1487,78 @@ function setGameFilter(key, val) {
   gameFilters[key] = val;
   renderGames();
 }
+
+// What the closed button reads. Two are spelled out with "or" so the widening
+// behaviour is legible without opening the menu; beyond that it would not fit.
+function gameGenreLabel() {
+  const n = gameFilters.genres.length;
+  if (!n) return 'All';
+  if (n === 1) return gameFilters.genres[0];
+  if (n === 2) return gameFilters.genres.join(' or ');
+  return `${n} genres`;
+}
+
+function toggleGameGenreMenu(e) {
+  if (e) e.stopPropagation();          // don't trip the close-on-outside handler
+  const menu = document.getElementById('gameGenreMenu');
+  const btn  = document.getElementById('gameGenreBtn');
+  if (!menu || !btn) return;
+  const open = menu.classList.toggle('open');
+  btn.setAttribute('aria-expanded', String(open));
+}
+
+function closeGameGenreMenu() {
+  const menu = document.getElementById('gameGenreMenu');
+  const btn  = document.getElementById('gameGenreBtn');
+  if (menu) menu.classList.remove('open');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+
+// Repaints the list only. A full renderGames() would rebuild the toolbar and
+// take the open menu down with it, so ticking a second genre would be
+// impossible without reopening — the same reason the search box uses listOnly.
+function toggleGameGenre(value) {
+  const i = gameFilters.genres.findIndex(x => x.toLowerCase() === String(value).toLowerCase());
+  if (i === -1) gameFilters.genres.push(value);
+  else gameFilters.genres.splice(i, 1);
+
+  const btn = document.getElementById('gameGenreBtn');
+  if (btn) {
+    btn.firstChild.nodeValue = gameGenreLabel() + ' ';
+    btn.classList.toggle('active', gameFilters.genres.length > 0);
+  }
+  const clear = document.querySelector('#gameGenreMenu .dropdown-clear');
+  if (clear) clear.disabled = gameFilters.genres.length === 0;
+
+  renderGames(true);
+}
+
+function clearGameGenreFilter() {
+  gameFilters.genres = [];
+  document.querySelectorAll('#gameGenreMenu input[type="checkbox"]')
+    .forEach(cb => { cb.checked = false; });
+  const btn = document.getElementById('gameGenreBtn');
+  if (btn) {
+    btn.firstChild.nodeValue = 'All ';
+    btn.classList.remove('active');
+  }
+  const clear = document.querySelector('#gameGenreMenu .dropdown-clear');
+  if (clear) clear.disabled = true;
+  renderGames(true);
+}
+
+// Close on a click anywhere else, like the settings menu.
+document.addEventListener('click', e => {
+  const menu = document.getElementById('gameGenreMenu');
+  const btn  = document.getElementById('gameGenreBtn');
+  if (!menu || !menu.classList.contains('open')) return;
+  if (btn && btn.contains(e.target)) return;
+  if (!menu.contains(e.target)) closeGameGenreMenu();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeGameGenreMenu();
+});
 
 function setGameSort(val) {
   gameSort = val;

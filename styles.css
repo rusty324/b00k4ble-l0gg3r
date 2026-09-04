@@ -226,6 +226,54 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
 .pill.active { background: var(--amber-900); border-color: var(--amber-900); color: var(--amber-50); }
 .pill.tag-pill.active { background: var(--blue-600); border-color: var(--blue-600); color: var(--blue-50); }
 
+/* ─── MULTI-SELECT DROPDOWN (game genre filter) ─────────────────────── */
+/* A menu rather than pills, because the genre vocabulary is open-ended and
+   a pill row would grow without bound. */
+.dropdown-wrap { position: relative; display: inline-block; }
+.dropdown-btn { display: inline-flex; align-items: center; gap: 0.35rem; }
+
+.dropdown-menu {
+  display: none; position: absolute; top: calc(100% + 4px); left: 0;
+  min-width: 220px; max-width: 78vw; max-height: 260px; overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--surface); border: 1px solid var(--border-mid);
+  border-radius: 10px; z-index: 300; padding: 0.25rem;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.16);
+}
+.dropdown-menu.open { display: block; }
+
+.dropdown-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  padding: 0.4rem 0.55rem 0.5rem; margin-bottom: 0.2rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px; color: var(--text-light);
+}
+.dropdown-head strong { color: var(--text-muted); font-weight: 500; }
+
+.dropdown-clear {
+  font-family: 'DM Sans', sans-serif; font-size: 11px;
+  background: none; border: none; padding: 0.15rem 0.3rem;
+  color: var(--amber-800); cursor: pointer; white-space: nowrap;
+}
+.dropdown-clear:disabled { color: var(--text-light); cursor: default; }
+
+/* A <label>, so it inherits the uppercased form-label styling — undone here,
+   because these are genre names and must read exactly as they were typed. */
+.dropdown-opt {
+  display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.4rem 0.55rem; margin: 0; border-radius: 6px;
+  font-size: 13px; font-weight: 400; color: var(--text); cursor: pointer;
+  text-transform: none; letter-spacing: 0;
+}
+.dropdown-opt:hover { background: var(--amber-50); color: var(--amber-900); }
+/* Checkboxes are globally hidden for the pill-style pickers — undo that here,
+   since these really are checkboxes and the tick is the state. */
+.dropdown-opt input[type="checkbox"] {
+  display: inline-block; width: 16px; height: 16px; flex-shrink: 0; margin: 0;
+  accent-color: var(--amber-900); cursor: pointer;
+}
+.dropdown-opt span { overflow-wrap: anywhere; }
+
 /* ─── PAGINATION ─────────────────────────────────────────────────── */
 .pagination { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; flex-wrap: wrap; }
 .page-info { font-size: 13px; color: var(--text-muted); }
@@ -516,6 +564,14 @@ input[type="radio"], input[type="checkbox"] { display: none; }
   #addBtnLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .filter-row { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; scrollbar-width: none; }
   .filter-row::-webkit-scrollbar { display: none; }
+  /* A row holding a menu must not scroll: overflow-x makes a clipping box, and
+     the absolutely-positioned panel would be cut off at the row's edge. There
+     is only a label and one button in here, so there is nothing to scroll. */
+  .filter-row-menu { overflow: visible; flex-wrap: wrap; }
+  /* Full-width tap targets for the options, like every other control here. */
+  .dropdown-opt { padding: 0.6rem 0.55rem; font-size: 14px; min-height: 44px; box-sizing: border-box; }
+  .dropdown-opt input[type="checkbox"] { width: 18px; height: 18px; }
+  .dropdown-menu { max-height: 50vh; }
   .pill-group { flex-wrap: nowrap; }
   .books-grid { grid-template-columns: 1fr; }
   .book-row-author { display: none; }
