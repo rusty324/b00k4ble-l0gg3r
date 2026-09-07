@@ -452,16 +452,22 @@
       <input type="text" class="plain" id="g-title" placeholder="Game title">
     </div>
 
+    <!-- Platforms, and how the game is held on each one. Format lives inside
+         a platform rather than beside it because the two really do vary
+         together: a PS4 disc alongside a PS5 copy that is only there while a
+         Plus subscription lasts is one game and two different facts. -->
     <div class="form-group">
-      <label>Platform</label>
+      <label>Platforms <span class="opt">(select all you own it on)</span></label>
       <div class="radio-group" id="g-platform-group">
-        <label class="radio-btn" for="g-plat-ps3">PS3<input type="radio" name="g-platform" id="g-plat-ps3" value="ps3"></label>
-        <label class="radio-btn" for="g-plat-ps4">PS4<input type="radio" name="g-platform" id="g-plat-ps4" value="ps4"></label>
-        <label class="radio-btn" for="g-plat-ps5">PS5<input type="radio" name="g-platform" id="g-plat-ps5" value="ps5"></label>
-        <label class="radio-btn" for="g-plat-xbox">Xbox<input type="radio" name="g-platform" id="g-plat-xbox" value="xbox"></label>
-        <label class="radio-btn" for="g-plat-steam">Steam<input type="radio" name="g-platform" id="g-plat-steam" value="steam"></label>
+        <label class="radio-btn" for="g-plat-ps3">PS3<input type="checkbox" name="g-plat-pick" id="g-plat-ps3" value="ps3"></label>
+        <label class="radio-btn" for="g-plat-ps4">PS4<input type="checkbox" name="g-plat-pick" id="g-plat-ps4" value="ps4"></label>
+        <label class="radio-btn" for="g-plat-ps5">PS5<input type="checkbox" name="g-plat-pick" id="g-plat-ps5" value="ps5"></label>
+        <label class="radio-btn" for="g-plat-xbox">Xbox<input type="checkbox" name="g-plat-pick" id="g-plat-xbox" value="xbox"></label>
+        <label class="radio-btn" for="g-plat-steam">Steam<input type="checkbox" name="g-plat-pick" id="g-plat-steam" value="steam"></label>
       </div>
-      <div class="hint hint-error" id="g-plat-error" style="display:none">Pick a platform.</div>
+      <div class="platform-entries" id="g-platform-entries"></div>
+      <div class="hint" id="g-plat-hint">Each platform you tick gets a row below, where you can say how you own it there. PS Plus is offered on PlayStation only.</div>
+      <div class="hint hint-error" id="g-plat-error" style="display:none">Pick at least one platform.</div>
     </div>
 
     <div class="form-group">
@@ -478,14 +484,6 @@
       </div>
       <div class="genre-pills" id="g-genre-pills"></div>
       <div class="hint">Press Enter (or a comma) to add a genre. Tap a pill, then tap it again to remove it.</div>
-    </div>
-
-    <div class="form-group">
-      <label>Format <span class="opt">(select all that apply)</span></label>
-      <div class="radio-group" id="g-format-group">
-        <label class="radio-btn" for="g-fmt-physical">📀 Physical<input type="checkbox" id="g-fmt-physical" value="physical"></label>
-        <label class="radio-btn" for="g-fmt-digital">💾 Digital<input type="checkbox" id="g-fmt-digital" value="digital"></label>
-      </div>
     </div>
 
     <div class="form-group">

@@ -17,7 +17,16 @@
   .settings-menu { left: 0; right: auto; }
   .brand { font-size: 1.2rem; flex: 1; }
   .header-actions { width: 100%; justify-content: flex-end; gap: 0.4rem; flex-wrap: nowrap; }
-  .btn, .pill, .genre-pill { min-height: 44px; }
+  .btn, .pill, .genre-pill, .fmt-chip { min-height: 44px; }
+  /* Three 44px chips will not sit beside a platform name on a phone, and
+     letting them wrap in a side column stacks them one per line. Give the
+     name its own line instead, float the × into the corner, and the chips
+     get the full width — two to a line rather than three tall ones. */
+  .platform-entry { flex-direction: column; align-items: stretch; position: relative; padding-right: 2.4rem; }
+  .platform-entry-formats { width: 100%; }
+  .fmt-chip { flex: 1 1 auto; }
+  .platform-entry-remove { position: absolute; top: 50%; right: 0.2rem; transform: translateY(-50%);
+                           min-width: 44px; min-height: 44px; }
   .btn-primary { flex: 1; justify-content: center; min-width: 0; }
   /* Let the "Add book" label truncate so the icon buttons keep 44px targets */
   #addBtnLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

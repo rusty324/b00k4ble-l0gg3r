@@ -122,6 +122,38 @@ textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
 .radio-btn.active { background: var(--amber-900); border-color: var(--amber-900); color: var(--amber-50); }
 input[type="radio"], input[type="checkbox"] { display: none; }
 
+/* ─── PLATFORM ENTRIES (game modal) ──────────────────────────────────
+   One row per platform the game is owned on, each carrying its own
+   format chips — a PS4 disc and a PS5 Plus copy are two rows, not one
+   platform with two formats. Indented and rule-topped so the rows read
+   as belonging to the platform buttons above rather than as a new
+   field. */
+.platform-entries:not(:empty) { margin-top: 0.7rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.platform-entry {
+  display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+  padding: 0.5rem 0.6rem; border: 1px solid var(--border);
+  border-radius: 10px; background: var(--surface);
+}
+.platform-entry-name {
+  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
+  letter-spacing: 0.04em; text-transform: uppercase; color: var(--text);
+  min-width: 3.2rem;
+}
+.platform-entry-formats { display: flex; gap: 0.35rem; flex-wrap: wrap; flex: 1; }
+.fmt-chip {
+  font-family: 'DM Sans', sans-serif; font-size: 12px;
+  padding: 0.25rem 0.6rem; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+}
+.fmt-chip:hover { border-color: var(--amber-200); color: var(--amber-800); }
+.fmt-chip.active { background: var(--amber-900); border-color: var(--amber-900); color: var(--amber-50); }
+.platform-entry-remove {
+  font-size: 17px; line-height: 1; padding: 0 0.25rem;
+  background: none; border: none; cursor: pointer; color: var(--text-light);
+}
+.platform-entry-remove:hover { color: var(--coral-600); }
+
 /* ─── STAR PICKER ────────────────────────────────────────────────── */
 .star-picker { display: flex; gap: 4px; }
 .star-btn { font-size: 22px; cursor: pointer; color: var(--gray-100); background: none; border: none; transition: color 0.1s, transform 0.1s; line-height: 1; padding: 0; }

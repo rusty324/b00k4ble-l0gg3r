@@ -451,9 +451,10 @@ async function gameAutofillFromLinks() {
     titleEl.value = info.title;
     filled.push('title');
   }
-  if (info.platform && !document.querySelector('input[name="g-platform"]:checked')) {
-    setRadio('g-platform', info.platform);
-    document.getElementById('g-plat-error').style.display = 'none';
+  // Adds to the list rather than replacing it: a Steam link on a game already
+  // marked Xbox means both, which is exactly the case the list exists for.
+  if (info.platform && !_gamePlatforms.some(p => p.platform === info.platform)) {
+    toggleGamePlatform(info.platform);
     filled.push('platform');
   }
 
@@ -479,12 +480,91 @@ function gameAutofillSoon() {
 }
 
 
-// ─── GAME MODAL ──────────────────────────────────────────────────────
-function setGameFormats(vals) {
-  document.querySelectorAll('#g-format-group input[type="checkbox"]').forEach(cb => {
-    cb.checked = vals.includes(cb.value);
+// ─── GAME MODAL: PLATFORMS ───────────────────────────────────────────
+// The form's working copy of the record's `platforms` list. Held here rather
+// than read back out of the DOM at save time because a platform's formats
+// have to survive it being unticked and reticked within one editing session.
+let _gamePlatforms = [];   // [{ platform, formats }]
+
+const gamePlatformsBox = () => document.getElementById('g-platform-entries');
+
+// Known platforms in the order the buttons offer them; anything unknown that
+// came in on an existing record keeps its own place at the end.
+function sortGamePlatforms() {
+  _gamePlatforms.sort((a, b) => {
+    const ia = GAME_PLATFORMS.indexOf(a.platform), ib = GAME_PLATFORMS.indexOf(b.platform);
+    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+  });
+}
+
+function setGamePlatforms(list) {
+  _gamePlatforms = (Array.isArray(list) ? list : []).map(p => ({
+    platform: p.platform, formats: [...(p.formats || [])],
+  }));
+  sortGamePlatforms();
+  syncGamePlatformPicks();
+  renderGamePlatformEntries();
+}
+
+// The tick boxes follow the list, not the other way round — removing a row
+// with its × has to clear the button too.
+function syncGamePlatformPicks() {
+  document.querySelectorAll('input[name="g-plat-pick"]').forEach(cb => {
+    cb.checked = _gamePlatforms.some(p => p.platform === cb.value);
     cb.closest('.radio-btn').classList.toggle('active', cb.checked);
   });
+}
+
+function renderGamePlatformEntries() {
+  const box = gamePlatformsBox();
+  if (!box) return;
+  box.innerHTML = _gamePlatforms.map(p => {
+    // PS Plus is a PlayStation subscription, so it is only offered where it
+    // could be true — the normalizer drops it elsewhere regardless.
+    const chips = formatsFor(p.platform).map(f =>
+      `<button type="button" class="fmt-chip${(p.formats || []).includes(f) ? ' active' : ''}"
+               aria-pressed="${(p.formats || []).includes(f)}"
+               onclick="toggleGamePlatformFormat('${p.platform}','${f}')"
+       >${GAME_FORMAT_ICON[f]} ${esc(GAME_FORMAT_LABEL[f])}</button>`).join('');
+    return `<div class="platform-entry">
+      <span class="platform-entry-name">${esc(platformLabel(p.platform))}</span>
+      <div class="platform-entry-formats">${chips}</div>
+      <button type="button" class="platform-entry-remove" aria-label="Remove ${esc(platformLabel(p.platform))}"
+              onclick="removeGamePlatform('${p.platform}')">&times;</button>
+    </div>`;
+  }).join('');
+}
+
+// From a platform button. Unticking drops that platform's formats with it —
+// they describe a copy the user just said they do not have.
+function toggleGamePlatform(value) {
+  const i = _gamePlatforms.findIndex(p => p.platform === value);
+  if (i === -1) _gamePlatforms.push({ platform: value, formats: [] });
+  else _gamePlatforms.splice(i, 1);
+  sortGamePlatforms();
+  syncGamePlatformPicks();
+  renderGamePlatformEntries();
+  if (_gamePlatforms.length) hideGamePlatformError();
+}
+
+function removeGamePlatform(value) {
+  _gamePlatforms = _gamePlatforms.filter(p => p.platform !== value);
+  syncGamePlatformPicks();
+  renderGamePlatformEntries();
+}
+
+function toggleGamePlatformFormat(platform, fmt) {
+  const entry = _gamePlatforms.find(p => p.platform === platform);
+  if (!entry) return;
+  const i = entry.formats.indexOf(fmt);
+  if (i === -1) entry.formats.push(fmt);
+  else entry.formats.splice(i, 1);
+  renderGamePlatformEntries();
+}
+
+function hideGamePlatformError() {
+  const el = document.getElementById('g-plat-error');
+  if (el) el.style.display = 'none';
 }
 
 // ─── STAR RATING (game modal) ──────────────────────────────────────────
@@ -512,9 +592,8 @@ function openGameModal(id) {
     document.getElementById('g-notes').value    = g.notes || '';
     document.getElementById('g-coverUrl').value = g.coverUrl || '';
     setLinksField('g', g.links);
-    setRadio('g-platform', g.platform || 'ps5');
+    setGamePlatforms(g.platforms);
     setRadio('g-status',   g.status   || 'want');
-    setGameFormats(g.formats || []);
     updateGameStars(gameRating);
   } else {
     gameEditingId = null;
@@ -523,14 +602,13 @@ function openGameModal(id) {
     ['g-title', 'g-year', 'g-notes', 'g-coverUrl'].forEach(fid => document.getElementById(fid).value = '');
     setGenreValues('g-genre', []);
     setLinksField('g', []);
-    setGameFormats([]);
     updateGameStars(0);
     // No default platform: picking one is the point of the field, and a
     // pre-selected PS5 quietly mislabels anything saved without touching it.
-    setRadio('g-platform', '');
+    setGamePlatforms([]);
     setRadio('g-status',   'want');
   }
-  document.getElementById('g-plat-error').style.display = 'none';
+  hideGamePlatformError();
   gameFillHint('');
   document.getElementById('gameModal').classList.add('open');
   // Only when adding: focusing on edit raises the phone keyboard over the
@@ -555,25 +633,24 @@ function saveGameItem() {
   const notes    = document.getElementById('g-notes').value.trim();
   const coverUrl = document.getElementById('g-coverUrl').value.trim();
   const links    = readLinksField('g');
-  const platformEl = document.querySelector('input[name="g-platform"]:checked');
-  if (!platformEl) {
+  if (!_gamePlatforms.length) {
     document.getElementById('g-plat-error').style.display = 'block';
     document.getElementById('g-platform-group').scrollIntoView({ block: 'center' });
     return;
   }
-  document.getElementById('g-plat-error').style.display = 'none';
-  const platform = platformEl.value;
-  const status   = document.querySelector('input[name="g-status"]:checked')?.value   || 'want';
-  const formats  = [...document.querySelectorAll('#g-format-group input[type="checkbox"]:checked')]
-    .map(cb => cb.value);
+  hideGamePlatformError();
+  const platforms = _gamePlatforms.map(p => ({ platform: p.platform, formats: [...p.formats] }));
+  const status    = document.querySelector('input[name="g-status"]:checked')?.value || 'want';
 
   if (gameEditingId !== null) {
     const i = videoGames.findIndex(x => x.id === gameEditingId);
     if (i !== -1) {
-      videoGames[i] = normalizeVideoGame({ ...videoGames[i], title, platform, year, genre, formats, status, notes, coverUrl, rating: gameRating, links });
+      // platform/formats are spread in from the stored record when it predates
+      // the list; normalizeVideoGame drops them once `platforms` is present.
+      videoGames[i] = normalizeVideoGame({ ...videoGames[i], title, platforms, year, genre, status, notes, coverUrl, rating: gameRating, links });
     }
   } else {
-    videoGames.push(normalizeVideoGame({ id: newId(), title, platform, year, genre, formats, status, notes, coverUrl, rating: gameRating, links }));
+    videoGames.push(normalizeVideoGame({ id: newId(), title, platforms, year, genre, status, notes, coverUrl, rating: gameRating, links }));
   }
 
   saveGames();
