@@ -7,7 +7,30 @@
 // No lookup API is wired up here — RAWG, IGDB, Giant Bomb and Steam's own
 // endpoints all decline browser CORS, so every field below is typed by
 // hand rather than searched, unlike the books/media tabs.
-const GAME_PLATFORM_LABEL = { ps3: 'PS3', ps4: 'PS4', ps5: 'PS5', xbox: 'Xbox', steam: 'Steam' };
+// GAME_PLATFORMS, GAME_PLATFORM_LABEL, platformLabel, GAME_FORMAT_ICON and
+// GAME_FORMAT_LABEL all live in core.js, next to the normalizer that decides
+// which combinations are legal.
+
+// "PS4 · PS5" — the platforms alone, for the line under a title.
+const gamePlatformText = g =>
+  (g.platforms || []).map(p => platformLabel(p.platform)).join(' · ');
+
+// One badge per platform, each carrying that platform's own format icons:
+// "PS4 📀" beside "PS5 ☁️" is the whole point of the list — a disc on one
+// console and a Plus copy on the other are two different facts.
+function gamePlatformBadges(g) {
+  // The form insists on at least one, so an empty list means an import that
+  // never said. Saying so beats a card that silently omits the field.
+  if (!(g.platforms || []).length)
+    return '<span class="badge badge-platform">Unknown platform</span>';
+  return g.platforms.map(p => {
+    const icons = (p.formats || []).map(f => GAME_FORMAT_ICON[f] || '').join('');
+    const names = (p.formats || []).map(f => GAME_FORMAT_LABEL[f] || f).join(', ');
+    const label = platformLabel(p.platform);
+    return `<span class="badge badge-platform" title="${esc(names ? label + ' — ' + names : label)}">${
+      esc(label)}${icons ? ' ' + icons : ''}</span>`;
+  }).join('');
+}
 
 // listOnly: replace just the results container, leaving the toolbar (and
 // the focused search input inside it) intact — used by the search path.
@@ -16,11 +39,14 @@ function renderGames(listOnly = false) {
 
   // Apply filters
   let items = videoGames;
-  if (gameFilters.platform !== 'all') items = items.filter(g => g.platform === gameFilters.platform);
+  // A game can be on several platforms, so these are both "has one like
+  // this", not "is this".
+  if (gameFilters.platform !== 'all')
+    items = items.filter(g => (g.platforms || []).some(p => p.platform === gameFilters.platform));
   if (gameFilters.status !== 'all') items = items.filter(g => g.status === gameFilters.status);
-  // An item can hold several formats, so this is "has it", not "is it".
   if (gameFilters.format !== 'all')
-    items = items.filter(g => (g.formats || []).includes(gameFilters.format));
+    items = items.filter(g =>
+      (g.platforms || []).some(p => (p.formats || []).includes(gameFilters.format)));
   // Several genres widen rather than narrow: ticking Adventure and RPG shows
   // games that are either, which is what a list of checkboxes reads as. The
   // menu says so, so it is never left to guess.
@@ -32,7 +58,7 @@ function renderGames(listOnly = false) {
     const q = gameSearch.toLowerCase().trim();
     items = items.filter(g =>
       (g.title || '').toLowerCase().includes(q) ||
-      (GAME_PLATFORM_LABEL[g.platform] || g.platform || '').toLowerCase().includes(q) ||
+      gamePlatformText(g).toLowerCase().includes(q) ||
       (g.year ? String(g.year) : '').includes(q) ||
       (g.genre || []).some(x => x.toLowerCase().includes(q))
     );
@@ -51,21 +77,19 @@ function renderGames(listOnly = false) {
 
   const stCls    = { want: 'badge-want', playing: 'badge-reading', completed: 'badge-watched' };
   const stLabel  = { want: 'Want to Play', playing: 'Playing', completed: 'Completed' };
-  const fmtIcons = { physical: '📀', digital: '💾' };
-  const fmtCls   = { physical: 'badge-physical', digital: 'badge-digital' };
 
   // Filter toolbar
-  const platformPills = [['all','All'],['ps3','PS3'],['ps4','PS4'],['ps5','PS5'],
-                         ['xbox','Xbox'],['steam','Steam']].map(([v,l]) =>
-    `<button class="pill${gameFilters.platform===v?' active':''}" onclick="setGameFilter('platform','${v}')">${l}</button>`
+  const platformPills = [['all', 'All'], ...GAME_PLATFORMS.map(p => [p, platformLabel(p)])].map(([v,l]) =>
+    `<button class="pill${gameFilters.platform===v?' active':''}" onclick="setGameFilter('platform','${v}')">${esc(l)}</button>`
   ).join('');
   const statusPills = [['all','All'],['want','Want to Play'],['playing','Playing'],
                        ['completed','Completed']].map(([v,l]) =>
     `<button class="pill${gameFilters.status===v?' active':''}" onclick="setGameFilter('status','${v}')">${l}</button>`
   ).join('');
-  // Same values and icons as the form's format checkboxes.
-  const formatPills = [['all','All'],['physical','📀 Physical'],['digital','💾 Digital']].map(([v,l]) =>
-    `<button class="pill${gameFilters.format===v?' active':''}" onclick="setGameFilter('format','${v}')">${l}</button>`
+  // Same values and icons as the form's per-platform format buttons.
+  const formatPills = [['all', 'All'], ...GAME_FORMATS.map(f =>
+    [f, `${GAME_FORMAT_ICON[f]} ${GAME_FORMAT_LABEL[f]}`])].map(([v,l]) =>
+    `<button class="pill${gameFilters.format===v?' active':''}" onclick="setGameFilter('format','${v}')">${esc(l)}</button>`
   ).join('');
   const genreRow = genreFilterRow('games');
 
@@ -121,8 +145,6 @@ function renderGames(listOnly = false) {
     </div>`;
   } else if (viewMode === 'list') {
     const rows = items.map(g => {
-      const plat    = GAME_PLATFORM_LABEL[g.platform] || g.platform || 'Unknown platform';
-      const formats = (g.formats || []).map(f => fmtIcons[f] || '').join(' ');
       return `<div class="book-row">
         ${g.coverUrl
           ? `<img class="book-row-thumb" src="${esc(g.coverUrl)}" alt="" loading="lazy">`
@@ -130,10 +152,10 @@ function renderGames(listOnly = false) {
         <div class="book-row-content">
           <div class="book-row-title">${esc(g.title)}</div>
           <div class="book-row-meta">
-            <div class="book-row-author">${esc(plat)}</div>
+            <div class="book-row-author">${g.year ? esc(String(g.year)) : ''}</div>
             <div class="book-row-badges">
               <span class="badge ${stCls[g.status] || 'badge-want'}">${stLabel[g.status] || esc(g.status)}</span>
-              ${formats ? `<span class="badge badge-media">${formats}</span>` : ''}
+              ${gamePlatformBadges(g)}
             </div>
             <div class="book-row-actions">
               ${renderLinkButtons(g.links, true)}
@@ -147,11 +169,8 @@ function renderGames(listOnly = false) {
     contentHtml = `<div class="books-list">${rows}</div>`;
   } else {
     const cards = items.map(g => {
-      const plat      = GAME_PLATFORM_LABEL[g.platform] || g.platform || 'Unknown platform';
       const genreTags = (g.genre || []).map(x =>
         `<span class="badge badge-tag">${esc(x)}</span>`).join('');
-      const fmtBadges = (g.formats || []).map(f =>
-        `<span class="badge ${fmtCls[f] || 'badge-media'}" title="${esc(f)}">${fmtIcons[f] || esc(f)}</span>`).join('');
       const gr = Math.max(0, Math.min(5, g.rating || 0));
       const stars = gr > 0
         ? `<span class="stars">${'★'.repeat(gr)}<span class="empty">${'★'.repeat(5-gr)}</span></span>`
@@ -161,10 +180,10 @@ function renderGames(listOnly = false) {
           ? `<img class="book-card-cover" src="${esc(g.coverUrl)}" alt="" loading="lazy">`
           : `<div class="media-card-placeholder">🎮</div>`}
         <div class="book-title">${esc(g.title)}</div>
-        <div class="book-author">${esc(plat)}${g.year ? ' · ' + esc(String(g.year)) : ''}</div>
+        ${g.year ? `<div class="book-author">${esc(String(g.year))}</div>` : ''}
         <div class="book-meta">
           <span class="badge ${stCls[g.status] || 'badge-want'}">${stLabel[g.status] || esc(g.status)}</span>
-          ${fmtBadges}
+          ${gamePlatformBadges(g)}
           ${stars}
         </div>
         ${genreTags ? `<div class="book-tags">${genreTags}</div>` : ''}

@@ -411,27 +411,81 @@ function normalizeWishlistItem(item) {
 // platform standing in for type. No whitelist on platform, matching how
 // media's own type is handled: an unrecognised value passes through rather
 // than being rejected, since a future console is a config change away.
+// How a copy is held. PS Plus is not a kind of "digital": a purchased
+// download stays yours, a Plus copy is only there while the subscription is,
+// and telling those apart is the whole point of recording it.
+const GAME_FORMATS = ['physical', 'digital', 'ps-plus'];
+const GAME_FORMAT_ICON  = { physical: '\u{1F4C0}', digital: '\u{1F4BE}', 'ps-plus': '\u2601\uFE0F' };
+const GAME_FORMAT_LABEL = { physical: 'Physical', digital: 'Digital', 'ps-plus': 'PS Plus' };
+const PS_PLATFORMS = new Set(['ps3', 'ps4', 'ps5']);
+
+// The platforms the form offers, in the order it offers them. Anything else
+// still stores and renders fine (see the note above); this list only decides
+// what has a button and how known platforms sort.
+const GAME_PLATFORMS = ['ps3', 'ps4', 'ps5', 'xbox', 'steam'];
+const GAME_PLATFORM_LABEL = { ps3: 'PS3', ps4: 'PS4', ps5: 'PS5', xbox: 'Xbox', steam: 'Steam' };
+const platformLabel = p => GAME_PLATFORM_LABEL[p] || p || '';
+
+// Which formats can describe a copy on this platform.
+const formatsFor = platform => PS_PLATFORMS.has(platform)
+  ? GAME_FORMATS : GAME_FORMATS.filter(f => f !== 'ps-plus');
+
+// One platform, and how the game is held *on that platform*.
+function normalizePlatformEntry(raw) {
+  const platform = String((raw && raw.platform) || '').trim().toLowerCase();
+  if (!platform) return null;
+  const list = Array.isArray(raw.formats) ? raw.formats : raw.formats ? [raw.formats] : [];
+  const formats = [...new Set(list.map(f => String(f).trim().toLowerCase()))]
+    .filter(f => GAME_FORMATS.includes(f))
+    // PS Plus is a PlayStation subscription — it cannot describe a Steam or
+    // Xbox copy, so it is dropped rather than stored somewhere meaningless.
+    .filter(f => f !== 'ps-plus' || PS_PLATFORMS.has(platform));
+  return { platform, formats };
+}
+
+// A game is often owned on more than one platform, and *how* it is owned
+// differs between them — a PS4 disc alongside a PS5 copy that is only there
+// while a Plus subscription lasts. So this is a list, one entry per platform.
+function normalizeGamePlatforms(g) {
+  if (Array.isArray(g.platforms)) {
+    const out = [];
+    const seen = new Set();
+    for (const raw of g.platforms) {
+      const entry = normalizePlatformEntry(raw);
+      if (!entry || seen.has(entry.platform)) continue;   // one entry per platform
+      seen.add(entry.platform);
+      out.push(entry);
+    }
+    return out;
+  }
+  // Before this was a list a game had a single `platform` and one shared
+  // `formats`. Both are still read, permanently, so an export taken before
+  // this, a repo file written before it, and a device still running an older
+  // copy of this page all keep working. Only `platforms` is ever written.
+  const legacy = normalizePlatformEntry({ platform: g.platform, formats: g.formats });
+  return legacy ? [legacy] : [];
+}
+
 function normalizeVideoGame(g) {
   const genre = Array.isArray(g.genre) ? g.genre.map(String)
     : (g.genre && typeof g.genre === 'string')
       ? g.genre.split(',').map(x => x.trim()).filter(Boolean)
     : [];
 
-  const formats = Array.isArray(g.formats) ? g.formats.map(String)
-    : g.formats ? [String(g.formats)]
-    : [];
-
-  return dropEmpty(applyLinks({
+  const game = dropEmpty(applyLinks({
     ...g,
     id: normalizeId(g.id),
     title: g.title != null ? String(g.title) : '',
-    platform: g.platform ? String(g.platform) : '',
+    platforms: normalizeGamePlatforms(g),
     status: g.status || 'want',
     genre,
-    formats,
     rating: Number.isFinite(+g.rating) ? Math.max(0, Math.min(5, Math.round(+g.rating))) : 0,
     ...(g.coverUrl != null ? { coverUrl: String(g.coverUrl) } : {}),
   }, g.links));
+  // The spread carried the pre-list shape in; only `platforms` is stored.
+  delete game.platform;
+  delete game.formats;
+  return game;
 }
 
 // Normalize media items — coerces every field the render/sort/search paths

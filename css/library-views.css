@@ -186,4 +186,6 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
 .badge-watched  { background: var(--teal-50);  color: var(--teal-600);  }
 .badge-media    { background: var(--gray-50);  color: var(--gray-600);  }
 .badge-digital  { background: var(--blue-50);  color: var(--blue-600);  }
+/* A game's platform, with that platform's own format icons after it. */
+.badge-platform { background: var(--gray-50);  color: var(--gray-600);  }
 
