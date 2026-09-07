@@ -9,3 +9,4 @@ in-session list does not survive to the next one.
 Write the issue so it can be picked up cold: what to build, and any facts
 already established while investigating — with the file and line references
 that back them — so the next session does not re-derive them.
+
