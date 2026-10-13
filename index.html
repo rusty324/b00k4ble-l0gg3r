@@ -473,6 +473,16 @@
       <div class="hint hint-error" id="g-plat-error" style="display:none">Pick at least one platform.</div>
     </div>
 
+    <!-- DLC, expansions, season passes. One row each, with whether it is owned
+         or only wanted — same row editor as Platforms above. -->
+    <div class="form-group">
+      <label>DLC &amp; expansions <span class="opt">(optional)</span></label>
+      <input type="text" class="plain" id="g-dlc" placeholder="Type a name, press Enter…" autocomplete="off"
+             enterkeyhint="done" onkeydown="gameDlcKey(event)">
+      <div class="platform-entries" id="g-dlc-entries"></div>
+      <div class="hint">Press Enter to add. Tap Owned to switch an item to Wishlist, and back.</div>
+    </div>
+
     <div class="form-group">
       <label>Year <span class="opt">(optional)</span></label>
       <input type="text" class="plain" id="g-year" placeholder="e.g. 2024" style="max-width:120px" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)">
