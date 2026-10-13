@@ -22,6 +22,7 @@ function openAddModal() {
   populateDataLists();
   syncIdentifyButtons();
   document.getElementById('modal').classList.add('open');
+  resetDup('books');
   document.getElementById('f-title').focus();
 }
 
@@ -53,6 +54,7 @@ function openEditModal(id) {
   populateDataLists();
   syncIdentifyButtons();
   document.getElementById('modal').classList.add('open');
+  resetDup('books');      // a warning left from an earlier add must not linger here
 }
 
 function closeModal() {
@@ -115,6 +117,7 @@ function saveBook() {
     return;
   }
   document.getElementById('fmt-error').style.display = 'none';
+  if (editingId === null && dupBlocksSave('books')) return;
 
   const status = document.querySelector('input[name="status"]:checked').value;
   const notes  = document.getElementById('f-notes').value.trim();
@@ -261,6 +264,7 @@ function openMediaModal(id) {
   pendingTmdb = null;
   syncTmdbUI();
   document.getElementById('mediaModal').classList.add('open');
+  resetDup('media');
   // Only when adding, for the same reason as the wishlist form. With a key
   // set, searching is the faster path than typing every field.
   if (mediaEditingId === null) {
@@ -284,6 +288,7 @@ function handleMediaBackdrop(e) {
 function saveMediaItem() {
   const title = document.getElementById('m-title').value.trim();
   if (!title) { document.getElementById('m-title').focus(); return; }
+  if (mediaEditingId === null && dupBlocksSave('media')) return;
 
   const year    = document.getElementById('m-year').value.trim();
   const genre   = getGenreValues('m-genre');
@@ -318,6 +323,114 @@ function deleteMediaItem(id) {
   saveMedia();
   renderPage();
 }
+
+
+// ─── ALREADY IN YOUR LIBRARY? ─────────────────────────────────────────
+// A note under Title, in each add form, the moment what is being added
+// matches something already there — typed, or filled in by a search pick,
+// a scan or a store link. Saving is never refused outright: the first Save
+// shows the note, a second Save adds the copy anyway, since owning two (a
+// hardback and a signed copy, say) is legitimate. Edits are not checked.
+const DUP_FORMS = {
+  books: {
+    note: 'f-dup', fields: ['f-title', 'f-author', 'f-isbn', 'f-asin'],
+    adding: () => editingId === null,
+    draft: () => ({
+      title:  document.getElementById('f-title').value,
+      author: document.getElementById('f-author').value,
+      isbn:   document.getElementById('f-isbn').value || pendingScanCode || '',
+      asin:   document.getElementById('f-asin').value,
+    }),
+    describe: b => `“${b.title}”${b.author ? ` by ${b.author}` : ''}`,
+    open: id => { closeModal(); openEditModal(id); },
+  },
+  media: {
+    note: 'm-dup', fields: ['m-title', 'm-year'],
+    adding: () => mediaEditingId === null,
+    draft: () => ({
+      title: document.getElementById('m-title').value,
+      year:  document.getElementById('m-year').value,
+      type:  document.querySelector('input[name="m-type"]:checked')?.value || 'movie',
+      tmdbId: pendingTmdb ? pendingTmdb.tmdbId : null,
+    }),
+    describe: m => `“${m.title}” (${m.type === 'tv' ? 'TV' : 'Movie'}${m.year ? ', ' + m.year : ''})`,
+    open: id => { closeMediaModal(); openMediaModal(id); },
+  },
+  games: {
+    note: 'g-dup', fields: ['g-title'],
+    adding: () => gameEditingId === null,
+    draft: () => ({ title: document.getElementById('g-title').value }),
+    describe: g => {
+      const on = (g.platforms || []).map(p => platformLabel(p.platform)).join(', ');
+      return `“${g.title}”${on ? ` on ${on}` : ''}`;
+    },
+    // Another platform belongs on the existing game, not on a second card.
+    extra: 'Got it on another platform too? Open it and tick that platform instead.',
+    open: id => { closeGameModal(); openGameModal(id); },
+  },
+};
+
+const _dupAck = {};     // kind -> the match a Save has already warned about
+const _dupTimer = {};
+
+// Repaints the note for `kind` and returns the matching record, or null.
+function paintDup(kind) {
+  const f = DUP_FORMS[kind];
+  const box = document.getElementById(f.note);
+  if (!box) return null;
+  const dup = f.adding() ? findDuplicate(kind, f.draft()) : null;
+  if (!dup) {
+    box.hidden = true;
+    box.textContent = '';
+    box.classList.remove('armed');
+    _dupAck[kind] = undefined;          // a changed draft has to be confirmed afresh
+    return null;
+  }
+  const t = idAsTime(dup.id);
+  const when = t === null ? '' : `, added ${new Date(t).toLocaleDateString(undefined, { dateStyle: 'medium' })}`;
+  const armed = _dupAck[kind] === dup.id;
+  box.hidden = false;
+  box.classList.toggle('armed', armed);
+  box.innerHTML = `<div><strong>Already in your library:</strong> ${esc(f.describe(dup))}${esc(when)}.</div>
+    ${f.extra ? `<div class="dup-extra">${esc(f.extra)}</div>` : ''}
+    ${armed ? '<div class="dup-armed">Tap Save again to add another copy anyway.</div>' : ''}
+    <button type="button" class="btn btn-sm" onclick="openDuplicate('${kind}', ${dup.id})">Open it</button>`;
+  return dup;
+}
+
+function paintDupSoon(kind) {
+  clearTimeout(_dupTimer[kind]);
+  _dupTimer[kind] = setTimeout(() => paintDup(kind), 150);
+}
+
+// True when Save should stop to warn. The second Save on the same match
+// goes through.
+function dupBlocksSave(kind) {
+  // Save checks for itself, so a re-check still pending from the last
+  // keystroke is cancelled: left to fire after the save, it would find the
+  // record that was just added and flag the closed form as a duplicate of it.
+  clearTimeout(_dupTimer[kind]);
+  const dup = paintDup(kind);
+  if (!dup || _dupAck[kind] === dup.id) return false;
+  _dupAck[kind] = dup.id;
+  paintDup(kind);                          // now with the "again" line
+  document.getElementById(DUP_FORMS[kind].note)?.scrollIntoView({ block: 'center' });
+  return true;
+}
+
+function openDuplicate(kind, id) { DUP_FORMS[kind].open(id); }
+
+function resetDup(kind) {
+  _dupAck[kind] = undefined;
+  clearTimeout(_dupTimer[kind]);
+  paintDup(kind);
+}
+
+for (const [kind, f] of Object.entries(DUP_FORMS)) {
+  for (const id of f.fields) document.getElementById(id)?.addEventListener('input', () => paintDupSoon(kind));
+}
+document.querySelectorAll('input[name="m-type"]').forEach(r =>
+  r.addEventListener('change', () => paintDupSoon('media')));
 
 
 // ─── GAME AUTOFILL FROM A STORE LINK ──────────────────────────────────
@@ -450,6 +563,7 @@ async function gameAutofillFromLinks() {
   if (info.title && titleEl && !titleEl.value.trim()) {
     titleEl.value = info.title;
     filled.push('title');
+    paintDup('games');
   }
   // Adds to the list rather than replacing it: a Steam link on a game already
   // marked Xbox means both, which is exactly the case the list exists for.
@@ -668,6 +782,7 @@ function openGameModal(id) {
   hideGamePlatformError();
   gameFillHint('');
   document.getElementById('gameModal').classList.add('open');
+  resetDup('games');
   // Only when adding: focusing on edit raises the phone keyboard over the
   // form the user opened in order to read it.
   if (gameEditingId === null) document.getElementById('g-title').focus();
@@ -696,6 +811,7 @@ function saveGameItem() {
     return;
   }
   hideGamePlatformError();
+  if (gameEditingId === null && dupBlocksSave('games')) return;
   commitGameDlc();            // a name typed but not yet Entered still counts
   const dlc = _gameDlc.map(d => ({ name: d.name, owned: d.owned }));
   const platforms = _gamePlatforms.map(p => ({ platform: p.platform, formats: [...p.formats] }));

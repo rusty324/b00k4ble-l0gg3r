@@ -100,6 +100,7 @@ function tmdbPick(i) {
   closeTmdbAC();
   document.getElementById('m-tmdb').value = '';
   tmdbHint(`Filled from TMDb: ${r.title}${r.year ? ' (' + r.year + ')' : ''}`);
+  paintDup('media');      // after pendingTmdb, so an exact TMDb-id match counts
 }
 
 // Shows the search box only when a key is present, with a pointer to where
