@@ -42,7 +42,7 @@ function renderMedia(listOnly = false) {
   const typeIcon  = { movie: '🎬', tv: '📺' };
   const stCls     = { want: 'badge-want', watched: 'badge-watched' };
   const stLabel   = { want: 'Want to Watch', watched: 'Watched' };
-  const fmtIcons  = { bluray: '📀', dvd: '💿', digital: '💻', streaming: '📡' };
+  const fmtIcons  = { bluray: '🥏', dvd: '💿', digital: '💻', streaming: '📡' };
 
   // Filter toolbar
   const typePills = [['all','All'],['movie','🎬 Movies'],['tv','📺 TV Shows']].map(([v,l]) =>
@@ -52,7 +52,7 @@ function renderMedia(listOnly = false) {
     `<button class="pill${mediaFilters.status===v?' active':''}" onclick="setMediaFilter('status','${v}')">${l}</button>`
   ).join('');
   // Same values and icons as the form's format checkboxes.
-  const formatPills = [['all','All'],['bluray','📀 Blu-ray'],['dvd','💿 DVD'],
+  const formatPills = [['all','All'],['bluray','🥏 Blu-ray'],['dvd','💿 DVD'],
                        ['digital','💻 Digital'],['streaming','📡 Streaming']].map(([v,l]) =>
     `<button class="pill${mediaFilters.format===v?' active':''}" onclick="setMediaFilter('format','${v}')">${l}</button>`
   ).join('');
