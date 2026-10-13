@@ -466,6 +466,26 @@ function normalizeGamePlatforms(g) {
   return legacy ? [legacy] : [];
 }
 
+// Add-ons for a game: expansions, season passes, DLC packs. Each is a name and
+// whether it is owned — a game you own with one pack bought and another
+// still on your list is the ordinary case, so a bare list of names would lose
+// the part that matters. Owned is the default: the usual reason to type one in
+// is that you have it, and a missing flag should not quietly downgrade it.
+function normalizeGameDlc(raw) {
+  if (!Array.isArray(raw)) return [];
+  const out = [];
+  const seen = new Set();
+  for (const d of raw) {
+    // A plain string is accepted too, so a hand-edited file can just list names.
+    const name = String(d && typeof d === 'object' ? d.name : d || '').trim();
+    const key = name.toLowerCase();
+    if (!name || seen.has(key)) continue;
+    seen.add(key);
+    out.push({ name, owned: !(d && typeof d === 'object' && d.owned === false) });
+  }
+  return out;
+}
+
 function normalizeVideoGame(g) {
   const genre = Array.isArray(g.genre) ? g.genre.map(String)
     : (g.genre && typeof g.genre === 'string')
@@ -485,6 +505,10 @@ function normalizeVideoGame(g) {
   // The spread carried the pre-list shape in; only `platforms` is stored.
   delete game.platform;
   delete game.formats;
+  // Only stored when there is something to store: most games have none, and an
+  // empty `dlc: []` on every record would be churn in the data repo.
+  const dlc = normalizeGameDlc(g.dlc);
+  if (dlc.length) game.dlc = dlc; else delete game.dlc;
   return game;
 }
 

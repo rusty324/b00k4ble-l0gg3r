@@ -24,6 +24,9 @@
      get the full width — two to a line rather than three tall ones. */
   .platform-entry { flex-direction: column; align-items: stretch; position: relative; padding-right: 2.4rem; }
   .platform-entry-formats { width: 100%; }
+  /* The DLC name takes its width from a flex-basis on desktop; in this column
+     layout that basis would be read as a height and balloon every row. */
+  .platform-entry-name.dlc-name { flex: 0 0 auto; }
   .fmt-chip { flex: 1 1 auto; }
   .platform-entry-remove { position: absolute; top: 50%; right: 0.2rem; transform: translateY(-50%);
                            min-width: 44px; min-height: 44px; }

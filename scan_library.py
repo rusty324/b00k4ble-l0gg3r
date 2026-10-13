@@ -458,6 +458,10 @@ def merge_with_existing(scanned, existing_path):
     try:
         with open(existing_path, encoding='utf-8') as f:
             existing = json.load(f)
+        # The app's export wraps the records as {"lastUpdatedOn": ..., "items": [...]};
+        # files exported before that are the bare list. Accept both.
+        if isinstance(existing, dict):
+            existing = existing.get('items', [])
     except FileNotFoundError:
         print(f"[merge] No existing file at {existing_path} — skipping merge", file=sys.stderr)
         return scanned

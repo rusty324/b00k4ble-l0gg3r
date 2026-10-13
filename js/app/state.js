@@ -64,6 +64,66 @@ let gameSearchTimer = null;
 // adds ~25% to every localStorage write and export for no benefit.
 const stripSearchStr = (k, v) => k === '_searchStr' ? undefined : v;
 
+// ─── LAST UPDATED ─────────────────────────────────────────────────────
+// One timestamp per tab, kept apart from the records. It is when this
+// device's copy of the tab last changed — an edit made here, or a change
+// pulled in from the data repo — which is also what "Last Updated on" in an
+// export means. Records carry no such field: a deletion leaves nothing behind
+// to stamp, and a per-record field would add a key to every entry in the repo.
+//
+// It is deliberately NOT bumped by saveLocal()/saveSoon(): background cover
+// discovery goes through those, and finding artwork is not the user changing
+// their library.
+const UPDATED_KEY = 'lastUpdated';
+
+function readUpdatedMap() {
+  try { return JSON.parse(localStorage.getItem(UPDATED_KEY)) || {}; }
+  catch { return {}; }
+}
+
+function touchTab(collection) {
+  const map = readUpdatedMap();
+  map[collection] = Date.now();
+  try { localStorage.setItem(UPDATED_KEY, JSON.stringify(map)); } catch { /* quota: the date is cosmetic */ }
+  paintUpdatedNote();
+}
+
+// Ids are Date.now() stamps for anything created here, but an imported record
+// can carry any number (1, 2, 3…). Only a value that is plausibly a time
+// counts: after 2001-09-09 (1e12 ms) and not in the future.
+const idAsTime = id => (Number.isFinite(id) && id >= 1e12 && id <= Date.now() + 864e5) ? id : null;
+
+// The stored stamp; failing that, the newest entry's creation time, which is a
+// true lower bound on when the tab last changed — so a library last touched
+// before this existed still shows something honest rather than nothing. Null
+// for an empty tab, or one whose ids carry no time at all.
+function tabUpdatedAt(collection) {
+  const stored = readUpdatedMap()[collection];
+  if (Number.isFinite(stored)) return stored;
+  const records = { books, media: mediaLibrary, wishlist: bookWishlist, games: videoGames }[collection] || [];
+  let newest = null;
+  for (const r of records) {
+    const t = idAsTime(r.id);
+    if (t !== null && (newest === null || t > newest)) newest = t;
+  }
+  return newest;
+}
+
+function formatUpdated(ms) {
+  return new Date(ms).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+// One note, under the tab bar, repainted on a tab switch and on every stamp.
+// It sits outside every tab's own render target, so a re-render never has to
+// know about it.
+function paintUpdatedNote() {
+  const el = document.getElementById('updatedNote');
+  if (!el) return;
+  const ms = tabUpdatedAt(activeTab);
+  el.textContent = ms === null ? '' : `Last updated ${formatUpdated(ms)}`;
+  el.title = ms === null ? '' : new Date(ms).toISOString();
+}
+
 // The local half of a save, without the trip out to the data repo.
 function saveLocal() {
   _booksMutation++;
@@ -72,6 +132,7 @@ function saveLocal() {
 
 function save() {
   saveLocal();
+  touchTab('books');
   syncPush('books');
 }
 
@@ -91,16 +152,19 @@ function saveSoon() {
 
 function saveWishlist() {
   localStorage.setItem('bookWishlist', JSON.stringify(bookWishlist));
+  touchTab('wishlist');
   syncPush('wishlist');
 }
 
 function saveMedia() {
   localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary));
+  touchTab('media');
   syncPush('media');
 }
 
 function saveGames() {
   localStorage.setItem('videoGames', JSON.stringify(videoGames));
+  touchTab('games');
   syncPush('games');
 }
 
@@ -153,6 +217,14 @@ function applySyncedData(collection, records) {
   const next = records.map(spec.normalize);
   const json = JSON.stringify(next, spec.replacer);
   if (json === localStorage.getItem(spec.key)) return false;
+
+  // Compared against memory, not storage: after a normalizer change the stored
+  // string is still the old shape while memory is already migrated, so a repo
+  // that merely agrees with us would otherwise read as "changed" and move the
+  // date. Only a real difference in the records counts.
+  const current = { books, media: mediaLibrary, wishlist: bookWishlist, games: videoGames }[collection];
+  const reallyChanged = JSON.stringify(current, spec.replacer) !== json;
+
   localStorage.setItem(spec.key, json);
 
   switch (collection) {
@@ -166,6 +238,7 @@ function applySyncedData(collection, records) {
     case 'wishlist': bookWishlist = next; break;
     case 'games':    videoGames   = next; break;
   }
+  if (reallyChanged) touchTab(collection);
   return true;
 }
 

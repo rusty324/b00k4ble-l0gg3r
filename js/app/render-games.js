@@ -32,6 +32,27 @@ function gamePlatformBadges(g) {
   }).join('');
 }
 
+// "DLC 2/3" when some are only wanted, plain "DLC 3" when every one is owned —
+// the fraction only earns its place when it is not 3/3. The title spells the
+// names out for anyone hovering.
+function gameDlcBadge(g) {
+  const dlc = g.dlc || [];
+  if (!dlc.length) return '';
+  const owned = dlc.filter(d => d.owned).length;
+  const label = owned === dlc.length ? `DLC ${dlc.length}` : `DLC ${owned}/${dlc.length}`;
+  const names = dlc.map(d => d.name + (d.owned ? '' : ' (wishlist)')).join(', ');
+  return `<span class="badge badge-dlc" title="${esc(names)}">${label}</span>`;
+}
+
+// On the card only: the names themselves, owned ones plain and wishlisted
+// ones muted, so what is missing reads at a glance.
+function gameDlcLine(g) {
+  const dlc = g.dlc || [];
+  if (!dlc.length) return '';
+  return `<div class="book-dlc"><span class="book-dlc-label">DLC</span> ${dlc.map(d =>
+    `<span class="${d.owned ? 'dlc-owned' : 'dlc-want'}">${esc(d.name)}</span>`).join(' · ')}</div>`;
+}
+
 // listOnly: replace just the results container, leaving the toolbar (and
 // the focused search input inside it) intact — used by the search path.
 function renderGames(listOnly = false) {
@@ -59,6 +80,7 @@ function renderGames(listOnly = false) {
     items = items.filter(g =>
       (g.title || '').toLowerCase().includes(q) ||
       gamePlatformText(g).toLowerCase().includes(q) ||
+      (g.dlc || []).some(d => d.name.toLowerCase().includes(q)) ||
       (g.year ? String(g.year) : '').includes(q) ||
       (g.genre || []).some(x => x.toLowerCase().includes(q))
     );
@@ -104,7 +126,7 @@ function renderGames(listOnly = false) {
   const toolbar = `<div style="margin-bottom:1rem">
     <div class="search-wrap" style="margin-bottom:0.6rem">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="search" id="gameSearchInput" placeholder="Search title, platform, year, or genre…" aria-label="Search video games" value="${esc(gameSearch)}" oninput="debouncedGameRender(this.value)">
+      <input type="search" id="gameSearchInput" placeholder="Search title, platform, DLC, year, or genre…" aria-label="Search video games" value="${esc(gameSearch)}" oninput="debouncedGameRender(this.value)">
     </div>
     <div class="filter-row">
       <span class="filter-label">Platform</span>
@@ -156,6 +178,7 @@ function renderGames(listOnly = false) {
             <div class="book-row-badges">
               <span class="badge ${stCls[g.status] || 'badge-want'}">${stLabel[g.status] || esc(g.status)}</span>
               ${gamePlatformBadges(g)}
+              ${gameDlcBadge(g)}
             </div>
             <div class="book-row-actions">
               ${renderLinkButtons(g.links, true)}
@@ -184,8 +207,10 @@ function renderGames(listOnly = false) {
         <div class="book-meta">
           <span class="badge ${stCls[g.status] || 'badge-want'}">${stLabel[g.status] || esc(g.status)}</span>
           ${gamePlatformBadges(g)}
+          ${gameDlcBadge(g)}
           ${stars}
         </div>
+        ${gameDlcLine(g)}
         ${genreTags ? `<div class="book-tags">${genreTags}</div>` : ''}
         ${g.notes ? `<div class="book-notes">${esc(g.notes)}</div>` : ''}
         <div class="book-actions">

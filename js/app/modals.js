@@ -562,6 +562,61 @@ function toggleGamePlatformFormat(platform, fmt) {
   renderGamePlatformEntries();
 }
 
+// ─── GAME MODAL: DLC ─────────────────────────────────────────────────
+// Working copy, like _gamePlatforms. Rows are addressed by index rather than
+// by name, so a name never has to be escaped into an inline handler.
+let _gameDlc = [];   // [{ name, owned }]
+
+function setGameDlc(list) {
+  _gameDlc = (Array.isArray(list) ? list : []).map(d => ({ name: d.name, owned: d.owned !== false }));
+  const input = document.getElementById('g-dlc');
+  if (input) input.value = '';
+  renderGameDlc();
+}
+
+function renderGameDlc() {
+  const box = document.getElementById('g-dlc-entries');
+  if (!box) return;
+  box.innerHTML = _gameDlc.map((d, i) => `<div class="platform-entry">
+      <span class="platform-entry-name dlc-name">${esc(d.name)}</span>
+      <div class="platform-entry-formats">
+        <button type="button" class="fmt-chip${d.owned ? ' active' : ''}" aria-pressed="${d.owned}"
+                onclick="toggleGameDlcOwned(${i})">${d.owned ? '✓ Owned' : 'Wishlist'}</button>
+      </div>
+      <button type="button" class="platform-entry-remove" aria-label="Remove ${esc(d.name)}"
+              onclick="removeGameDlc(${i})">&times;</button>
+    </div>`).join('');
+}
+
+// Trimmed, non-empty and not already listed (case-insensitively, the same fold
+// the genre pills use). Returns whether a row was added.
+function commitGameDlc() {
+  const input = document.getElementById('g-dlc');
+  const name = (input ? input.value : '').trim();
+  if (input) input.value = '';
+  if (!name || _gameDlc.some(d => d.name.toLowerCase() === name.toLowerCase())) return false;
+  _gameDlc.push({ name, owned: true });
+  renderGameDlc();
+  return true;
+}
+
+// Enter adds, rather than submitting or doing nothing — and a comma is a name
+// character here ("Awakening, Part 2"), so unlike genres it is left alone.
+function gameDlcKey(e) {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  commitGameDlc();
+}
+
+function toggleGameDlcOwned(i) {
+  if (_gameDlc[i]) { _gameDlc[i].owned = !_gameDlc[i].owned; renderGameDlc(); }
+}
+
+function removeGameDlc(i) {
+  _gameDlc.splice(i, 1);
+  renderGameDlc();
+}
+
 function hideGamePlatformError() {
   const el = document.getElementById('g-plat-error');
   if (el) el.style.display = 'none';
@@ -593,6 +648,7 @@ function openGameModal(id) {
     document.getElementById('g-coverUrl').value = g.coverUrl || '';
     setLinksField('g', g.links);
     setGamePlatforms(g.platforms);
+    setGameDlc(g.dlc);
     setRadio('g-status',   g.status   || 'want');
     updateGameStars(gameRating);
   } else {
@@ -606,6 +662,7 @@ function openGameModal(id) {
     // No default platform: picking one is the point of the field, and a
     // pre-selected PS5 quietly mislabels anything saved without touching it.
     setGamePlatforms([]);
+    setGameDlc([]);
     setRadio('g-status',   'want');
   }
   hideGamePlatformError();
@@ -639,6 +696,8 @@ function saveGameItem() {
     return;
   }
   hideGamePlatformError();
+  commitGameDlc();            // a name typed but not yet Entered still counts
+  const dlc = _gameDlc.map(d => ({ name: d.name, owned: d.owned }));
   const platforms = _gamePlatforms.map(p => ({ platform: p.platform, formats: [...p.formats] }));
   const status    = document.querySelector('input[name="g-status"]:checked')?.value || 'want';
 
@@ -647,10 +706,10 @@ function saveGameItem() {
     if (i !== -1) {
       // platform/formats are spread in from the stored record when it predates
       // the list; normalizeVideoGame drops them once `platforms` is present.
-      videoGames[i] = normalizeVideoGame({ ...videoGames[i], title, platforms, year, genre, status, notes, coverUrl, rating: gameRating, links });
+      videoGames[i] = normalizeVideoGame({ ...videoGames[i], title, platforms, dlc, year, genre, status, notes, coverUrl, rating: gameRating, links });
     }
   } else {
-    videoGames.push(normalizeVideoGame({ id: newId(), title, platforms, year, genre, status, notes, coverUrl, rating: gameRating, links }));
+    videoGames.push(normalizeVideoGame({ id: newId(), title, platforms, dlc, year, genre, status, notes, coverUrl, rating: gameRating, links }));
   }
 
   saveGames();
