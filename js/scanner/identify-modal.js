@@ -157,7 +157,7 @@ function pickIdentifyResult(i) {
     if (r.coverUrl) document.getElementById('f-coverUrl').value = r.coverUrl;
     // An ISBN from Open Library gives this book the same duplicate detection
     // a scanned one gets.
-    if (r.isbn) pendingScanCode = r.isbn;
+    if (r.isbn) { pendingScanCode = r.isbn; document.getElementById('f-isbn').value = r.isbn; }
     paintDup('books');
     return;
   }
