@@ -4,6 +4,11 @@
    Split out of styles.css. */
 
 /* ─── STATS BAR ──────────────────────────────────────────────────── */
+/* When the active tab last changed. Quiet by design: it is reference, not a
+   control, and sits above the stats so it never pushes them around. */
+.updated-note { font-size: 12px; color: var(--text-light); margin: 0 0 0.6rem; min-height: 1.1em; letter-spacing: 0.01em; }
+.updated-note:empty { display: none; }
+
 .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 2rem; }
 .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1rem; }
 .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.25rem; }

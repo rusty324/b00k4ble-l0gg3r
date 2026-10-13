@@ -125,6 +125,7 @@ function handleAddClick() {
 }
 
 function renderPage() {
+  paintUpdatedNote();
   switch (activeTab) {
     case 'books':    render();          break;
     case 'media':    renderMedia();     break;

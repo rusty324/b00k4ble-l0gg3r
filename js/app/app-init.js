@@ -4,6 +4,10 @@
 // defined. Split out of app.js.
 
 // ─── IMPORT / EXPORT ─────────────────────────────────────────────────
+// An export is { lastUpdatedOn, items } rather than the bare array it used to
+// be: an array has nowhere to carry a field. importData() reads both, so every
+// export made before this still loads, and so does the data repo's own
+// array-shaped files should one ever be fed in by hand.
 function exportData() {
   let data, filename;
   if (activeTab === 'media') {
@@ -15,7 +19,12 @@ function exportData() {
   } else {
     data = books; filename = 'my-library.json';
   }
-  const blob = new Blob([JSON.stringify(data, stripSearchStr, 2)], { type: 'application/json' });
+  const updated = tabUpdatedAt(activeTab);
+  const payload = {
+    lastUpdatedOn: updated === null ? null : new Date(updated).toISOString(),
+    items: data,
+  };
+  const blob = new Blob([JSON.stringify(payload, stripSearchStr, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = filename;
@@ -29,8 +38,12 @@ function importData(e) {
   const reader = new FileReader();
   reader.onload = ev => {
     try {
-      const data = JSON.parse(ev.target.result);
-      if (!Array.isArray(data)) throw new Error('Expected a JSON array');
+      const parsed = JSON.parse(ev.target.result);
+      // New exports wrap the records; older ones are the bare array.
+      const data = Array.isArray(parsed) ? parsed
+                 : (parsed && Array.isArray(parsed.items)) ? parsed.items
+                 : null;
+      if (!data) throw new Error('Expected a JSON array, or an export with an "items" array');
 
       if (activeTab === 'media') {
         if (!confirm(`Import ${data.length} media items? Duplicates (by ID) will be skipped.`)) return;
