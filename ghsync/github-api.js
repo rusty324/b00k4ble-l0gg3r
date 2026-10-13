@@ -73,8 +73,23 @@ async function check(res, path) {
 }
 
 // UTF-8-safe base64 helpers (btoa alone breaks on non-ASCII text).
+//
+// Chunked, never `String.fromCharCode(...bytes)`: that spreads every byte of
+// the file into one call's argument list, and JavaScriptCore (Safari, and so
+// every iOS browser) caps a call at 65,536 arguments. Any data file past
+// ~64 KB threw "Maximum call stack size exceeded", which left the upload
+// queued and failing identically on every retry. V8 fails the same way at a
+// few hundred KB. 0x8000 bytes per call stays well inside both limits, and
+// the output is byte-for-byte what the one-shot version produced.
+function bytesToBinary(bytes) {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  }
+  return bin;
+}
 function b64encode(str) {
-  return btoa(String.fromCharCode(...new TextEncoder().encode(str)));
+  return btoa(bytesToBinary(new TextEncoder().encode(str)));
 }
 function b64decode(b64) {
   const bin = atob(b64.replace(/\n/g, ''));

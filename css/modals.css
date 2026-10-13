@@ -138,6 +138,17 @@ input[type="radio"], input[type="checkbox"] { display: none; }
    platform with two formats. Indented and rule-topped so the rows read
    as belonging to the platform buttons above rather than as a new
    field. */
+/* "Already in your library" under a Title field. Amber like a warning, not
+   coral like an error: saving is still allowed. Coral once Save has been
+   pressed, when a second press is about to add the extra copy. */
+.dup-note { margin-top: 0.5rem; padding: 0.55rem 0.7rem; border-radius: 10px; font-size: 13px; line-height: 1.45;
+            background: var(--amber-50); border: 1px solid var(--amber-100); color: var(--amber-900); }
+.dup-note[hidden] { display: none; }
+.dup-note > div + div { margin-top: 0.3rem; }
+.dup-note .btn { margin-top: 0.5rem; }
+.dup-note.armed { background: var(--coral-50); border-color: var(--coral-200); color: var(--coral-600); }
+.dup-armed { font-weight: 600; }
+
 .platform-entries:not(:empty) { margin-top: 0.7rem; display: flex; flex-direction: column; gap: 0.4rem; }
 .platform-entry {
   display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;

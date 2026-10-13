@@ -273,6 +273,7 @@ function olPick(i) {
   closeOlAC();
   document.getElementById('f-ol').value = '';
   olHint(`Filled from ${r.source === 'audible' ? 'Audible' : 'Open Library'}: ${r.title}${r.year ? ' (' + r.year + ')' : ''}`);
+  paintDup('books');      // already in the library? (title/author/ISBN/ASIN all set now)
 }
 
 

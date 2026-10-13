@@ -289,6 +289,58 @@ function setLinksField(prefix, links) {
 // article has to be followed by whitespace.
 const LEADING_ARTICLE = /^(?:the|a|an)\s+/i;
 
+// ─── DUPLICATE DETECTION ──────────────────────────────────────────────
+// Loose on spelling, strict on meaning. Case, accents, punctuation, "&" vs
+// "and" and a leading article are all ignored — "The Lord of the Rings" and
+// "lord of the rings" are the same book — but a subtitle is not, so "Dune"
+// does not match "Dune Messiah".
+function dupTitleKey(title) {
+  const plain = String(title || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
+  return titleSortKey(plain).replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '');
+}
+
+// Word order ignored, so "Tolkien, J.R.R." and "J. R. R. Tolkien" agree.
+function dupAuthorKey(author) {
+  return String(author || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(Boolean).sort().join(' ');
+}
+
+// The existing record a draft would duplicate, or null. `draft` is what the
+// add form holds; `excludeId` keeps a record from matching itself.
+//   books — same ISBN or ASIN outright; else same title, and authors that
+//           agree (a blank author on either side does not rule a match out).
+//   media — same TMDb id and type outright (TMDb numbers movies and TV
+//           separately); else same title and type, and the same year when
+//           both have one, so a remake is not a duplicate of the original.
+//   games — same title. Another platform is not another game: it belongs on
+//           the existing record's platform list.
+function findDuplicate(kind, draft, excludeId = null) {
+  const tk = dupTitleKey(draft.title);
+  if (kind === 'books') {
+    const isbn = String(draft.isbn || '').replace(/[^0-9Xx]/g, '').toUpperCase();
+    const asin = String(draft.asin || '').toUpperCase();
+    const ak = dupAuthorKey(draft.author);
+    return books.find(b => b.id !== excludeId && (
+      (isbn && String(b.isbn || '').replace(/[^0-9Xx]/g, '').toUpperCase() === isbn) ||
+      (asin && String(b.asin || '').toUpperCase() === asin) ||
+      (tk && dupTitleKey(b.title) === tk &&
+        (!ak || !dupAuthorKey(b.author) || dupAuthorKey(b.author) === ak))
+    )) || null;
+  }
+  if (kind === 'media') {
+    const type = draft.type || 'movie';
+    const year = String(draft.year || '').trim();
+    return mediaLibrary.find(m => m.id !== excludeId && (m.type || 'movie') === type && (
+      (draft.tmdbId != null && m.tmdbId != null && String(m.tmdbId) === String(draft.tmdbId)) ||
+      (tk && dupTitleKey(m.title) === tk && (!year || !m.year || String(m.year) === year))
+    )) || null;
+  }
+  if (kind === 'games') {
+    return tk ? videoGames.find(g => g.id !== excludeId && dupTitleKey(g.title) === tk) || null : null;
+  }
+  return null;
+}
+
 function titleSortKey(title) {
   const t = String(title || '').trim();
   // A title that is nothing but an article still has to sort somewhere.

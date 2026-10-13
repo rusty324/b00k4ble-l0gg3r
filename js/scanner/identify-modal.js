@@ -158,6 +158,7 @@ function pickIdentifyResult(i) {
     // An ISBN from Open Library gives this book the same duplicate detection
     // a scanned one gets.
     if (r.isbn) pendingScanCode = r.isbn;
+    paintDup('books');
     return;
   }
 
@@ -181,6 +182,7 @@ function pickIdentifyResult(i) {
   // Same handoff tmdbPick uses, so posters and the save path work unchanged.
   pendingTmdb = { tmdbId: r.tmdbId, posterUrl: r.posterUrl || '' };
   tmdbHint(`Identified from the cover: ${r.title}${r.year ? ' (' + r.year + ')' : ''}`);
+  paintDup('media');
 }
 
 function openIdentifyFallbackForm(guess, identified) {
@@ -190,6 +192,7 @@ function openIdentifyFallbackForm(guess, identified) {
     openAddModal();
     if (guess) document.getElementById('f-title').value = guess;
     if (first && first.author) document.getElementById('f-author').value = first.author;
+    paintDup('books');
     return;
   }
 
@@ -212,6 +215,7 @@ function openIdentifyFallbackForm(guess, identified) {
   const tq = document.getElementById('m-tmdb');
   if (tmdbEnabled() && tq && guess) { tq.value = guess; tmdbAC(); }
   else if (guess) document.getElementById('m-title').value = guess;
+  paintDup('media');
 }
 
 function closeIdentifyModal() {

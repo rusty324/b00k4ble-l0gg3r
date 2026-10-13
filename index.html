@@ -155,6 +155,7 @@
       <input type="text" class="plain" id="f-title" placeholder="Book title">
       <button type="button" class="btn btn-sm identify-btn" id="bookIdentifyBtn"
               onclick="openIdentify('books')" style="display:none">&#128247; Identify from cover</button>
+      <div class="dup-note" id="f-dup" role="status" hidden></div>
     </div>
 
     <div class="form-group">
@@ -337,6 +338,7 @@
     <div class="form-group">
       <label>Title</label>
       <input type="text" class="plain" id="m-title" placeholder="Movie or TV show title">
+      <div class="dup-note" id="m-dup" role="status" hidden></div>
     </div>
 
     <div class="form-group">
@@ -453,6 +455,7 @@
     <div class="form-group">
       <label>Title</label>
       <input type="text" class="plain" id="g-title" placeholder="Game title">
+      <div class="dup-note" id="g-dup" role="status" hidden></div>
     </div>
 
     <!-- Platforms, and how the game is held on each one. Format lives inside

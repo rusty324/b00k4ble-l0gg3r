@@ -228,6 +228,7 @@ function openPrefilledForm(code, info, isBookPath) {
   // Set last: the open* helpers reset form state, and saveBook() builds a
   // fresh object literal that would otherwise drop the code.
   pendingScanCode = code;
+  if (activeTab === 'books') paintDup('books');   // after the code, so an ISBN match counts
 }
 
 function quickAddScanned(code, info, isBookPath) {
