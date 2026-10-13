@@ -48,12 +48,28 @@ export function createTokenStore(tokenKey) {
   };
 }
 
+// GitHub says why in the body of every error ("Bad credentials", "API rate
+// limit exceeded", "Branch main not found"). It is read so the message can
+// repeat it: a bare status code left a user staring at "pending sync" with
+// nothing to act on. Best-effort — an unreadable body just means no detail.
 async function check(res, path) {
   if (res.ok) return res;
-  if (res.status === 401 || res.status === 403) throw new AuthError(`GitHub auth failed (${res.status})`);
+  let detail = '';
+  try { detail = String((await res.clone().json()).message || ''); } catch { /* no body */ }
+  const why = detail ? `: ${detail}` : '';
+  if (res.status === 401 || res.status === 403) throw new AuthError(`GitHub auth failed (${res.status})${why}`);
   if (res.status === 404) throw new NotFoundError(path);
-  if (res.status === 409 || res.status === 422) throw new ConflictError(path);
-  throw new Error(`GitHub API ${res.status} for ${path}`);
+  if (res.status === 409) throw new ConflictError(path);
+  // A 422 is a conflict only when it is about the sha ("sha wasn't supplied"):
+  // that is what a stale or missing sha looks like, and what merging fixes.
+  // Any other 422 (a branch that does not exist, content GitHub will not take)
+  // cannot be cured by merging and re-sending, so it is reported as itself
+  // rather than retried three times as a "conflict" and given up on.
+  if (res.status === 422) {
+    if (!detail || /sha/i.test(detail)) throw new ConflictError(path);
+    throw new Error(`GitHub rejected the write to ${path} (422)${why}`);
+  }
+  throw new Error(`GitHub API ${res.status} for ${path}${why}`);
 }
 
 // UTF-8-safe base64 helpers (btoa alone breaks on non-ASCII text).

@@ -19,6 +19,16 @@
 .gh-badge.error   { background: var(--coral-50); color: var(--coral-600); }
 
 .gh-panel .field { margin-bottom: 0.75rem; }
+/* Why sync is not completing. Amber while it is only waiting, coral when the
+   user has to do something. */
+.gh-problem { margin-bottom: 1rem; padding: 0.7rem 0.8rem; border-radius: 10px; font-size: 13px; line-height: 1.5;
+              background: var(--amber-50); border: 1px solid var(--amber-100); color: var(--amber-900); }
+.gh-problem[hidden] { display: none; }
+.gh-problem p { margin: 0.35rem 0 0; overflow-wrap: anywhere; }
+.gh-problem .muted { color: inherit; opacity: 0.9; }
+.gh-problem-title { font-weight: 600; font-size: 13px; }
+.gh-problem-fix { font-weight: 500; }
+.gh-problem .btn { margin-top: 0.6rem; }
 .gh-panel .field-row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: flex-end; }
 .gh-panel .field-row > * { flex: 1 1 110px; min-width: 0; }
 .gh-panel .muted { font-size: 12px; color: var(--text-light); line-height: 1.5; }

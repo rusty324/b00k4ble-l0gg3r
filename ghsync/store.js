@@ -120,7 +120,11 @@ export function createStore(opts) {
 
   // Repo-file (de)serialization boundary — the ONLY place ciphertext exists.
   async function serializeFile(path, data) {
-    const body = password() && isEncryptedPath(path) ? await encryptJson(data, password()) : data;
+    // A collection nothing has been saved to yet is empty, not null: a literal
+    // `null` in the repo is a file that parses fine and then breaks every
+    // merge against it, which is a permanent "pending sync".
+    const value = data ?? [];
+    const body = password() && isEncryptedPath(path) ? await encryptJson(value, password()) : value;
     return JSON.stringify(body, null, 2) + '\n';
   }
 
@@ -221,7 +225,11 @@ export function createStore(opts) {
       }
       throw new Error(`Gave up pushing ${path} after repeated conflicts`);
     } catch (e) {
-      if (e instanceof AuthError) setStatus('error', e);
+      // A 404 on a WRITE means the repo or branch is unreachable with this
+      // token — GitHub answers 404, not 403, for a private repo the token
+      // cannot see. Retrying will not change that, so it is an error the user
+      // has to act on, not a "pending" that looks like it will resolve.
+      if (e instanceof AuthError || e instanceof NotFoundError) setStatus('error', e);
       else setStatus('pending', e); // network or transient: stays queued
     }
   }
@@ -235,7 +243,9 @@ export function createStore(opts) {
       // Locked remote = encrypted under a password we don't have; merging is
       // impossible and overwriting would destroy data. Stay dirty and queued.
       if (res.locked) throw new Error(`Cannot merge ${path}: encrypted with an unknown password`);
-      remote = res.data;
+      // A remote that is not a list (a `null` an older version wrote, or
+      // anything hand-edited) has no records to merge; local simply wins.
+      remote = Array.isArray(res.data) ? res.data : [];
       sha = f.sha;
     } catch (e) {
       if (!(e instanceof NotFoundError)) throw e;
@@ -273,6 +283,17 @@ export function createStore(opts) {
               emit({ type: 'sync-status', status, error: lastError });
               continue;
             }
+            if (!Array.isArray(res.data)) {
+              // Present but holding no list (a `null`, say). Treated like an
+              // absent file — local records are NOT replaced with nothing —
+              // except that the file does exist, so its sha is kept for the
+              // next write to be checked against, and anything held locally
+              // is queued to be written over it.
+              cache.setSha(path, sha);
+              const local = cache.getData(path);
+              if (Array.isArray(local) && local.length) cache.markDirty(path);
+              continue;
+            }
             cache.setData(path, res.data);
             cache.setSha(path, sha);
             emit({ type: 'changed', collection });
@@ -285,7 +306,12 @@ export function createStore(opts) {
       if (!cache.getQueue().length) setStatus('ok');
     } catch (e) {
       if (e instanceof AuthError) setStatus('error', e);
-      // other failures: keep whatever we had cached
+      // A file that arrives but will not parse is not a flaky network: past
+      // 1 MB the Contents API returns an empty body, and a hand-damaged file
+      // fails the same way. Retrying cannot fix either, so it is reported
+      // rather than swallowed — otherwise sync just quietly stops working.
+      else if (e instanceof SyntaxError) setStatus('error', e);
+      // other failures (offline, a blip): keep whatever we had cached
     }
   }
 
@@ -377,7 +403,10 @@ export function createStore(opts) {
       }, retryMs);
     }
     setStatus(canSync() ? (cache.getQueue().length ? 'pending' : 'ok') : 'local');
-    refresh(); // fire-and-forget background load
+    // Fire-and-forget background load. The queue is retried straight after it,
+    // not left for the 30s timer: refresh() skips dirty paths, so it is also
+    // what learns their shas, and writes that were waiting on one can go now.
+    refresh().then(() => { if (cache.getQueue().length) return flushQueue(); }).catch(() => {});
   }
 
   return {

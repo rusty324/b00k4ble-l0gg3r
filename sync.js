@@ -181,11 +181,91 @@ function toast(message, type = '') {
 }
 
 function paintBadge() {
+  paintProblem();
   const el = $('syncBadge');
   if (!el) return;
   const { text, cls } = badgeState(store);
   el.className = `gh-badge ${cls}`;
   el.textContent = text;
+  // Hover/long-press shows why, for anyone who does not open the panel.
+  const { error } = store.syncStatus();
+  el.title = error && (cls === 'pending' || cls === 'error') ? explainSyncError(error).short : '';
+}
+
+// ─── why isn't it syncing? ───────────────────────────────────────────
+// "pending sync" on its own says only that something is waiting. The store
+// always knows what went wrong; this turns it into something to act on.
+// Matched by class name rather than instanceof for the package's errors that
+// are not re-exported here, and by message for the browser's own.
+function explainSyncError(err) {
+  const t = store.client.target();
+  const repo = t ? `${t.owner}/${t.repo}` : 'the data repo';
+  const branch = t ? t.branch : 'main';
+  const msg = String(err && err.message || err || '');
+
+  if (err && err.name === 'NotFoundError') return {
+    short: `GitHub can't find ${repo} on “${branch}”, or the token can't see it.`,
+    why: `GitHub can't find ${repo} on branch “${branch}” — or your token has no access to it. `
+       + `For a private repo GitHub answers “not found” rather than “forbidden”, so a wrong name, `
+       + `a wrong branch and a token that was not granted this repo all look the same.`,
+    fix: `Check the owner, repo and branch above, and that the token has Contents: read & write on ${repo}.`,
+  };
+  if (err && err.name === 'AuthError') return {
+    short: msg,
+    why: /\.$/.test(msg) ? msg : `${msg}.`,
+    fix: /rate limit/i.test(msg)
+      ? 'This is GitHub throttling requests, not a bad token — it clears on its own; Retry in a few minutes.'
+      : 'The token may have expired or lost access. Paste a fresh one under GitHub token.',
+  };
+  if (err && err.name === 'NotConfiguredError') return {
+    short: 'No data repository is set.', why: msg, fix: 'Set one under Data repository.',
+  };
+  if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) return {
+    short: "Couldn't reach GitHub.",
+    why: "The request to GitHub didn't go through — offline, a flaky connection, or something blocking api.github.com.",
+    fix: 'It retries every 30 seconds and when you come back online. Retry to try now.',
+  };
+  if (/repeated conflicts/i.test(msg)) return {
+    short: 'GitHub keeps rejecting the write as a conflict.',
+    why: `${msg}. Each attempt re-reads the file and re-sends, and GitHub still refuses.`,
+    fix: 'Retry once; if it persists, the file in the repo may have been changed by something else.',
+  };
+  // By type, not by text: the message of any error that names a file contains
+  // ".json", and matching on that misreported every such failure as this one.
+  if (err && err.name === 'SyntaxError') return {
+    short: "The file in the repo couldn't be read.",
+    why: `${msg}. GitHub only returns file contents under 1 MB, or the file isn't valid JSON.`,
+    fix: 'Check the size and contents of the file in the data repo.',
+  };
+  return { short: msg || 'Sync failed.', why: msg || 'Sync failed for an unknown reason.',
+           fix: 'It retries every 30 seconds. Retry to try now.' };
+}
+
+// The block at the top of the panel. Present only while something is wrong,
+// and repainted by paintBadge(), so it follows the status without a reopen.
+function paintProblem() {
+  const box = $('ghProblem');
+  if (!box) return;
+  const { status, error } = store.syncStatus();
+  const bad = (status === 'pending' || status === 'error') && error;
+  box.hidden = !bad;
+  if (!bad) { box.textContent = ''; return; }
+  const e = explainSyncError(error);
+  const queued = store.cache.getQueue().length;
+  box.replaceChildren(
+    h('div', { class: 'gh-problem-title' },
+      status === 'error' ? 'Sync needs attention' : 'Waiting to sync'),
+    h('p', {}, e.why),
+    h('p', { class: 'gh-problem-fix' }, e.fix),
+    h('p', { class: 'muted' }, `${queued} file${queued === 1 ? '' : 's'} waiting to upload.`),
+    h('button', { class: 'btn btn-sm', id: 'ghRetry', onclick: retrySync }, 'Retry now'));
+}
+
+async function retrySync() {
+  const btn = $('ghRetry');
+  if (btn) { btn.disabled = true; btn.textContent = 'Retrying…'; }
+  try { await store.flushQueue(); } catch { /* push() records its own failure */ }
+  paintBadge();       // rebuilds the block, so the button comes back with it
 }
 
 function renderSyncPanel() {
@@ -208,6 +288,8 @@ function renderSyncPanel() {
                  + 'written here would be readable by anyone.',
     },
   });
+
+  panel.appendChild(h('div', { class: 'gh-problem', id: 'ghProblem', hidden: true, role: 'status' }));
 
   panel.appendChild(h('div', { class: 'gh-setup' }, setupRows(store, (id) => {
     const el = panel.querySelector(`.settings-section[data-section="${id}"]`);
