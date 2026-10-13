@@ -21,3 +21,6 @@ Gemfile.lock
 # the browser through ghsync (⋯ → Sync & backup) — see ghsync/README.md.
 # This repo is public, so nothing personal belongs in it.
 data/
+
+__pycache__/
+*.pyc
