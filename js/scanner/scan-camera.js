@@ -212,10 +212,15 @@ function dismissScanDuplicate() {
 function openPrefilledForm(code, info, isBookPath) {
   if (activeTab === 'books') {
     openAddModal();
+    // The scanned code IS the ISBN-13, so it goes in the field where it can be
+    // seen and corrected — not only into pendingScanCode, where Save read it
+    // but the form never showed it.
+    document.getElementById('f-isbn').value = code;
     if (info) {
       document.getElementById('f-title').value  = info.title  || '';
       document.getElementById('f-author').value = info.author || '';
       if (info.coverUrl) document.getElementById('f-coverUrl').value = info.coverUrl;
+      addGenreValues('f-genre', genresFromSubjects(info.subjects));
     }
   } else {
     openWishlistModal(null);
@@ -237,7 +242,7 @@ function quickAddScanned(code, info, isBookPath) {
   if (activeTab === 'books') {
     const b = normalizeBook({
       id: newId(), title: info.title, author: info.author || '', series: '',
-      genre: [], formats: ['physical'], status: 'want', notes: '',
+      genre: genresFromSubjects(info.subjects), formats: ['physical'], status: 'want', notes: '',
       rating: 0, coverUrl: info.coverUrl || '', isbn: code,
     });
     books.push(b);

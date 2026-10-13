@@ -113,6 +113,7 @@ async function lookupASIN(raw) {
     isbn: book.isbn || '',
     asin: book.asin || asin,
     series: audnexusSeries(book),
+    subjects: (book.genres || []).map(g => g && g.name).filter(Boolean),
   };
 }
 
@@ -139,7 +140,7 @@ async function olSearch(query) {
     if (aud.status === 'fulfilled' && aud.value) out.push(aud.value);
     if (ol.status === 'fulfilled' && ol.value) out.push({
       source: 'ol', title: ol.value.title, author: ol.value.author, year: '',
-      coverUrl: ol.value.coverUrl || '', isbn: id,
+      coverUrl: ol.value.coverUrl || '', isbn: id, subjects: ol.value.subjects,
     });
     if (out.length) return out;
     if (aud.status === 'rejected' && ol.status === 'rejected') throw aud.reason;
@@ -151,7 +152,7 @@ async function olSearch(query) {
     const info = await lookupISBN(isbn);
     return info ? [{
       source: 'ol', title: info.title, author: info.author, year: '',
-      coverUrl: info.coverUrl || '', isbn,
+      coverUrl: info.coverUrl || '', isbn, subjects: info.subjects,
     }] : [];
   }
 
@@ -170,6 +171,7 @@ async function olSearch(query) {
     year: d.first_publish_year ? String(d.first_publish_year) : '',
     coverUrl: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : '',
     isbn: (d.isbn || [])[0] || '',
+    key: d.key || '',          // "/works/OL…W": subjects are fetched from it on pick
   })).filter(d => d.title);
 
   // Same short-title problem TMDb has: promote an exact match.
@@ -272,8 +274,33 @@ function olPick(i) {
 
   closeOlAC();
   document.getElementById('f-ol').value = '';
-  olHint(`Filled from ${r.source === 'audible' ? 'Audible' : 'Open Library'}: ${r.title}${r.year ? ' (' + r.year + ')' : ''}`);
+  const filledFrom = `Filled from ${r.source === 'audible' ? 'Audible' : 'Open Library'}: ${r.title}${r.year ? ' (' + r.year + ')' : ''}`;
+  olHint(filledFrom);
   paintDup('books');      // already in the library? (title/author/ISBN/ASIN all set now)
+
+  const seq = ++_olGenreSeq;
+  const say = added => { if (added.length) olHint(`${filledFrom} · genre: ${added.join(', ')}`); };
+  if (Array.isArray(r.subjects)) say(addGenreValues('f-genre', genresFromSubjects(r.subjects)));
+  else if (r.key) olWorkSubjects(r.key).then(subs => {
+    // Only if this is still the pick on screen: a second pick, or the form
+    // closing, makes this answer stale.
+    if (seq !== _olGenreSeq || !document.getElementById('modal').classList.contains('open')) return;
+    say(addGenreValues('f-genre', genresFromSubjects(subs)));
+  });
+}
+
+// A title search does not return subjects — asking for them would make every
+// keystroke's results several times heavier — so they are fetched once, from
+// the work record, after a result is actually picked. Failure is silent: no
+// genres is the same outcome as before this existed.
+let _olGenreSeq = 0;
+async function olWorkSubjects(key) {
+  if (!/^\/works\/OL\d+W$/.test(key)) return [];
+  try {
+    const res = await fetchWithTimeout(`https://openlibrary.org${key}.json`);
+    if (!res.ok) return [];
+    return subjectNames((await res.json()).subjects);
+  } catch { return []; }
 }
 
 

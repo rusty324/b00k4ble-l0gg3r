@@ -163,9 +163,106 @@ async function fetchWithTimeout(url, ms = SCAN_LOOKUP_TIMEOUT, init = {}) {
 
 // Open Library primary (keyless, Access-Control-Allow-Origin: *),
 // Google Books fallback.
+// ─── GENRES FROM SUBJECTS ─────────────────────────────────────────────
+// Open Library's subjects are a librarian's cataloguing, not genres: "Fiction,
+// fantasy, epic", "Juvenile fiction", "Wizards", "nyt:hardcover-fiction=2008-
+// 01-06", "Accessible book". Google Books sends BISAC-style "Fiction / Fantasy
+// / Epic"; Audible sends its own categories. All of it is matched against one
+// fixed list of real genres, so a book gets "Fantasy", never "Fiction,
+// fantasy, epic" — and noise ("Accessible book", "In library") matches nothing.
+//
+// Each row: the genre, spellings a library may already use for it, what in a
+// subject means it, and (optionally) what rules that out.
+const BOOK_GENRES = [
+  ['Science Fiction', ['sci-fi', 'scifi', 'sf'], /science fiction|sci-?fi\b|space opera|cyberpunk|time travel/],
+  ['Fantasy', [], /fantasy|wizards|dragons|sword and sorcery|magic\b.*fiction|fiction.*\bmagic/],
+  ['Horror', [], /horror|ghost stories|vampires|zombies/],
+  ['True Crime', [], /true crime/],
+  ['Mystery', ['mysteries'], /myster|detective|whodunit|private investigators/],
+  ['Thriller', ['thrillers', 'suspense'], /thriller|suspense|espionage|spy stories/],
+  ['Romance', [], /romance|love stories/],
+  ['Historical Fiction', [], /historical fiction|fiction,? historical/],
+  ['Dystopian', ['dystopia'], /dystop/],
+  ['Adventure', [], /adventure/],
+  ['Young Adult', ['ya'], /young adult|\bteens?\b|teenagers/],
+  ["Children's", ['childrens', 'children', 'kids'], /juvenile|children'?s (?:stories|books|fiction|literature)|picture books/],
+  ['Graphic Novel', ['graphic novels', 'comics', 'manga'], /graphic novel|comic books|\bcomics\b|manga/],
+  ['Classics', ['classic'], /\bclassics?\b/],
+  ['Poetry', ['poems'], /poetry|\bpoems\b/],
+  ['Short Stories', [], /short stories/],
+  ['Humor', ['humour', 'comedy'], /humou?r|comedy|comic fiction/],
+  ['Memoir', ['memoirs'], /memoir/],
+  ['Biography', ['biographies', 'autobiography'], /biograph/],
+  ['History', [], /\bhistory\b/, /fiction/],
+  ['Science', [], /\b(?:science|physics|astronomy|biology|chemistry|cosmology|evolution)\b/,
+    /fiction|computer science|political science|social science/],
+  ['Technology', ['tech', 'programming', 'computers'], /computer|programming|software/],
+  ['Philosophy', [], /philosoph/],
+  ['Religion', ['spirituality'], /religio|christian|bible|theolog|spiritual|buddhis|islam|judaism/],
+  ['Psychology', [], /psycholog/],
+  ['Self-Help', ['self help', 'personal development'], /self-help|self help|personal growth|self-actualization/],
+  ['Business', ['economics', 'finance'], /business|economics|management|investing|entrepreneur/],
+  ['Politics', ['political science'], /politic/],
+  ['Cooking', ['cookbooks', 'food'], /cooking|cookery|recipes|cookbooks/],
+  ['Travel', [], /\btravel/],
+  ['Art', ['arts'], /\bart\b|painting|photography/],
+  ['Music', [], /\bmusic/],
+  ['Sports', [], /sports|baseball|football|basketball|soccer/],
+  ['Health', ['fitness', 'wellness'], /health|nutrition|\bdiet|fitness/],
+];
+
+// subjects: strings, or {name} objects as Open Library's ISBN API sends them.
+// Returns at most `max` genres, the ones most subjects point at first. Where
+// this library already uses a spelling for a genre ("Sci-Fi"), that spelling
+// is returned instead of the canonical one, so the list does not split in two.
+function genresFromSubjects(subjects, max = 3) {
+  const list = (Array.isArray(subjects) ? subjects : [])
+    .map(s => String(s && typeof s === 'object' ? s.name : s || '').toLowerCase())
+    // Machine tags ("nyt:hardcover-fiction=2008-01-06") are bookkeeping, not
+    // subjects; read as text, the word "fiction" in one would decide a genre.
+    .filter(s => s && !/^[a-z_]+:/.test(s));
+  if (!list.length) return [];
+
+  const hits = [];                       // [row index, count, first position]
+  BOOK_GENRES.forEach(([, , pat, not], row) => {
+    let count = 0, first = Infinity;
+    list.forEach((s, i) => {
+      if (pat.test(s) && !(not && not.test(s))) { count++; first = Math.min(first, i); }
+    });
+    if (count) hits.push([row, count, first]);
+  });
+  // A teen book is usually *also* catalogued "Juvenile fiction"; YA is the
+  // truer of the two, and having both says less than having one.
+  const ya = BOOK_GENRES.findIndex(g => g[0] === 'Young Adult');
+  const kids = BOOK_GENRES.findIndex(g => g[0] === "Children's");
+  const filtered = hits.some(h => h[0] === ya) ? hits.filter(h => h[0] !== kids) : hits;
+
+  let names = filtered.sort((a, b) => b[1] - a[1] || a[2] - b[2]).slice(0, max)
+    .map(([row]) => BOOK_GENRES[row]);
+  if (!names.length) {
+    // Nothing specific: say at least which side of the shelf it is on.
+    if (list.some(s => /non-?fiction/.test(s))) names = [['Nonfiction', ['non-fiction']]];
+    else if (list.some(s => /\bfiction\b/.test(s))) names = [['Fiction', []]];
+  }
+
+  const have = new Map((typeof allBookGenres === 'function' ? allBookGenres() : [])
+    .map(g => [g.toLowerCase(), g]));
+  return names.map(([genre, aliases]) => {
+    for (const k of [genre, ...aliases]) if (have.has(k.toLowerCase())) return have.get(k.toLowerCase());
+    return genre;
+  });
+}
+
+// Open Library's raw subjects, trimmed: they run to dozens for a popular book.
+const subjectNames = subs => (subs || []).map(s => (s && typeof s === 'object' ? s.name : s))
+  .filter(Boolean).map(String).slice(0, 60);
+
 async function lookupISBN(isbn) {
   const cached = scanCacheGet(isbn);
-  if (cached !== undefined) return cached;
+  // A hit cached before subjects were kept has none to offer, so it is
+  // looked up again once rather than going without genres for 30 days.
+  // Misses (null) are trusted as before.
+  if (cached !== undefined && (cached === null || Array.isArray(cached.subjects))) return cached;
 
   try {
     const res = await fetchWithTimeout(`${OPENLIBRARY_ISBN_URL}?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
@@ -177,6 +274,7 @@ async function lookupISBN(isbn) {
           title: rec.title + (rec.subtitle ? `: ${rec.subtitle}` : ''),
           author: (rec.authors || []).map(a => a.name).filter(Boolean).join(', '),
           coverUrl: (rec.cover && (rec.cover.medium || rec.cover.large)) || '',
+          subjects: subjectNames(rec.subjects),
           source: 'Open Library',
         };
         scanCacheSet(isbn, true, out);
@@ -196,6 +294,8 @@ async function lookupISBN(isbn) {
           author: (v.authors || []).join(', '),
           // imageLinks come back as http:// — GitHub Pages blocks mixed content
           coverUrl: ((v.imageLinks && v.imageLinks.thumbnail) || '').replace(/^http:/, 'https:'),
+          // BISAC-style "Fiction / Fantasy / Epic": each level is a subject.
+          subjects: (v.categories || []).flatMap(c => String(c).split('/')).map(s => s.trim()).filter(Boolean),
           source: 'Google Books',
         };
         scanCacheSet(isbn, true, out);

@@ -217,6 +217,15 @@ function setGenreValues(inputId, values) {
   renderGenrePills(inputId);
 }
 
+// Adds suggested genres alongside whatever the field already holds — a pick
+// from a search must not wipe genres the user typed first. Returns the ones
+// actually added (duplicates, case-insensitively, are skipped).
+function addGenreValues(inputId, values) {
+  const added = (values || []).filter(v => commitGenrePill(inputId, v));
+  if (added.length) renderGenrePills(inputId);
+  return added;
+}
+
 // Called at save time. Whatever is still sitting unsubmitted in the text box
 // counts too — pressing Save is as much a commit as pressing Enter would
 // have been, so a genre typed and not yet confirmed is not silently dropped.
