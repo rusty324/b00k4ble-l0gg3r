@@ -415,7 +415,7 @@ function normalizeWishlistItem(item) {
 // download stays yours, a Plus copy is only there while the subscription is,
 // and telling those apart is the whole point of recording it.
 const GAME_FORMATS = ['physical', 'digital', 'ps-plus'];
-const GAME_FORMAT_ICON  = { physical: '\u{1F4C0}', digital: '\u{1F4BE}', 'ps-plus': '\u2601\uFE0F' };
+const GAME_FORMAT_ICON  = { physical: '\u{1F4C0}', digital: '\u{1F4BE}', 'ps-plus': '\u2795\uFE0F' };
 const GAME_FORMAT_LABEL = { physical: 'Physical', digital: 'Digital', 'ps-plus': 'PS Plus' };
 const PS_PLATFORMS = new Set(['ps3', 'ps4', 'ps5']);
 
