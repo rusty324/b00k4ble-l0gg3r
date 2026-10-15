@@ -101,6 +101,7 @@ function tmdbPick(i) {
   document.getElementById('m-tmdb').value = '';
   tmdbHint(`Filled from TMDb: ${r.title}${r.year ? ' (' + r.year + ')' : ''}`);
   paintDup('media');      // after pendingTmdb, so an exact TMDb-id match counts
+  mediaPicked();          // TV: show Seasons, and ask TMDb how many there are
 }
 
 // Shows the search box only when a key is present, with a pointer to where

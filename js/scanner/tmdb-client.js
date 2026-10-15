@@ -97,6 +97,23 @@ async function tmdbSearch(query) {
 }
 
 // Verifies a key before it is saved, so a typo is caught immediately.
+// How many seasons a show has, from its details record — search results do
+// not carry it. Null when unknown (no key, not found, offline): the form then
+// just offers seasons by hand. Cached per show for the page's lifetime.
+const _tmdbSeasonCounts = new Map();
+async function tmdbSeasonCount(tvId) {
+  if (!tmdbEnabled() || tvId == null) return null;
+  if (_tmdbSeasonCounts.has(tvId)) return _tmdbSeasonCounts.get(tvId);
+  try {
+    const res = await fetchWithTimeout(tmdbUrl(`/tv/${encodeURIComponent(tvId)}`, {}));
+    if (!res.ok) return null;
+    const n = Number((await res.json()).number_of_seasons);
+    const count = Number.isInteger(n) && n >= 1 ? n : null;
+    _tmdbSeasonCounts.set(tvId, count);
+    return count;
+  } catch { return null; }
+}
+
 async function tmdbTestKey(key) {
   const q = new URLSearchParams({ api_key: key, query: 'inception' });
   const res = await fetchWithTimeout(`${TMDB_API_BASE}/search/movie?${q}`);

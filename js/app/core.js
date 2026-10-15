@@ -564,6 +564,48 @@ function normalizeVideoGame(g) {
   return game;
 }
 
+// The Movies & TV formats. Icons shared by the card, the list row, the filter
+// pills and the form's edition rows, so they cannot drift apart.
+const MEDIA_FORMAT_ICON  = { bluray: '\u{1F94F}', dvd: '\u{1F4BF}', digital: '\u{1F4BB}', streaming: '\u{1F4E1}' };
+const MEDIA_FORMAT_LABEL = { bluray: 'Blu-ray', dvd: 'DVD', digital: 'Digital', streaming: 'Streaming' };
+// A copy you hold can be a particular edition; a stream cannot.
+const EDITION_FORMATS = ['bluray', 'dvd', 'digital'];
+
+// Format -> edition name, e.g. { dvd: '"Don\'t Call Me Shirley!" Edition' }.
+// Only for formats the item actually has: unticking DVD takes its edition
+// with it rather than leaving a note about a copy that is no longer listed.
+function normalizeEditions(raw, formats) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const out = {};
+  for (const f of formats) {
+    if (!EDITION_FORMATS.includes(f)) continue;
+    const v = raw[f] == null ? '' : String(raw[f]).trim().slice(0, 120);
+    if (v) out[f] = v;
+  }
+  return out;
+}
+
+// Owned season numbers: whole, positive, unique, ascending.
+function normalizeSeasons(raw) {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= 999))].sort((a, b) => a - b);
+}
+
+// "Season 1", "Seasons 1–3, 5", with "of 8" when the total is known, and
+// "All 8 seasons" when every one is owned.
+function seasonsText(seasons, count) {
+  if (!seasons || !seasons.length) return '';
+  if (count && seasons.length === count && seasons[seasons.length - 1] === count)
+    return count === 1 ? 'The only season' : `All ${count} seasons`;
+  const runs = [];
+  for (const n of seasons) {
+    const last = runs[runs.length - 1];
+    if (last && n === last[1] + 1) last[1] = n; else runs.push([n, n]);
+  }
+  const list = runs.map(([a, b]) => a === b ? `${a}` : `${a}\u2013${b}`).join(', ');
+  return `${seasons.length === 1 ? 'Season' : 'Seasons'} ${list}${count ? ` of ${count}` : ''}`;
+}
+
 // Normalize media items — coerces every field the render/sort/search paths
 // call string or array methods on, so malformed imports can't freeze the tab
 function normalizeMediaItem(m) {
@@ -576,7 +618,7 @@ function normalizeMediaItem(m) {
     : m.formats ? [String(m.formats)]
     : [];
 
-  return dropEmpty(applyLinks({
+  const item = dropEmpty(applyLinks({
     ...m,
     id: normalizeId(m.id),
     title: m.title != null ? String(m.title) : '',
@@ -588,6 +630,17 @@ function normalizeMediaItem(m) {
     ...(m.posterUrl != null ? { posterUrl: String(m.posterUrl) } : {}),
     ...(m.tmdbId != null ? { tmdbId: m.tmdbId } : {}),
   }, m.links));
+
+  // Stored only when there is something to store, so a title without them is
+  // unchanged on disk and in the data repo.
+  const editions = normalizeEditions(m.editions, item.formats);
+  if (Object.keys(editions).length) item.editions = editions; else delete item.editions;
+  // Seasons belong to TV. A title switched to Movie drops them.
+  const seasons = item.type === 'tv' ? normalizeSeasons(m.seasons) : [];
+  if (seasons.length) item.seasons = seasons; else delete item.seasons;
+  const count = Math.round(Number(m.seasonCount));
+  if (item.type === 'tv' && count >= 1 && count <= 999) item.seasonCount = count; else delete item.seasonCount;
+  return item;
 }
 
 
