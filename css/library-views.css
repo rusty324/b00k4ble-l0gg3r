@@ -40,6 +40,21 @@ input[type="search"] {
   transition: border-color 0.15s;
 }
 input[type="search"]:focus { border-color: var(--amber-200); }
+
+/* The ✕ that clears a search box. Present only while there is something to
+   clear — :placeholder-shown is true exactly when the box is empty, so no
+   script has to keep it in step. The browser's own clear control is hidden
+   so desktop Chrome does not show two. */
+.search-wrap input[type="search"] { padding-right: 2.5rem; }
+.search-wrap input[type="search"]::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
+.search-clear {
+  position: absolute; right: 0.25rem; top: 50%; transform: translateY(-50%);
+  width: 2rem; height: 2rem; border: none; border-radius: 50%; background: none;
+  color: var(--text-muted); font-size: 20px; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.search-clear:hover { color: var(--text); background: var(--amber-50); }
+.search-wrap input:placeholder-shown + .search-clear { display: none; }
 select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.875rem; font-size: 13px; color: var(--text); cursor: pointer; outline: none; }
 
 /* ─── FILTER ROWS ────────────────────────────────────────────────── */
@@ -105,7 +120,7 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
 .page-info { font-size: 13px; color: var(--text-muted); }
 
 /* ─── BOOK GRID ──────────────────────────────────────────────────── */
-.books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+.books-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 1rem; }
 
 /* ─── LIST VIEW ─────────────────────────────────────────────────────── */
 .books-list { display: flex; flex-direction: column; }
@@ -177,7 +192,15 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
 .book-meta { display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; margin-top: 0.1rem; }
 .book-tags { display: flex; gap: 0.3rem; flex-wrap: wrap; }
 .book-notes { font-size: 12px; color: var(--text-muted); font-style: italic; line-height: 1.4; }
-.book-actions { display: flex; gap: 0.5rem; margin-top: auto; padding-top: 0.4rem; }
+/* Wraps: a card's store-link buttons plus Edit and Delete used to sit on one
+   line that could not break, and three links made a card ~530px wide. On a
+   390px phone that widened the grid column, so the whole page was zoomed out
+   to fit — only on whichever filter happened to include such a card. */
+.book-actions { display: flex; gap: 0.5rem; margin-top: auto; padding-top: 0.4rem; flex-wrap: wrap; }
+/* Belt and braces for the same failure: a card can never be wider than its
+   column, and no single unbroken word (a pasted URL) can force it wider. */
+.book-card { min-width: 0; }
+.book-title, .book-notes, .media-edition { overflow-wrap: anywhere; }
 
 /* ─── BADGES ─────────────────────────────────────────────────────── */
 .badge { font-size: 11px; font-weight: 500; padding: 0.15rem 0.55rem; border-radius: 999px; letter-spacing: 0.02em; }
@@ -198,4 +221,7 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
 .dlc-want { opacity: 0.6; font-style: italic; }
 /* A game's platform, with that platform's own format icons after it. */
 .badge-platform { background: var(--gray-50);  color: var(--gray-600);  }
+/* Which seasons of a show are owned, and the edition of each held format. */
+.badge-seasons  { background: var(--teal-50);  color: var(--teal-600);  }
+.media-edition  { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
 

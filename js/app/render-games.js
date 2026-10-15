@@ -127,6 +127,7 @@ function renderGames(listOnly = false) {
     <div class="search-wrap" style="margin-bottom:0.6rem">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input type="search" id="gameSearchInput" placeholder="Search title, platform, DLC, year, or genre…" aria-label="Search video games" value="${esc(gameSearch)}" oninput="debouncedGameRender(this.value)">
+      <button type="button" class="search-clear" aria-label="Clear search" onclick="clearSearch(this)">&times;</button>
     </div>
     <div class="filter-row">
       <span class="filter-label">Platform</span>

@@ -24,7 +24,8 @@ function renderMedia(listOnly = false) {
     items = items.filter(m =>
       (m.title || '').toLowerCase().includes(q) ||
       (m.year ? String(m.year) : '').includes(q) ||
-      (m.genre || []).some(g => g.toLowerCase().includes(q))
+      (m.genre || []).some(g => g.toLowerCase().includes(q)) ||
+      Object.values(m.editions || {}).some(e => e.toLowerCase().includes(q))
     );
   }
 
@@ -42,7 +43,14 @@ function renderMedia(listOnly = false) {
   const typeIcon  = { movie: '🎬', tv: '📺' };
   const stCls     = { want: 'badge-want', watched: 'badge-watched' };
   const stLabel   = { want: 'Want to Watch', watched: 'Watched' };
-  const fmtIcons  = { bluray: '🥏', dvd: '💿', digital: '💻', streaming: '📡' };
+  const fmtIcons  = MEDIA_FORMAT_ICON;      // shared with the form (core.js)
+  // "DVD — "Don't Call Me Shirley!" Edition" on hover, plain "DVD" otherwise.
+  const fmtTitle  = (m, f) => (MEDIA_FORMAT_LABEL[f] || f) + (m.editions && m.editions[f] ? ` — ${m.editions[f]}` : '');
+  const seasonsBadge = m => m.type === 'tv' && m.seasons && m.seasons.length
+    ? `<span class="badge badge-seasons">${esc(seasonsText(m.seasons, m.seasonCount))}</span>` : '';
+  // The card spells editions out; the list row leaves them to the tooltip.
+  const editionLines = m => Object.entries(m.editions || {}).map(([f, e]) =>
+    `<div class="media-edition">${fmtIcons[f] || ''} ${esc(MEDIA_FORMAT_LABEL[f] || f)} · ${esc(e)}</div>`).join('');
 
   // Filter toolbar
   const typePills = [['all','All'],['movie','🎬 Movies'],['tv','📺 TV Shows']].map(([v,l]) =>
@@ -67,7 +75,8 @@ function renderMedia(listOnly = false) {
   const toolbar = `<div style="margin-bottom:1rem">
     <div class="search-wrap" style="margin-bottom:0.6rem">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="search" id="mediaSearchInput" placeholder="Search title, year, or genre…" aria-label="Search movies and TV shows" value="${esc(mediaSearch)}" oninput="debouncedMediaRender(this.value)">
+      <input type="search" id="mediaSearchInput" placeholder="Search title, year, genre, or edition…" aria-label="Search movies and TV shows" value="${esc(mediaSearch)}" oninput="debouncedMediaRender(this.value)">
+      <button type="button" class="search-clear" aria-label="Clear search" onclick="clearSearch(this)">&times;</button>
     </div>
     <div class="filter-row">
       <span class="filter-label">Type</span>
@@ -108,6 +117,7 @@ function renderMedia(listOnly = false) {
     const rows = items.map(m => {
       const icon    = typeIcon[m.type] || '🎬';
       const formats = (m.formats || []).map(f => fmtIcons[f] || '').join(' ');
+      const fmtTip  = (m.formats || []).map(f => fmtTitle(m, f)).join('; ');
       return `<div class="book-row">
         ${m.posterUrl
           ? `<img class="book-row-thumb" src="${esc(m.posterUrl)}" alt="" loading="lazy">`
@@ -118,7 +128,8 @@ function renderMedia(listOnly = false) {
             <div class="book-row-author">${m.year ? esc(String(m.year)) : ''}</div>
             <div class="book-row-badges">
               <span class="badge ${stCls[m.status] || 'badge-want'}">${stLabel[m.status] || esc(m.status)}</span>
-              ${formats ? `<span class="badge badge-media">${formats}</span>` : ''}
+              ${formats ? `<span class="badge badge-media" title="${esc(fmtTip)}">${formats}</span>` : ''}
+              ${seasonsBadge(m)}
             </div>
             <div class="book-row-actions">
               ${renderLinkButtons(m.links, true)}
@@ -136,7 +147,7 @@ function renderMedia(listOnly = false) {
       const genreTags = (m.genre || []).map(g =>
         `<span class="badge badge-tag">${esc(g)}</span>`).join('');
       const fmtBadges = (m.formats || []).map(f =>
-        `<span class="badge badge-media" title="${esc(f)}">${fmtIcons[f] || esc(f)}</span>`).join('');
+        `<span class="badge badge-media" title="${esc(fmtTitle(m, f))}">${fmtIcons[f] || esc(f)}</span>`).join('');
       const mr = Math.max(0, Math.min(5, m.rating || 0));
       const stars = mr > 0
         ? `<span class="stars">${'★'.repeat(mr)}<span class="empty">${'★'.repeat(5-mr)}</span></span>`
@@ -150,8 +161,10 @@ function renderMedia(listOnly = false) {
         <div class="book-meta">
           <span class="badge ${stCls[m.status] || 'badge-want'}">${stLabel[m.status] || esc(m.status)}</span>
           ${fmtBadges}
+          ${seasonsBadge(m)}
           ${stars}
         </div>
+        ${editionLines(m)}
         ${genreTags ? `<div class="book-tags">${genreTags}</div>` : ''}
         ${m.notes ? `<div class="book-notes">${esc(m.notes)}</div>` : ''}
         <div class="book-actions">

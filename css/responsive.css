@@ -5,7 +5,7 @@
 
 /* ─── RESPONSIVE: TABLET ─────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .books-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+  .books-grid { grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); }
   main { padding: 1.5rem 1.25rem; }
 }
 
@@ -18,6 +18,8 @@
   .brand { font-size: 1.2rem; flex: 1; }
   .header-actions { width: 100%; justify-content: flex-end; gap: 0.4rem; flex-wrap: nowrap; }
   .btn, .pill, .genre-pill, .fmt-chip { min-height: 44px; }
+  .search-clear { width: 44px; height: 44px; right: 0; }
+  .season-chip { min-width: 44px; }
   /* Three 44px chips will not sit beside a platform name on a phone, and
      letting them wrap in a side column stacks them one per line. Give the
      name its own line instead, float the × into the corner, and the chips
@@ -44,7 +46,9 @@
   .dropdown-opt input[type="checkbox"] { width: 18px; height: 18px; }
   .dropdown-menu { max-height: 50vh; }
   .pill-group { flex-wrap: nowrap; }
-  .books-grid { grid-template-columns: 1fr; }
+  /* minmax(0, …), not a bare 1fr: 1fr's minimum is its widest content, so one
+     card that could not wrap stretched the column past the screen. */
+  .books-grid { grid-template-columns: minmax(0, 1fr); }
   .book-row-author { display: none; }
   main { padding: 1rem 0.75rem; }
   .toolbar { gap: 0.5rem; }

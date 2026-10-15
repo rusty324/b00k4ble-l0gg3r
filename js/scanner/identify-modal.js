@@ -183,6 +183,7 @@ function pickIdentifyResult(i) {
   pendingTmdb = { tmdbId: r.tmdbId, posterUrl: r.posterUrl || '' };
   tmdbHint(`Identified from the cover: ${r.title}${r.year ? ' (' + r.year + ')' : ''}`);
   paintDup('media');
+  mediaPicked();
 }
 
 function openIdentifyFallbackForm(guess, identified) {
@@ -216,6 +217,7 @@ function openIdentifyFallbackForm(guess, identified) {
   if (tmdbEnabled() && tq && guess) { tq.value = guess; tmdbAC(); }
   else if (guess) document.getElementById('m-title').value = guess;
   paintDup('media');
+  syncMediaSeasons();     // setMediaRadio above does not fire 'change'
 }
 
 function closeIdentifyModal() {

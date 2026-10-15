@@ -84,6 +84,7 @@
       <div class="search-wrap">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="search" id="searchInput" placeholder="Search title, author, series, or genre…" aria-label="Search books" oninput="debouncedRender()">
+        <button type="button" class="search-clear" aria-label="Clear search" onclick="clearSearch(this)">&times;</button>
       </div>
       <select class="sort-select" id="sortSelect" aria-label="Sort books" onchange="render()">
         <option value="added-desc">Newest added</option>
@@ -373,6 +374,15 @@
         <label class="radio-btn" for="m-fmt-digital">💻 Digital<input type="checkbox" id="m-fmt-digital" value="digital"></label>
         <label class="radio-btn" for="m-fmt-streaming">📡 Streaming<input type="checkbox" id="m-fmt-streaming" value="streaming"></label>
       </div>
+      <!-- One edition box per held format that is ticked — filled by renderMediaEditions() -->
+      <div class="edition-rows" id="m-editions"></div>
+    </div>
+
+    <!-- TV only: which seasons are owned — filled by renderMediaSeasons() -->
+    <div class="form-group" id="m-seasons-group" style="display:none">
+      <label>Seasons owned <span class="opt">(optional)</span></label>
+      <div class="season-chips" id="m-season-chips"></div>
+      <div class="hint" id="m-seasons-hint">Tap each season you own. Leave them all off if you don't track seasons.</div>
     </div>
 
     <div class="form-group">

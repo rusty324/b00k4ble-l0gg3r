@@ -149,6 +149,16 @@ input[type="radio"], input[type="checkbox"] { display: none; }
 .dup-note.armed { background: var(--coral-50); border-color: var(--coral-200); color: var(--coral-600); }
 .dup-armed { font-weight: 600; }
 
+/* Movies & TV: an edition box under each ticked held format. */
+.edition-rows:not(:empty) { margin-top: 0.7rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.edition-row { display: flex; flex-direction: column; gap: 0.3rem; }
+.edition-label { font-size: 12px; color: var(--text-muted); }
+.edition-label .opt { font-size: 11px; color: var(--text-light); }
+/* Season numbers: fixed-size chips, never stretched to fill the row. */
+.season-chips { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.season-chip { min-width: 2.4rem; text-align: center; }
+.season-chips .fmt-chip { flex: 0 0 auto; }
+
 .platform-entries:not(:empty) { margin-top: 0.7rem; display: flex; flex-direction: column; gap: 0.4rem; }
 .platform-entry {
   display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;

@@ -217,6 +217,18 @@ function setGenreValues(inputId, values) {
   renderGenrePills(inputId);
 }
 
+// The ✕ in every tab's search box. It clears through the box's own oninput,
+// so each tab re-filters exactly as if the text had been deleted by hand.
+// Focus goes back to the box only where there is a pointer: on a phone,
+// putting it back would raise the keyboard that tapping ✕ just put away.
+function clearSearch(btn) {
+  const input = btn.parentElement && btn.parentElement.querySelector('input[type="search"]');
+  if (!input) return;
+  input.value = '';
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  if (window.matchMedia && matchMedia('(hover: hover)').matches) input.focus();
+}
+
 // Adds suggested genres alongside whatever the field already holds — a pick
 // from a search must not wipe genres the user typed first. Returns the ones
 // actually added (duplicates, case-insensitively, are skipped).
