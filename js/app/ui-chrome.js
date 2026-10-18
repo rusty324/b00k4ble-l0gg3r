@@ -125,6 +125,22 @@ function setRadio(name, val) {
     r.checked = r.value === val;
     r.closest('.radio-btn').classList.toggle('active', r.value === val);
   });
+  if (name === 'status') syncFinishedField(false);
+}
+
+// The Finished field shows only for a Read book. Marking a book Read by hand
+// fills in this month, the usual answer, which can be changed; a form merely
+// opening on a Read book with no date leaves it blank rather than inventing one.
+function syncFinishedField(fillIfEmpty) {
+  const group = document.getElementById('f-finished-group');
+  const input = document.getElementById('f-finished');
+  const read = document.getElementById('st-read');
+  if (!group || !input || !read) return;
+  group.style.display = read.checked ? '' : 'none';
+  if (read.checked && fillIfEmpty && !input.value) {
+    const d = new Date();
+    input.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }
 }
 
 // Sync radio active class on change — covers all modals
@@ -137,6 +153,7 @@ document.querySelectorAll('.radio-btn input[type="radio"]').forEach(r => {
     // not fire this event — openWishlistModal() calls syncIdentifyButtons()
     // itself right after, covering that path separately.
     if (this.name === 'wl-type') syncIdentifyButtons();
+    if (this.name === 'status') syncFinishedField(true);
   });
 });
 

@@ -107,11 +107,20 @@ function renderStats() {
     ? (rated.reduce((sum, b) => sum + b.rating, 0) / rated.length).toFixed(1)
     : '—';
 
+  // Read this calendar year, from the finished month; and last year for scale.
+  const year = new Date().getFullYear();
+  const readIn = y => books.filter(b => b.status === 'read' && (b.finished || '').startsWith(`${y}-`)).length;
+
   document.getElementById('statsBar').innerHTML = `
     <div class="stat-card">
       <div class="stat-label">Total</div>
       <div class="stat-value">${total}</div>
       <div class="stat-sub">${read} read · ${books.filter(b => b.status === 'reading').length} in progress</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Read in ${year}</div>
+      <div class="stat-value">${readIn(year)}</div>
+      <div class="stat-sub">${readIn(year - 1)} in ${year - 1}</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Physical</div>
@@ -169,6 +178,10 @@ function render() {
         case 'title-desc': return titleSortKey(b.title).localeCompare(titleSortKey(a.title));
         case 'author-asc': return authorSortKey(a.author).localeCompare(authorSortKey(b.author));
         case 'rating-desc': return (b.rating || 0) - (a.rating || 0);
+        // Most recent month first; books with no finished month after them,
+        // newest added first among those.
+        case 'finished-desc':
+          return (b.finished || '').localeCompare(a.finished || '') || b.id - a.id;
         case 'series-asc': return seriesSort(a, b);
         default:           return b.id - a.id;
       }
@@ -203,6 +216,9 @@ function render() {
   const fmtCls    = { physical: 'badge-physical', ebook: 'badge-ebook', audio: 'badge-audio' };
   const stCls     = { read: 'badge-read', reading: 'badge-reading', want: 'badge-want' };
   const stLabel   = { read: 'Read', reading: 'Reading', want: 'Want to read' };
+  // "Read · Jun 2025" when the month is known.
+  const statusText = b => (b.status === 'read' && b.finished)
+    ? `Read · ${finishedLabel(b.finished)}` : (stLabel[b.status] || b.status);
 
   let html;
   if (viewMode === 'list') {
@@ -223,7 +239,7 @@ function render() {
           <div class="book-row-title">${esc(b.title)}</div>
           <div class="book-row-meta">
             <div class="book-row-author">${esc(b.author || '')}${b.narrator ? ` <span class="book-row-narrator">· 🎙 ${esc(b.narrator)}</span>` : ''}</div>
-            <div class="book-row-badges">${fmtBadges}<span class="badge ${stCls[b.status] || 'badge-want'}">${stLabel[b.status] || esc(b.status)}</span></div>
+            <div class="book-row-badges">${fmtBadges}<span class="badge ${stCls[b.status] || 'badge-want'}">${esc(statusText(b))}</span></div>
             <div class="book-row-actions">
               ${renderLinkButtons(b.links, true)}
               <button class="btn btn-sm" onclick="openEditModal(${b.id})" title="Edit">✏</button>
@@ -259,7 +275,7 @@ function render() {
         ${b.series ? `<div class="book-series">📖 ${esc(b.series)}</div>` : ''}
         <div class="book-meta">
           ${fmtBadges}
-          <span class="badge ${stCls[b.status] || 'badge-want'}">${stLabel[b.status] || esc(b.status)}</span>
+          <span class="badge ${stCls[b.status] || 'badge-want'}">${esc(statusText(b))}</span>
           ${stars ? `<span class="stars">${stars}</span>` : ''}
         </div>
         ${tagBadges ? `<div class="book-tags">${tagBadges}</div>` : ''}

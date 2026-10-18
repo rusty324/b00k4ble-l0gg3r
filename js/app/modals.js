@@ -8,7 +8,7 @@ function openAddModal() {
   currentRating = 0;
   document.getElementById('modalTitle').textContent = 'Add a book';
 
-  ['f-title', 'f-author', 'f-narrator', 'f-series', 'f-seriesIndex', 'f-notes', 'f-coverUrl', 'f-isbn', 'f-asin', 'f-ol']
+  ['f-title', 'f-author', 'f-narrator', 'f-series', 'f-seriesIndex', 'f-notes', 'f-coverUrl', 'f-isbn', 'f-asin', 'f-ol', 'f-finished']
     .forEach(id => document.getElementById(id).value = '');
   setGenreValues('f-genre', []);
   setLinksField('f', []);
@@ -37,6 +37,7 @@ function openEditModal(id) {
   document.getElementById('f-title').value  = b.title;
   document.getElementById('f-author').value = b.author || '';
   document.getElementById('f-narrator').value = b.narrator || '';
+  document.getElementById('f-finished').value = b.finished || '';
   setSeriesFields(b.series);
   setGenreValues('f-genre', b.genre);
   document.getElementById('f-notes').value  = b.notes || '';
@@ -185,15 +186,17 @@ function saveBook() {
   const notes  = document.getElementById('f-notes').value.trim();
   // Only an audiobook has one; normalizeBook enforces the same.
   const narrator = formats.includes('audio') ? document.getElementById('f-narrator').value.trim() : '';
+  // Only a Read book has one; normalizeBook enforces the same.
+  const finished = status === 'read' ? document.getElementById('f-finished').value.trim() : '';
 
   if (editingId !== null) {
     const i = books.findIndex(b => b.id === editingId);
     if (i !== -1) {
-      books[i] = normalizeBook({ ...books[i], title, author, narrator, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
+      books[i] = normalizeBook({ ...books[i], title, author, narrator, finished, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
         isbn: isbn || pendingScanCode || books[i].isbn || '', asin });
     }
   } else {
-    books.push(normalizeBook({ id: newId(), title, author, narrator, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
+    books.push(normalizeBook({ id: newId(), title, author, narrator, finished, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
       ...(isbn || pendingScanCode ? { isbn: isbn || pendingScanCode } : {}),
       ...(asin ? { asin } : {}) }));
   }

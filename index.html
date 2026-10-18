@@ -93,6 +93,7 @@
         <option value="title-desc">Title Z–A</option>
         <option value="author-asc">Author A–Z (surname)</option>
         <option value="rating-desc">Rating ↓</option>
+        <option value="finished-desc">Recently finished</option>
         <option value="series-asc">Series</option>
       </select>
     </div>
@@ -211,6 +212,12 @@
         <label class="radio-btn" for="st-reading">Reading<input type="radio" name="status" id="st-reading" value="reading"></label>
         <label class="radio-btn" for="st-read">Read<input type="radio" name="status" id="st-read" value="read"></label>
       </div>
+    </div>
+
+    <!-- Read only: the month it was finished (syncFinishedField) -->
+    <div class="form-group" id="f-finished-group" style="display:none">
+      <label for="f-finished">Finished <span class="opt">(month and year)</span></label>
+      <input type="month" class="plain" id="f-finished" placeholder="YYYY-MM" style="max-width:220px" autocomplete="off">
     </div>
 
     <div class="form-group">
