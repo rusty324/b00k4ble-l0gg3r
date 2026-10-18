@@ -621,17 +621,22 @@ function normalizeSeasons(raw) {
 
 // "Season 1", "Seasons 1–3, 5", with "of 8" when the total is known, and
 // "All 8 seasons" when every one is owned.
+// [1, 2, 3, 5] -> "1–3, 5". Input ascending. `prefix` goes before each run
+// ("#" for series numbers: "#1–3, #5").
+function compressRanges(nums, prefix = '') {
+  const runs = [];
+  for (const n of nums) {
+    const last = runs[runs.length - 1];
+    if (last && n === last[1] + 1) last[1] = n; else runs.push([n, n]);
+  }
+  return runs.map(([a, b]) => a === b ? `${prefix}${a}` : `${prefix}${a}\u2013${prefix}${b}`).join(', ');
+}
+
 function seasonsText(seasons, count) {
   if (!seasons || !seasons.length) return '';
   if (count && seasons.length === count && seasons[seasons.length - 1] === count)
     return count === 1 ? 'The only season' : `All ${count} seasons`;
-  const runs = [];
-  for (const n of seasons) {
-    const last = runs[runs.length - 1];
-    if (last && n === last[1] + 1) last[1] = n; else runs.push([n, n]);
-  }
-  const list = runs.map(([a, b]) => a === b ? `${a}` : `${a}\u2013${b}`).join(', ');
-  return `${seasons.length === 1 ? 'Season' : 'Seasons'} ${list}${count ? ` of ${count}` : ''}`;
+  return `${seasons.length === 1 ? 'Season' : 'Seasons'} ${compressRanges(seasons)}${count ? ` of ${count}` : ''}`;
 }
 
 // Normalize media items — coerces every field the render/sort/search paths

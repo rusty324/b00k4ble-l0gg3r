@@ -125,6 +125,7 @@
     <div id="bookGenreFilter"></div>
 
     <!-- Book cards / list rows injected here -->
+    <div class="missing-slot" id="booksMissing"></div>
     <div class="books-grid" id="booksGrid"></div>
     <div class="pagination" id="pagination"></div>
   </div>
@@ -728,6 +729,11 @@
 
 <!-- Tap a cover to see it full size. Closes on a tap anywhere, since on a
      phone hunting for a small × is worse than tapping the picture again. -->
+<!-- "What am I missing?" — filled by openMissing() (js/app/missing-view.js) -->
+<div class="modal-backdrop" id="missingModal" onclick="handleMissingBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="missingTitle">
+  <div class="modal detail-modal" id="missingBody"></div>
+</div>
+
 <!-- A library card's details — filled by openDetail() (js/app/detail-view.js) -->
 <div class="modal-backdrop" id="detailModal" onclick="handleDetailBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
   <div class="modal detail-modal" id="detailBody"></div>
@@ -770,6 +776,7 @@
 <script src="js/app/row-editor.js"></script>
 <script src="js/app/modals.js"></script>
 <script src="js/app/detail-view.js"></script>
+<script src="js/app/missing-view.js"></script>
 <script src="js/app/app-init.js"></script>
 <!-- Module, so deferred: app-init.js has already initialised by the time
      this runs, which is what lets the app stay standalone and local-first. -->

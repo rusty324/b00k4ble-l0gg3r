@@ -92,6 +92,7 @@ function renderMedia(listOnly = false) {
       <span class="filter-label">Sort</span>
       ${sortSelect}
     </div>
+    <div class="missing-slot">${missingButton('media')}</div>
   </div>`;
 
   let contentHtml;

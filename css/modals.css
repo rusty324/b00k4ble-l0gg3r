@@ -294,3 +294,20 @@ input[type="radio"], input[type="checkbox"] { display: none; }
 /* A card is now a button: say so to pointer and keyboard users. */
 .book-card[data-detail], .book-row[data-detail] { cursor: pointer; }
 .book-card[data-detail]:focus-visible, .book-row[data-detail]:focus-visible { outline: 2px solid var(--amber-200); outline-offset: 2px; }
+
+/* ─── WHAT AM I MISSING? ───────────────────────────────────────────── */
+.missing-slot:empty { display: none; }
+.missing-slot { margin: 0 0 1rem; }
+.missing-btn { display: inline-flex; align-items: center; gap: 0.5rem; }
+.missing-count { background: var(--amber-50); color: var(--amber-900); border-radius: 999px; padding: 0 0.5rem;
+                 font-size: 12px; font-weight: 600; min-width: 1.5rem; text-align: center; }
+.missing-list { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.75rem; }
+.missing-item { display: block; width: 100%; text-align: left; padding: 0.7rem 0.8rem; border-radius: 10px;
+                border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; }
+.missing-link { cursor: pointer; }
+.missing-link:hover { border-color: var(--amber-200); }
+.missing-name { font-family: 'Playfair Display', serif; font-size: 15px; color: var(--amber-900); overflow-wrap: anywhere; }
+.missing-what { font-size: 13px; color: var(--text); margin-top: 0.2rem; overflow-wrap: anywhere; }
+.missing-have { font-size: 12px; color: var(--text-light); margin-top: 0.15rem; }
+.missing-item .btn { margin-top: 0.5rem; }
+

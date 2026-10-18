@@ -137,6 +137,7 @@ function renderGames(listOnly = false) {
       <span class="filter-label">Sort</span>
       ${sortSelect}
     </div>
+    <div class="missing-slot">${missingButton('games')}</div>
   </div>`;
 
   let contentHtml;

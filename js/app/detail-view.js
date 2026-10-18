@@ -41,6 +41,10 @@ function detailBook(b) {
     facts: [
       fact('Narrated by', esc(b.narrator || '')),
       fact('Series', esc(b.series || '')),
+      fact('Series gaps', (() => {
+        const s = seriesGaps().find(x => x.books.includes(b));
+        return s ? `Missing ${esc(compressRanges(s.missing, '#'))}` : '';
+      })()),
       fact('Formats', (b.formats || []).map(f => esc(BOOK_FORMAT_LABEL[f] || f)).join('<br>')),
       fact('Finished', b.status === 'read' && b.finished ? esc(finishedLabel(b.finished)) : ''),
       fact('ISBN', esc(b.isbn || '')),
@@ -64,6 +68,8 @@ function detailMedia(m) {
     facts: [
       fact('Formats', formats),
       fact('Seasons', m.type === 'tv' ? esc(seasonsText(m.seasons, m.seasonCount)) : ''),
+      fact('Missing', (() => { const gap = seasonGaps(m);
+        return gap.length ? `${gap.length === 1 ? 'Season' : 'Seasons'} ${esc(compressRanges(gap))}` : ''; })()),
       fact('Added', addedFact(m.id)),
     ].join(''),
     genre: m.genre, notes: m.notes, links: m.links,

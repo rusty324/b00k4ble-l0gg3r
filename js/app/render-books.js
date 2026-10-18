@@ -147,6 +147,9 @@ function renderStats() {
 
 // ─── MAIN RENDER (books tab) ──────────────────────────────────────────
 function render() {
+  // First, so an early return below (an empty library, say) cannot skip it.
+  const missingSlot = document.getElementById('booksMissing');
+  if (missingSlot) missingSlot.innerHTML = missingButton('books');
   // Stats and tag pills only depend on the books array, not on search/
   // filter/page state — skip the six full-library passes unless it changed.
   if (_statsRenderedAt !== _booksMutation) {
