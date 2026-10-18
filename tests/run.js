@@ -58,7 +58,7 @@ function run(file, env) {
     if (!ok) {
       failed++;
       // Only what went wrong, not every passing line.
-      console.log(out.split('\n').filter(l => /^FAIL|SUITE ERROR|Error|at /.test(l)).slice(0, 25).map(l => '      ' + l).join('\n'));
+      console.log(out.split('\n').filter(l => /^FAIL|SUITE ERROR|^\s+at /.test(l)).slice(0, 25).map(l => '      ' + l).join('\n'));
     }
   }
   server.close();

@@ -31,6 +31,13 @@ function exportData() {
   a.click();
 }
 
+// An imported record whose id this device has deleted gets a fresh id.
+// Importing is an explicit "I want this back"; under its old id the deletion
+// would win the next sync merge and remove it again.
+function reviveIfDeleted(collection, record) {
+  return tombsFor(collection)[record.id] ? { ...record, id: newId() } : record;
+}
+
 function importData(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -50,6 +57,7 @@ function importData(e) {
         const existingIds = new Set(mediaLibrary.map(m => m.id));
         const newItems = data
           .map(normalizeMediaItem)
+          .map(r => reviveIfDeleted('media', r))
           .filter(m => !existingIds.has(m.id));
         mediaLibrary = [...mediaLibrary, ...newItems];
         saveMedia();
@@ -60,6 +68,7 @@ function importData(e) {
         const existingIds = new Set(bookWishlist.map(w => w.id));
         const newItems = data
           .map(normalizeWishlistItem)
+          .map(r => reviveIfDeleted('wishlist', r))
           .filter(w => !existingIds.has(w.id));
         bookWishlist = [...bookWishlist, ...newItems];
         saveWishlist();
@@ -70,6 +79,7 @@ function importData(e) {
         const existingIds = new Set(videoGames.map(g => g.id));
         const newItems = data
           .map(normalizeVideoGame)
+          .map(r => reviveIfDeleted('games', r))
           .filter(g => !existingIds.has(g.id));
         videoGames = [...videoGames, ...newItems];
         saveGames();
@@ -80,6 +90,7 @@ function importData(e) {
         const existingIds = new Set(books.map(b => b.id));
         const newBooks = data
           .map(normalizeBook)
+          .map(r => reviveIfDeleted('books', r))
           .filter(b => !existingIds.has(b.id));
         books = [...books, ...newBooks];
         save();

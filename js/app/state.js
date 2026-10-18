@@ -124,6 +124,67 @@ function paintUpdatedNote() {
   el.title = ms === null ? '' : new Date(ms).toISOString();
 }
 
+// ─── DELETIONS (tombstones) ───────────────────────────────────────────
+// A deleted record has to leave something behind, or sync brings it back: a
+// merge keeps any record that exists on only one side, so another device's
+// stale copy — or a remote that changed while this delete was being pushed —
+// would resurrect it. A tombstone `{ id, deleted: true, deletedAt }` travels
+// in the synced file instead, and wins over a live copy of the same id in
+// every merge (ghsync/store.js mergeRemote).
+//
+// Tombstones never enter the app's own arrays, so nothing that renders,
+// counts, filters or exports a collection ever sees one. They live under
+// their own key, are added to what is pushed (syncSnapshot), and are applied
+// and filtered out of what arrives (applySyncedData).
+//
+// Deletions are noticed at the save choke points, by which ids have gone
+// since the last save, rather than at each delete button — so every path
+// that removes a record (delete, scan undo, bulk delete, moving a wishlist
+// item into the library) is covered without having to remember it.
+const TOMB_KEY = 'tombstones';
+const TOMB_TTL = 365 * 864e5;   // a device offline for a year can resurrect; accepted
+
+function readTombs() {
+  try { return JSON.parse(localStorage.getItem(TOMB_KEY)) || {}; } catch { return {}; }
+}
+function writeTombs(t) {
+  try { localStorage.setItem(TOMB_KEY, JSON.stringify(t)); } catch { /* quota: worst case is a resurrection */ }
+}
+const collectionArray = c =>
+  ({ books, media: mediaLibrary, wishlist: bookWishlist, games: videoGames })[c] || [];
+
+// Ids each collection held at its last save or sync, to tell what was deleted.
+const _knownIds = {};
+['books', 'media', 'wishlist', 'games'].forEach(c => {
+  _knownIds[c] = new Set(collectionArray(c).map(r => r.id));
+});
+
+function noteDeletions(collection) {
+  const now = new Set(collectionArray(collection).map(r => r.id));
+  const gone = [..._knownIds[collection]].filter(id => !now.has(id));
+  _knownIds[collection] = now;
+  if (!gone.length) return;
+  const t = readTombs();
+  const map = t[collection] || (t[collection] = {});
+  const at = Date.now();
+  for (const id of gone) map[id] = at;
+  writeTombs(pruneTombs(t));
+}
+
+function pruneTombs(t) {
+  const cutoff = Date.now() - TOMB_TTL;
+  for (const c of Object.keys(t))
+    for (const [id, at] of Object.entries(t[c])) if (!(at > cutoff)) delete t[c][id];
+  return t;
+}
+
+const tombsFor = collection => readTombs()[collection] || {};
+
+// What a push carries for deletions.
+function tombRecords(collection) {
+  return Object.entries(tombsFor(collection)).map(([id, at]) => ({ id: Number(id), deleted: true, deletedAt: at }));
+}
+
 // The local half of a save, without the trip out to the data repo.
 function saveLocal() {
   _booksMutation++;
@@ -132,6 +193,7 @@ function saveLocal() {
 
 function save() {
   saveLocal();
+  noteDeletions('books');
   touchTab('books');
   syncPush('books');
 }
@@ -152,18 +214,21 @@ function saveSoon() {
 
 function saveWishlist() {
   localStorage.setItem('bookWishlist', JSON.stringify(bookWishlist));
+  noteDeletions('wishlist');
   touchTab('wishlist');
   syncPush('wishlist');
 }
 
 function saveMedia() {
   localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary));
+  noteDeletions('media');
   touchTab('media');
   syncPush('media');
 }
 
 function saveGames() {
   localStorage.setItem('videoGames', JSON.stringify(videoGames));
+  noteDeletions('games');
   touchTab('games');
   syncPush('games');
 }
@@ -180,13 +245,16 @@ function saveGames() {
 // would only bloat the file, so it is stripped with the same replacer the
 // localStorage write and the export already use.
 function syncSnapshot(collection) {
+  let records;
   switch (collection) {
-    case 'books':    return JSON.parse(JSON.stringify(books, stripSearchStr));
-    case 'media':    return mediaLibrary;
-    case 'wishlist': return bookWishlist;
-    case 'games':    return videoGames;
+    case 'books':    records = JSON.parse(JSON.stringify(books, stripSearchStr)); break;
+    case 'media':    records = mediaLibrary; break;
+    case 'wishlist': records = bookWishlist; break;
+    case 'games':    records = videoGames; break;
     default:         return null;
   }
+  const tombs = tombRecords(collection);
+  return tombs.length ? [...records, ...tombs] : records;
 }
 
 function syncPush(collection) {
@@ -214,7 +282,18 @@ function applySyncedData(collection, records) {
   const spec = SYNC_COLLECTIONS[collection];
   if (!spec) return false;
 
-  const next = records.map(spec.normalize);
+  // Deletions made elsewhere: remember them (newest wins), and drop every
+  // tombstoned id from what is applied — including a live copy a stale
+  // device still sends.
+  const incoming = records.filter(r => r && r.deleted);
+  if (incoming.length) {
+    const t = readTombs();
+    const map = t[collection] || (t[collection] = {});
+    for (const r of incoming) if (!(map[r.id] >= r.deletedAt)) map[r.id] = r.deletedAt || Date.now();
+    writeTombs(pruneTombs(t));
+  }
+  const tombs = tombsFor(collection);
+  const next = records.filter(r => r && !r.deleted && !tombs[r.id]).map(spec.normalize);
   const json = JSON.stringify(next, spec.replacer);
   if (json === localStorage.getItem(spec.key)) return false;
 
@@ -238,6 +317,7 @@ function applySyncedData(collection, records) {
     case 'wishlist': bookWishlist = next; break;
     case 'games':    videoGames   = next; break;
   }
+  _knownIds[collection] = new Set(next.map(r => r.id));   // a remote removal is not a local delete
   if (reallyChanged) touchTab(collection);
   return true;
 }
