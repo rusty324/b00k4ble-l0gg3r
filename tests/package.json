@@ -1,0 +1,12 @@
+{
+  "name": "b00k4ble-l0gg3r-tests",
+  "private": true,
+  "description": "Playwright suites for the app. Not part of the site: nothing here is loaded by index.html.",
+  "scripts": {
+    "test": "node run.js",
+    "test:webkit": "BROWSER=webkit node run.js"
+  },
+  "devDependencies": {
+    "playwright": "1.64.0"
+  }
+}
