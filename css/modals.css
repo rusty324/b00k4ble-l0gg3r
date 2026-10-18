@@ -297,7 +297,8 @@ input[type="radio"], input[type="checkbox"] { display: none; }
 
 /* ─── WHAT AM I MISSING? ───────────────────────────────────────────── */
 .missing-slot:empty { display: none; }
-.missing-slot { margin: 0 0 1rem; }
+/* Holds "What am I missing?" and bulk edit's Select, side by side. */
+.missing-slot { margin: 0 0 1rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
 .missing-btn { display: inline-flex; align-items: center; gap: 0.5rem; }
 .missing-count { background: var(--amber-50); color: var(--amber-900); border-radius: 999px; padding: 0 0.5rem;
                  font-size: 12px; font-weight: 600; min-width: 1.5rem; text-align: center; }
@@ -311,3 +312,27 @@ input[type="radio"], input[type="checkbox"] { display: none; }
 .missing-have { font-size: 12px; color: var(--text-light); margin-top: 0.15rem; }
 .missing-item .btn { margin-top: 0.5rem; }
 
+/* ─── BULK EDIT ────────────────────────────────────────────────────── */
+/* A round tick in each card's corner while selecting: empty, then filled. */
+.bulk-mode [data-detail] { position: relative; user-select: none; -webkit-user-select: none; }
+.bulk-mode [data-detail]::after { content: ''; position: absolute; top: 0.5rem; right: 0.5rem; width: 22px; height: 22px;
+                                  border-radius: 50%; border: 2px solid var(--border-mid); background: var(--surface);
+                                  box-sizing: border-box; pointer-events: none; }
+.bulk-mode [data-detail].selected { border-color: var(--amber-200); background: var(--amber-50); }
+.bulk-mode [data-detail].selected::after { content: '✓'; border-color: var(--amber-200); background: var(--amber-200);
+                                           color: #fff; font-size: 13px; font-weight: 700; line-height: 18px; text-align: center; }
+/* The bar must not cover the last row, nor the back-to-top button it. */
+.bulk-mode main { padding-bottom: 6rem; }
+.bulk-mode .scroll-top-btn { bottom: 5.5rem; }
+/* Already selecting: a second Select would only clear the selection. */
+.bulk-mode .select-btn { display: none; }
+.bulk-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 150; display: flex; flex-wrap: wrap;
+            align-items: center; justify-content: space-between; gap: 0.5rem 1rem;
+            padding: 0.75rem max(1rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+            background: var(--surface); border-top: 1px solid var(--border-mid); box-shadow: 0 -2px 8px rgba(0,0,0,0.08); }
+.bulk-bar[hidden] { display: none; }
+.bulk-bar-info, .bulk-bar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+#bulkCount { font-size: 14px; font-weight: 600; color: var(--amber-900); }
+.bulk-bar .sort-select { width: auto; }
+.bulk-genres { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+#bulkGenreInput { width: 100%; margin-top: 0.75rem; box-sizing: border-box; }

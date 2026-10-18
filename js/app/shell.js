@@ -69,6 +69,8 @@ document.addEventListener('click', e => {
 
 // ─── TAB NAVIGATION ───────────────────────────────────────────────────
 function switchTab(tab) {
+  // A selection belongs to one tab's list; leaving the tab ends it.
+  if (typeof bulkActive === 'function' && bulkActive()) endBulk();
   activeTab = tab;
   localStorage.setItem('activeTab', tab);
 

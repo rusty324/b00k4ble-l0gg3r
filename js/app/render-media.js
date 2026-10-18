@@ -39,6 +39,7 @@ function renderMedia(listOnly = false) {
       default:            return b.id - a.id; // added-desc
     }
   });
+  _shownIds.media = items.map(m => m.id);   // what bulk edit's "Select all" means
 
   const typeIcon  = { movie: '🎬', tv: '📺' };
   const stCls     = { want: 'badge-want', watched: 'badge-watched' };
@@ -92,7 +93,7 @@ function renderMedia(listOnly = false) {
       <span class="filter-label">Sort</span>
       ${sortSelect}
     </div>
-    <div class="missing-slot">${missingButton('media')}</div>
+    <div class="missing-slot">${listTools('media')}</div>
   </div>`;
 
   let contentHtml;

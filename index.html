@@ -727,8 +727,6 @@
   </div>
 </div>
 
-<!-- Tap a cover to see it full size. Closes on a tap anywhere, since on a
-     phone hunting for a small × is worse than tapping the picture again. -->
 <!-- "What am I missing?" — filled by openMissing() (js/app/missing-view.js) -->
 <div class="modal-backdrop" id="missingModal" onclick="handleMissingBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="missingTitle">
   <div class="modal detail-modal" id="missingBody"></div>
@@ -738,6 +736,28 @@
 <div class="modal-backdrop" id="detailModal" onclick="handleDetailBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
   <div class="modal detail-modal" id="detailBody"></div>
 </div>
+
+<!-- Bulk edit: the action bar shown while selecting, and the genre sheet
+     (js/app/bulk-edit.js) -->
+<div class="bulk-bar" id="bulkBar" hidden role="toolbar" aria-label="Selected items">
+  <div class="bulk-bar-info">
+    <span id="bulkCount" aria-live="polite"></span>
+    <button type="button" class="btn btn-sm" id="bulkAll" onclick="bulkSelectAll()"></button>
+  </div>
+  <div class="bulk-bar-actions">
+    <select id="bulkStatus" class="sort-select bulk-act" aria-label="Set status of selected" onchange="bulkSetStatus(this.value)"></select>
+    <button type="button" class="btn btn-sm bulk-act" onclick="openBulkGenre('add')">+ Genre</button>
+    <button type="button" class="btn btn-sm bulk-act" onclick="openBulkGenre('remove')">− Genre</button>
+    <button type="button" class="btn btn-sm btn-danger bulk-act" onclick="bulkDelete()">Delete</button>
+    <button type="button" class="btn btn-sm btn-primary" onclick="endBulk()">Done</button>
+  </div>
+</div>
+<div class="modal-backdrop" id="bulkModal" onclick="handleBulkBackdrop(event)" role="dialog" aria-modal="true">
+  <div class="modal detail-modal" id="bulkBody"></div>
+</div>
+
+<!-- Tap a cover to see it full size. Closes on a tap anywhere, since on a
+     phone hunting for a small × is worse than tapping the picture again. -->
 
 <div class="modal-backdrop lightbox" id="lightbox" role="dialog" aria-modal="true"
      aria-label="Cover image" onclick="closeCover()">
@@ -777,6 +797,7 @@
 <script src="js/app/modals.js"></script>
 <script src="js/app/detail-view.js"></script>
 <script src="js/app/missing-view.js"></script>
+<script src="js/app/bulk-edit.js"></script>
 <script src="js/app/app-init.js"></script>
 <!-- Module, so deferred: app-init.js has already initialised by the time
      this runs, which is what lets the app stay standalone and local-first. -->

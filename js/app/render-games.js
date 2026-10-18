@@ -87,6 +87,7 @@ function renderGames(listOnly = false) {
       default:            return b.id - a.id; // added-desc
     }
   });
+  _shownIds.games = items.map(g => g.id);   // what bulk edit's "Select all" means
 
   const stCls    = { want: 'badge-want', playing: 'badge-reading', completed: 'badge-watched' };
   const stLabel  = { want: 'Want to Play', playing: 'Playing', completed: 'Completed' };
@@ -137,7 +138,7 @@ function renderGames(listOnly = false) {
       <span class="filter-label">Sort</span>
       ${sortSelect}
     </div>
-    <div class="missing-slot">${missingButton('games')}</div>
+    <div class="missing-slot">${listTools('games')}</div>
   </div>`;
 
   let contentHtml;
