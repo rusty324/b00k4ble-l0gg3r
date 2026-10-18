@@ -147,7 +147,7 @@ function openBulkGenre(mode) {
   } else {
     const present = new Map();
     collectionArray(kind).filter(r => ids.has(r.id)).forEach(r =>
-      (r.genre || []).forEach(g => { const k = g.toLowerCase(); present.set(k, { name: present.get(k)?.name || g, n: (present.get(k)?.n || 0) + 1 }); }));
+      (r.genre || []).forEach(g => { const k = textKey(g); present.set(k, { name: present.get(k)?.name || g, n: (present.get(k)?.n || 0) + 1 }); }));
     const list = [...present.values()].sort((a, b) => a.name.localeCompare(b.name));
     body.innerHTML = `
       <div class="modal-title">Remove a genre from ${ids.size} ${bulkNoun(kind, ids.size)}</div>
@@ -167,11 +167,11 @@ function bulkAddGenre() {
   const g = (document.getElementById('bulkGenreInput')?.value || '').trim();
   if (!g) return;
   // Reuse an existing spelling, so "sci-fi" typed here joins "Sci-Fi".
-  const existing = BULK_GENRES[_bulk.kind]().find(x => x.toLowerCase() === g.toLowerCase()) || g;
+  const existing = BULK_GENRES[_bulk.kind]().find(x => textKey(x) === textKey(g)) || g;
   closeBulkSheet();
   bulkApply(r => {
     const genre = r.genre || [];
-    if (!genre.some(x => x.toLowerCase() === existing.toLowerCase())) r.genre = [...genre, existing];
+    if (!genre.some(x => textKey(x) === textKey(existing))) r.genre = [...genre, existing];
     return r;
   }, n => `Added “${existing}” to ${n} ${bulkNoun(_bulk.kind, n)}.`);
 }
@@ -179,7 +179,7 @@ function bulkAddGenre() {
 function bulkRemoveGenre(name) {
   closeBulkSheet();
   bulkApply(r => {
-    r.genre = (r.genre || []).filter(x => x.toLowerCase() !== name.toLowerCase());
+    r.genre = (r.genre || []).filter(x => textKey(x) !== textKey(name));
     return r;
   }, n => `Removed “${name}” from ${n} ${bulkNoun(_bulk.kind, n)}.`);
 }

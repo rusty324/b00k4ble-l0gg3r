@@ -16,8 +16,8 @@ function renderMedia(listOnly = false) {
     items = items.filter(m => (m.formats || []).includes(mediaFilters.format));
   // Several genres widen rather than narrow — see GENRE_FILTERS.
   if (mediaFilters.genres.length) {
-    const wanted = new Set(mediaFilters.genres.map(x => x.toLowerCase()));
-    items = items.filter(m => (m.genre || []).some(x => wanted.has(String(x).toLowerCase())));
+    const wanted = new Set(mediaFilters.genres.map(textKey));
+    items = items.filter(m => (m.genre || []).some(x => wanted.has(textKey(x))));
   }
   if (mediaSearch.trim()) {
     const q = searchFold(mediaSearch).trim();

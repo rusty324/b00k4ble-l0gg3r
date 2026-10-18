@@ -3,7 +3,10 @@
 //   Books        a numbered series with numbers missing — own #1, #3 and #4
 //                of The Expanse and #2 is missing. Counted from #1, so owning
 //                only #3 lists #1 and #2. Half-numbers (#1.5 novellas) are
-//                owned extras, never gaps.
+//                owned extras, never gaps. A bundle ("#1-3") owns every
+//                number it holds. Gaps the user chose to Ignore are left
+//                out (kept on the series's books — see normalizeIgnoredGaps)
+//                until "Reset ignored".
 //   Movies & TV  a show with some seasons ticked but not all of them: up to
 //                TMDb's total when it is known, otherwise up to the highest
 //                season owned. A show with no seasons ticked is not tracked
@@ -14,28 +17,56 @@
 // filter over cards: it is a button above each tab's results, shown only when
 // there is something to list, opening a sheet of the gaps.
 
-// Grouped by seriesKey, so "Old Man's War" and "Old Man’s War" are one.
-function seriesGaps() {
+// Every numbered series, grouped by seriesKey (so "Old Man's War" and "Old
+// Man’s War" are one): what it has, what it is missing, and which of the
+// missing numbers are ignored.
+function seriesStatus() {
   const bySeries = new Map();
   const spelling = seriesSpellings();
   for (const b of books) {
     const { name, number } = splitSeries(b.series);
-    if (!number) continue;
-    const n = Number(number);
-    if (!Number.isInteger(n) || n < 1 || n > 500) continue;
+    const nums = seriesNumbers(number).filter(n => Number.isInteger(n) && n >= 1 && n <= 500);
+    if (!nums.length) continue;
     const key = seriesKey(name);
-    if (!bySeries.has(key)) bySeries.set(key, { name: spelling.get(key) || name, have: new Set(), books: [] });
+    if (!bySeries.has(key)) bySeries.set(key, { key, name: spelling.get(key) || name, have: new Set(), ignored: new Set(), books: [] });
     const s = bySeries.get(key);
-    s.have.add(n); s.books.push(b);
+    nums.forEach(n => s.have.add(n));
+    (b.ignoredGaps || []).forEach(n => s.ignored.add(n));
+    s.books.push(b);
   }
   const out = [];
   for (const s of bySeries.values()) {
     const top = Math.max(...s.have);
-    const missing = [];
-    for (let i = 1; i <= top; i++) if (!s.have.has(i)) missing.push(i);
-    if (missing.length) out.push({ name: s.name, have: [...s.have].sort((a, b) => a - b), missing, books: s.books });
+    const missing = [], ignored = [];
+    for (let i = 1; i <= top; i++) if (!s.have.has(i)) (s.ignored.has(i) ? ignored : missing).push(i);
+    out.push({ key: s.key, name: s.name, have: [...s.have].sort((a, b) => a - b), missing, ignored, books: s.books });
   }
   return out.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+const seriesGaps = () => seriesStatus().filter(s => s.missing.length);
+// Series with an ignored gap that is still a gap — what "Reset ignored" would bring back.
+const ignoredSeries = () => seriesStatus().filter(s => s.ignored.length);
+
+// Stop listing a series's current gaps. Only these numbers: a gap that opens
+// later (a #6 added with #5 still unowned) is listed as usual.
+function ignoreSeriesGaps(key) {
+  const s = seriesStatus().find(x => x.key === key);
+  if (!s || !s.missing.length) return;
+  const ids = new Set(s.books.map(b => b.id));
+  books = books.map(b => ids.has(b.id)
+    ? normalizeBook({ ...b, ignoredGaps: [...(b.ignoredGaps || []), ...s.missing] }) : b);
+  save();
+  renderPage();
+  openMissing('books');   // repaint the sheet without the row
+}
+
+function resetIgnoredGaps() {
+  if (!books.some(b => b.ignoredGaps)) return;
+  books = books.map(b => b.ignoredGaps ? normalizeBook({ ...b, ignoredGaps: [] }) : b);
+  save();
+  renderPage();
+  openMissing('books');
 }
 
 function seasonGaps(m) {
@@ -57,9 +88,15 @@ const MISSING = {
     row: s => `<div class="missing-item">
         <div class="missing-name">${esc(s.name)}</div>
         <div class="missing-what">Missing ${esc(compressRanges(s.missing, '#'))}</div>
-        <div class="missing-have">You have ${esc(compressRanges(s.have, '#'))}</div>
-        <button type="button" class="btn btn-sm" onclick="addMissingBook(${jsArg(s.name)}, ${s.missing[0]})">Add #${s.missing[0]}</button>
+        <div class="missing-have">You have ${esc(compressRanges(s.have, '#'))}${s.ignored.length ? ` · ignoring ${esc(compressRanges(s.ignored, '#'))}` : ''}</div>
+        <div class="missing-actions">
+          <button type="button" class="btn btn-sm" onclick="addMissingBook(${jsArg(s.name)}, ${s.missing[0]})">Add #${s.missing[0]}</button>
+          <button type="button" class="btn btn-sm" onclick="ignoreSeriesGaps(${jsArg(s.key)})"
+                  title="Stop listing these gaps; a new gap in this series still shows">Ignore</button>
+        </div>
       </div>`,
+    ignored: () => ignoredSeries().length,
+    reset: 'resetIgnoredGaps()',
   },
   media: {
     list: () => mediaLibrary.map(m => ({ m, missing: seasonGaps(m) })).filter(x => x.missing.length),
@@ -85,22 +122,31 @@ const MISSING = {
 const jsArg = v => esc(JSON.stringify(v));
 
 const missingCount = kind => MISSING[kind] ? MISSING[kind].list().length : 0;
+const ignoredCount = kind => MISSING[kind] && MISSING[kind].ignored ? MISSING[kind].ignored() : 0;
 
 // The button above a tab's results, or nothing when there is nothing missing.
+// Still shown, without a count, when everything missing is ignored — it is
+// the way back to "Reset ignored".
 function missingButton(kind) {
   const n = missingCount(kind);
-  return n ? `<button type="button" class="btn btn-sm missing-btn" onclick="openMissing('${kind}')">
-      What am I missing? <span class="missing-count">${n}</span></button>` : '';
+  if (!n && !ignoredCount(kind)) return '';
+  return `<button type="button" class="btn btn-sm missing-btn" onclick="openMissing('${kind}')">
+      What am I missing?${n ? ` <span class="missing-count">${n}</span>` : ''}</button>`;
 }
 
 function openMissing(kind) {
   const spec = MISSING[kind];
   if (!spec) return;
   const items = spec.list();
+  const ignored = ignoredCount(kind);
+  const empty = ignored ? 'Nothing left to show: every gap is ignored.' : spec.empty;
   document.getElementById('missingBody').innerHTML = `
     <div class="modal-title" id="missingTitle">${esc(spec.heading)}</div>
-    <div class="missing-list">${items.length ? items.map(spec.row).join('') : `<p class="muted">${esc(spec.empty)}</p>`}</div>
-    <div class="detail-actions"><span class="detail-spacer"></span>
+    <div class="missing-list">${items.length ? items.map(spec.row).join('') : `<p class="muted">${esc(empty)}</p>`}</div>
+    <div class="detail-actions">
+      ${ignored ? `<span class="missing-ignored">${ignored} series ignored</span>
+        <button type="button" class="btn btn-sm" onclick="${spec.reset}">Reset ignored</button>` : ''}
+      <span class="detail-spacer"></span>
       <button type="button" class="btn" onclick="closeMissing()">Close</button></div>`;
   document.getElementById('missingModal').classList.add('open');
 }

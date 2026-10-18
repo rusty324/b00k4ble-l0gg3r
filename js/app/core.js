@@ -291,14 +291,17 @@ const LEADING_ARTICLE = /^(?:the|a|an)\s+/i;
 
 // ─── TYPOGRAPHIC PUNCTUATION ──────────────────────────────────────────
 // The same text arrives with plain or "smart" punctuation depending on where
-// it was typed: iOS turns a typed ' into ’ (Smart Punctuation, on by
-// default), and Open Library, Audible and TMDb each use either. So "Old Man's
-// War" and "Old Man’s War" are one series. Folded only for comparing and
+// it was typed: iOS Smart Punctuation (on by default) turns ' into ’, " into
+// “ ”, -- into — and ... into …, and Open Library, Audible and TMDb each use
+// either. So "Old Man's War" and "Old Man’s War" are one series, and
+// "Children's" and "Children’s" one genre. Folded only for comparing and
 // searching — what is stored and shown keeps the spelling it was given.
 const PUNCT_FOLD = [
   [/[\u2018\u2019\u201A\u201B\u2032\u02BC\u0060\u00B4]/g, "'"],   // ‘ ’ ‚ ‛ ′ ʼ ` ´
   [/[\u201C\u201D\u201E\u201F\u2033]/g, '"'],                    // “ ” „ ‟ ″
   [/[\u2010-\u2015\u2212]/g, '-'],                                 // ‐ ‑ ‒ – — ― −
+  [/\u2026/g, '...'],                                               // …
+  [/[\u00A0\u2007\u202F]/g, ' '],                                   // non-breaking spaces
 ];
 function foldPunct(s) {
   let out = String(s == null ? '' : s);
@@ -308,43 +311,72 @@ function foldPunct(s) {
 // What search compares: folded, lowercased. Applied to both the query and
 // the text searched, so either spelling finds either.
 const searchFold = s => foldPunct(s).toLowerCase();
+// Two names that mean the same thing — series, genre, author, DLC: case,
+// spacing and typographic punctuation aside.
+const textKey = s => searchFold(s).replace(/\s+/g, ' ').trim();
 
-// ─── SERIES ───────────────────────────────────────────────────────────
-// A book's series is one "Name #N" string ("#" optional; N may be 4.5),
-// edited as two inputs. Every reader splits it here.
-const SERIES_NUMBERED = /^(.+?)[\s#]+(\d+(?:\.\d+)?)$/;
-function splitSeries(series) {
-  const s = String(series || '').trim();
-  const m = s.match(SERIES_NUMBERED);
-  return m ? { name: m[1].trim(), number: m[2] } : { name: s, number: '' };
-}
-// Two series names that mean the same series: case, spacing and typographic
-// punctuation aside.
-const seriesKey = name => searchFold(name).replace(/\s+/g, ' ').trim();
-
-// One spelling per series — whichever the most books use (the first seen on
-// a tie) — keyed by seriesKey. What the series suggestions offer, what "What
-// am I missing?" calls it, and what a new variant typed in the form becomes.
-// excludeId leaves one book out — the one being edited, whose own old
-// spelling must not outvote what is being typed over it.
-function seriesSpellings(excludeId = null) {
-  const counts = new Map();   // key -> Map(spelling -> books)
-  for (const b of books) {
-    if (b.id === excludeId) continue;
-    const { name } = splitSeries(b.series);
-    if (!name) continue;
-    const k = seriesKey(name);
+// One spelling per textKey among `values` — whichever is used most (the
+// first seen on a tie).
+function preferredSpellings(values) {
+  const counts = new Map();   // key -> Map(spelling -> uses)
+  for (const v of values) {
+    const s = String(v == null ? '' : v).trim();
+    if (!s) continue;
+    const k = textKey(s);
     if (!counts.has(k)) counts.set(k, new Map());
     const c = counts.get(k);
-    c.set(name, (c.get(name) || 0) + 1);
+    c.set(s, (c.get(s) || 0) + 1);
   }
   const out = new Map();
   for (const [k, c] of counts) {
     let best = null, bestN = 0;
-    for (const [name, n] of c) if (n > bestN) { best = name; bestN = n; }
+    for (const [s, n] of c) if (n > bestN) { best = s; bestN = n; }
     out.set(k, best);
   }
   return out;
+}
+
+// ─── SERIES ───────────────────────────────────────────────────────────
+// A book's series is one "Name #N" string ("#" optional; N may be 4.5),
+// edited as two inputs. Every reader splits it here. A bundle — an omnibus
+// holding books 1 to 3 — is "Name #1-3", with any dash (iOS may have made a
+// typed "-" into "–").
+const SERIES_NUMBERED = /^(.+?)[\s#]+(\d+(?:\.\d+)?(?:\s*[-\u2010-\u2015]\s*\d+(?:\.\d+)?)?)$/;
+function splitSeries(series) {
+  const s = String(series || '').trim();
+  const m = s.match(SERIES_NUMBERED);
+  return m ? { name: m[1].trim(), number: m[2].replace(/\s+/g, '') } : { name: s, number: '' };
+}
+// The numbers a series number covers: "2" -> [2], "4.5" -> [4.5], and a
+// bundle "1-3" -> [1, 2, 3]. A range that runs backwards or implausibly far
+// (a typo, or "#1-300") counts as just its two ends.
+function seriesNumbers(number) {
+  const parts = String(number || '').split(/[-\u2010-\u2015]/).map(p => p.trim());
+  if (!parts[0]) return [];
+  const [a, b] = parts.map(Number);
+  if (!Number.isFinite(a)) return [];
+  if (!Number.isFinite(b) || b === a) return [a];
+  if (Number.isInteger(a) && Number.isInteger(b) && b > a && b - a <= 50)
+    return Array.from({ length: b - a + 1 }, (_, i) => a + i);
+  return [Math.min(a, b), Math.max(a, b)];
+}
+const seriesKey = textKey;
+
+// One spelling per series — whichever the most books use — keyed by
+// seriesKey. What the series suggestions offer, what "What am I missing?"
+// calls it, and what a new variant typed in the form becomes. excludeId
+// leaves one book out — the one being edited, whose own old spelling must
+// not outvote what is being typed over it.
+const seriesSpellings = (excludeId = null) =>
+  preferredSpellings(books.filter(b => b.id !== excludeId).map(b => splitSeries(b.series).name));
+
+// Gaps in a series the user chose to stop being told about ("What am I
+// missing?" → Ignore). Kept on the series's books themselves, so it syncs
+// and exports with them: Ignore writes the list to each book of the series,
+// and the series's ignored gaps are the union, so losing a book loses nothing.
+function normalizeIgnoredGaps(raw) {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= 500))].sort((a, b) => a - b);
 }
 
 // ─── DUPLICATE DETECTION ──────────────────────────────────────────────
@@ -529,6 +561,9 @@ function normalizeBook(b) {
     ...(b.asin != null ? { asin: String(b.asin).toUpperCase() } : {}),
   }, b.links));
   delete book.tags;   // the spread carried the old name in; only `genre` is stored
+  // Only a book in a series can carry its series's ignored gaps.
+  const ignoredGaps = series ? normalizeIgnoredGaps(b.ignoredGaps) : [];
+  if (ignoredGaps.length) book.ignoredGaps = ignoredGaps; else delete book.ignoredGaps;
   return book;
 }
 
@@ -616,7 +651,7 @@ function normalizeGameDlc(raw) {
   for (const d of raw) {
     // A plain string is accepted too, so a hand-edited file can just list names.
     const name = String(d && typeof d === 'object' ? d.name : d || '').trim();
-    const key = name.toLowerCase();
+    const key = textKey(name);
     if (!name || seen.has(key)) continue;
     seen.add(key);
     out.push({ name, owned: !(d && typeof d === 'object' && d.owned === false) });

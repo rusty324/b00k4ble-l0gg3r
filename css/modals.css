@@ -310,7 +310,8 @@ input[type="radio"], input[type="checkbox"] { display: none; }
 .missing-name { font-family: 'Playfair Display', serif; font-size: 15px; color: var(--amber-900); overflow-wrap: anywhere; }
 .missing-what { font-size: 13px; color: var(--text); margin-top: 0.2rem; overflow-wrap: anywhere; }
 .missing-have { font-size: 12px; color: var(--text-light); margin-top: 0.15rem; }
-.missing-item .btn { margin-top: 0.5rem; }
+.missing-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+.missing-ignored { font-size: 13px; color: var(--text-muted); }
 
 /* ─── BULK EDIT ────────────────────────────────────────────────────── */
 /* A round tick in each card's corner while selecting: empty, then filled. */

@@ -204,8 +204,10 @@ function saveBook() {
   if (editingId !== null) {
     const i = books.findIndex(b => b.id === editingId);
     if (i !== -1) {
+      // Ignored gaps belong to a series: a book moved to another one leaves them behind.
+      const sameSeries = seriesKey(splitSeries(series).name) === seriesKey(splitSeries(books[i].series).name);
       books[i] = normalizeBook({ ...books[i], title, author, narrator, finished, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
-        isbn: isbn || pendingScanCode || books[i].isbn || '', asin });
+        isbn: isbn || pendingScanCode || books[i].isbn || '', asin, ...(sameSeries ? {} : { ignoredGaps: [] }) });
     }
   } else {
     books.push(normalizeBook({ id: newId(), title, author, narrator, finished, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
@@ -907,7 +909,7 @@ function commitGameDlc() {
   const input = document.getElementById('g-dlc');
   const name = (input ? input.value : '').trim();
   if (input) input.value = '';
-  if (!name || _gameDlc.some(d => d.name.toLowerCase() === name.toLowerCase())) return false;
+  if (!name || _gameDlc.some(d => textKey(d.name) === textKey(name))) return false;
   _gameDlc.push({ name, owned: true });
   dlcEditor.render();
   return true;

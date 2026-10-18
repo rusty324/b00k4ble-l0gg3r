@@ -113,11 +113,11 @@ function render() {
   if (_filteredCacheKey !== key || _filteredCache === null) {
     // Several genres widen rather than narrow — see GENRE_FILTERS.
     const bookGenreFilter = filters.genres.length
-      ? new Set(filters.genres.map(x => x.toLowerCase())) : null;
+      ? new Set(filters.genres.map(textKey)) : null;
     const fresh = books.filter(b => {
       if (filters.format !== 'all' && !b.formats.includes(filters.format)) return false;
       if (filters.status !== 'all' && b.status !== filters.status) return false;
-      if (bookGenreFilter && !(b.genre || []).some(g => bookGenreFilter.has(g.toLowerCase()))) return false;
+      if (bookGenreFilter && !(b.genre || []).some(g => bookGenreFilter.has(textKey(g)))) return false;
       if (query && !b._searchStr.includes(query)) return false;
       return true;
     });
