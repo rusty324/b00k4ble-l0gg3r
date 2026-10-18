@@ -90,6 +90,7 @@ function renderWishlist(listOnly = false) {
               <!-- Not compact: the wishlist has no card view, so a second
                    link would otherwise be reachable only by editing. -->
               ${renderLinkButtons(item.links)}
+              <button class="btn btn-sm btn-got" onclick="gotWishlistItem(${item.id})" title="Got it — move into the library">✓ Got it</button>
               <button class="btn btn-sm" onclick="openWishlistModal(${item.id})" title="Edit">✏</button>
               <button class="btn btn-sm btn-danger" onclick="deleteWishlistItem(${item.id})" title="Delete">🗑</button>
             </div>

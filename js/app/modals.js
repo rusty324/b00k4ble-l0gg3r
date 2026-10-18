@@ -58,9 +58,70 @@ function openEditModal(id) {
   resetDup('books');      // a warning left from an earlier add must not linger here
 }
 
+// ─── WISHLIST → LIBRARY ("Got it") ────────────────────────────────────
+// Bought something on the wishlist: open the matching library tab's add form
+// filled in from the wishlist item, so formats, platform, status and the rest
+// can be set before saving. The wishlist entry is removed only once that save
+// completes; cancelling leaves it where it was and goes back to the wishlist.
+// The removal needs nothing special for sync — the save point notices the id
+// has gone and leaves a tombstone, like any delete.
+let _wishlistMove = null;    // { id, kind, title } while an add form is filling from one
+
+const WISH_TARGET = { book: 'books', movie: 'media', tv: 'media', game: 'games' };
+const MOVE_TITLE  = 'Add from your wishlist';
+
+function gotWishlistItem(id) {
+  const w = bookWishlist.find(x => x.id === id);
+  if (!w) return;
+  const kind = WISH_TARGET[w.type] || 'books';
+  const set = (fid, v) => { const el = document.getElementById(fid); if (el && v) el.value = v; };
+  switchTab(kind);
+  if (kind === 'books') {
+    openAddModal();
+    set('f-title', w.title); set('f-author', w.creator); set('f-isbn', w.isbn); set('f-notes', w.notes);
+    setLinksField('f', w.links || []);
+    document.getElementById('modalTitle').textContent = MOVE_TITLE;
+  } else if (kind === 'media') {
+    openMediaModal(null);
+    set('m-title', w.title); set('m-notes', w.notes);
+    setMediaRadio('m-type', w.type === 'tv' ? 'tv' : 'movie');
+    syncMediaSeasons();
+    setLinksField('m', w.links || []);
+    document.getElementById('mediaModalTitle').textContent = MOVE_TITLE;
+  } else {
+    openGameModal(null);
+    set('g-title', w.title); set('g-notes', w.notes);
+    setLinksField('g', w.links || []);
+    gameAutofillSoon();        // a store link ticks its own platform
+    document.getElementById('gameModalTitle').textContent = MOVE_TITLE;
+  }
+  // Set after the open* call, which resets the form state this lives beside.
+  _wishlistMove = { id, kind, title: w.title };
+  paintDup(kind);              // already in the library? say so before the save
+}
+
+// After a successful add on `kind`'s form.
+function completeWishlistMove(kind) {
+  const move = _wishlistMove;
+  if (!move || move.kind !== kind) return;
+  _wishlistMove = null;
+  bookWishlist = bookWishlist.filter(w => w.id !== move.id);
+  saveWishlist();
+  flashBanner(`Moved “${move.title}” from your wishlist into your library.`);
+}
+
+// A form closing without that save: the wishlist keeps the item, and the
+// view goes back to where the move started.
+function cancelWishlistMove() {
+  if (!_wishlistMove) return;
+  _wishlistMove = null;
+  switchTab('wishlist');
+}
+
 function closeModal() {
   pendingScanCode = null;
   document.getElementById('modal').classList.remove('open');
+  cancelWishlistMove();
 }
 
 function handleBackdropClick(e) {
@@ -138,6 +199,7 @@ function saveBook() {
   }
 
   save();
+  if (editingId === null) completeWishlistMove('books');
   closeModal();
   render();
 }
@@ -414,6 +476,7 @@ function closeMediaModal() {
   pendingTmdb = null;
   closeTmdbAC();
   document.getElementById('mediaModal').classList.remove('open');
+  cancelWishlistMove();
 }
 
 function handleMediaBackdrop(e) {
@@ -448,6 +511,7 @@ function saveMediaItem() {
   }
 
   saveMedia();
+  if (mediaEditingId === null) completeWishlistMove('media');
   closeMediaModal();
   renderPage();
 }
@@ -555,7 +619,9 @@ function dupBlocksSave(kind) {
   return true;
 }
 
-function openDuplicate(kind, id) { DUP_FORMS[kind].open(id); }
+// Choosing the existing entry ends a wishlist move without going back to the
+// wishlist: the item stays there, and the library entry opens where it lives.
+function openDuplicate(kind, id) { _wishlistMove = null; DUP_FORMS[kind].open(id); }
 
 function resetDup(kind) {
   _dupAck[kind] = undefined;
@@ -899,6 +965,7 @@ function openGameModal(id) {
 
 function closeGameModal() {
   document.getElementById('gameModal').classList.remove('open');
+  cancelWishlistMove();
 }
 
 function handleGameBackdrop(e) {
@@ -938,6 +1005,7 @@ function saveGameItem() {
   }
 
   saveGames();
+  if (gameEditingId === null) completeWishlistMove('games');
   closeGameModal();
   renderPage();
 }

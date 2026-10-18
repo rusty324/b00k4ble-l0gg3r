@@ -235,6 +235,18 @@ function setGenreValues(inputId, values) {
   renderGenrePills(inputId);
 }
 
+// A short message in the status banner under the header, gone after a few
+// seconds. sync.js has its own copy for sync messages; this one is the app's.
+function flashBanner(message) {
+  const b = document.getElementById('statusBanner');
+  if (!b) return;
+  b.textContent = message;
+  b.classList.remove('banner-error');
+  b.classList.add('visible');
+  clearTimeout(flashBanner._t);
+  flashBanner._t = setTimeout(() => b.classList.remove('visible'), 4000);
+}
+
 // The ✕ in every tab's search box. It clears through the box's own oninput,
 // so each tab re-filters exactly as if the text had been deleted by hand.
 // Focus goes back to the box only where there is a pointer: on a phone,

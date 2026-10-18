@@ -228,3 +228,6 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
 .badge-seasons  { background: var(--teal-50);  color: var(--teal-600);  }
 .media-edition  { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
 
+/* Wishlist "Got it": the one action on the row that moves something forward. */
+.btn.btn-got { color: var(--teal-600); border-color: var(--teal-50); }
+.btn.btn-got:hover { background: var(--teal-50); }
