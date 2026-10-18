@@ -8,7 +8,7 @@ function openAddModal() {
   currentRating = 0;
   document.getElementById('modalTitle').textContent = 'Add a book';
 
-  ['f-title', 'f-author', 'f-series', 'f-seriesIndex', 'f-notes', 'f-coverUrl', 'f-isbn', 'f-asin', 'f-ol']
+  ['f-title', 'f-author', 'f-narrator', 'f-series', 'f-seriesIndex', 'f-notes', 'f-coverUrl', 'f-isbn', 'f-asin', 'f-ol']
     .forEach(id => document.getElementById(id).value = '');
   setGenreValues('f-genre', []);
   setLinksField('f', []);
@@ -36,6 +36,7 @@ function openEditModal(id) {
   document.getElementById('modalTitle').textContent = 'Edit book';
   document.getElementById('f-title').value  = b.title;
   document.getElementById('f-author').value = b.author || '';
+  document.getElementById('f-narrator').value = b.narrator || '';
   setSeriesFields(b.series);
   setGenreValues('f-genre', b.genre);
   document.getElementById('f-notes').value  = b.notes || '';
@@ -121,15 +122,17 @@ function saveBook() {
 
   const status = document.querySelector('input[name="status"]:checked').value;
   const notes  = document.getElementById('f-notes').value.trim();
+  // Only an audiobook has one; normalizeBook enforces the same.
+  const narrator = formats.includes('audio') ? document.getElementById('f-narrator').value.trim() : '';
 
   if (editingId !== null) {
     const i = books.findIndex(b => b.id === editingId);
     if (i !== -1) {
-      books[i] = normalizeBook({ ...books[i], title, author, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
+      books[i] = normalizeBook({ ...books[i], title, author, narrator, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
         isbn: isbn || pendingScanCode || books[i].isbn || '', asin });
     }
   } else {
-    books.push(normalizeBook({ id: newId(), title, author, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
+    books.push(normalizeBook({ id: newId(), title, author, narrator, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
       ...(isbn || pendingScanCode ? { isbn: isbn || pendingScanCode } : {}),
       ...(asin ? { asin } : {}) }));
   }

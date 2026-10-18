@@ -191,6 +191,13 @@ def read_abs_metadata(metadata_path):
             else:
                 author = str(raw_authors).strip()
 
+            # Narrators the same way: a list of strings in current ABS versions.
+            raw_narr = meta.get('narrators') or meta.get('narrator') or meta.get('narratorName') or ''
+            if isinstance(raw_narr, list):
+                narrator = ', '.join(str(n).strip() for n in raw_narr if str(n).strip())
+            else:
+                narrator = str(raw_narr).strip()
+
             if not title:
                 continue
 
@@ -211,6 +218,7 @@ def read_abs_metadata(metadata_path):
                 '_source': 'abs_metadata',
                 'title':   title,
                 'author':  author,
+                'narrator': narrator,
                 'series':  series,
                 'formats': ['audio'],
                 'status':  'want',
@@ -425,7 +433,14 @@ def merge_sources(all_books):
             # Prefer higher-priority source for metadata
             if SOURCE_PRIORITY.get(book['_source'], 9) < SOURCE_PRIORITY.get(existing['_source'], 9):
                 saved_formats = existing['formats']
+                saved_narrator = existing.get('narrator', '')
                 merged[key] = {**book, 'formats': saved_formats}
+                # Calibre outranks Audiobookshelf but knows nothing of narrators;
+                # winning on metadata must not throw ABS's narrator away.
+                if not merged[key].get('narrator') and saved_narrator:
+                    merged[key]['narrator'] = saved_narrator
+            elif not existing.get('narrator') and book.get('narrator'):
+                existing['narrator'] = book['narrator']
 
     # Assign stable IDs and strip internal fields
     result = []
@@ -435,6 +450,7 @@ def merge_sources(all_books):
             'id':      base_id + i,
             'title':   book['title'],
             'author':  book['author'],
+            **({'narrator': book['narrator']} if book.get('narrator') else {}),
             'series':  book.get('series', ''),
             'formats': sorted(book['formats']),
             'status':  book.get('status', 'want'),
@@ -484,6 +500,9 @@ def merge_with_existing(scanned, existing_path):
             book['status'] = ex.get('status', book['status'])
             book['notes']  = ex.get('notes', book['notes'])
             book['rating'] = ex.get('rating', book['rating'])
+            # A narrator typed in the app wins over the one the scan found.
+            if ex.get('narrator'):
+                book['narrator'] = ex['narrator']
             # Merge formats — keep anything from existing (e.g. 'physical')
             for fmt in ex.get('formats', []):
                 if fmt not in book['formats']:
