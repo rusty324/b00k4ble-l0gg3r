@@ -100,6 +100,7 @@ function tickFormat(value) {
   if (!cb || cb.checked) return;
   cb.checked = true;
   cb.closest('.radio-btn').classList.add('active');
+  syncNarratorField();
 }
 
 function setFormats(vals) {
@@ -107,6 +108,16 @@ function setFormats(vals) {
     cb.checked = vals.includes(cb.value);
     cb.closest('.radio-btn').classList.toggle('active', cb.checked);
   });
+  syncNarratorField();
+}
+
+// The Narrator field is there only while Audiobook is ticked. Hidden, its
+// text is kept for the life of the form — so unticking by mistake and
+// ticking again loses nothing — and saveBook() simply does not store it.
+function syncNarratorField() {
+  const group = document.getElementById('f-narrator-group');
+  const audio = document.querySelector('#f-format-group input[value="audio"]');
+  if (group) group.style.display = audio && audio.checked ? '' : 'none';
 }
 
 function setRadio(name, val) {
@@ -133,6 +144,7 @@ document.querySelectorAll('.radio-btn input[type="radio"]').forEach(r => {
 document.querySelectorAll('#f-format-group input[type="checkbox"]').forEach(cb => {
   cb.addEventListener('change', function() {
     this.closest('.radio-btn').classList.toggle('active', this.checked);
+    syncNarratorField();
   });
 });
 
@@ -167,6 +179,12 @@ function populateDataLists() {
 
   document.getElementById('dl-series').innerHTML =
     seriesNames.map(s => `<option value="${esc(s)}">`).join('');
+
+  // Each narrator of a multi-narrator book is offered on its own.
+  const narrators = [...new Set(books.flatMap(b => String(b.narrator || '').split(','))
+    .map(n => n.trim()).filter(Boolean))].sort();
+  const dl = document.getElementById('dl-narrators');
+  if (dl) dl.innerHTML = narrators.map(n => `<option value="${esc(n)}">`).join('');
 }
 
 

@@ -431,14 +431,21 @@ function normalizeBook(b) {
 
   const title  = b.title  != null ? String(b.title)  : '';
   const series = b.series ? String(b.series) : '';
-  const _searchStr = [title, author, series, b.isbn || '', b.asin || '', ...genre].join(' ').toLowerCase();
+  // Who reads the audiobook. Kept only while the book is an audiobook: a
+  // narrator on a print-only copy describes nothing, so unticking Audiobook
+  // drops it. Accepted as a list too, the way Audible and Audiobookshelf
+  // send it.
+  const narrator = !formats.includes('audio') ? ''
+    : Array.isArray(b.narrator) ? b.narrator.map(String).map(s => s.trim()).filter(Boolean).join(', ')
+    : String(b.narrator || '').trim();
+  const _searchStr = [title, author, narrator, series, b.isbn || '', b.asin || '', ...genre].join(' ').toLowerCase();
 
   // Clamp rating to 0–5; out-of-range values (e.g. from imported JSON) cause
   // '★'.repeat(5 - rating) to throw a RangeError with a negative count.
   const rating = Number.isFinite(+b.rating) ? Math.max(0, Math.min(5, Math.round(+b.rating))) : 0;
 
   const book = dropEmpty(applyLinks({
-    ...b, id: normalizeId(b.id), title, series, author, status, formats, genre, rating, _searchStr,
+    ...b, id: normalizeId(b.id), title, series, author, narrator, status, formats, genre, rating, _searchStr,
     ...(b.isbn != null ? { isbn: String(b.isbn) } : {}),
     ...(b.asin != null ? { asin: String(b.asin).toUpperCase() } : {}),
   }, b.links));

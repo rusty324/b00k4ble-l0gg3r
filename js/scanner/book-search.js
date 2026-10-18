@@ -265,6 +265,7 @@ function olPick(i) {
     // enough to build the ownership link — both land in visible fields the
     // user can undo before saving, rather than being applied at save time.
     tickFormat('audio');
+    if (r.narrator) document.getElementById('f-narrator').value = r.narrator;
     const links = document.getElementById('f-links');
     if (links && !links.value.trim() && r.asin) {
       links.value = `https://www.audible.com/pd/${r.asin}`;

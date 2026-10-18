@@ -222,7 +222,7 @@ function render() {
         <div class="book-row-content">
           <div class="book-row-title">${esc(b.title)}</div>
           <div class="book-row-meta">
-            <div class="book-row-author">${esc(b.author || '')}</div>
+            <div class="book-row-author">${esc(b.author || '')}${b.narrator ? ` <span class="book-row-narrator">· 🎙 ${esc(b.narrator)}</span>` : ''}</div>
             <div class="book-row-badges">${fmtBadges}<span class="badge ${stCls[b.status] || 'badge-want'}">${stLabel[b.status] || esc(b.status)}</span></div>
             <div class="book-row-actions">
               ${renderLinkButtons(b.links, true)}
@@ -255,6 +255,7 @@ function render() {
         ${coverHtml}
         <div class="book-title">${esc(b.title)}</div>
         ${b.author ? `<div class="book-author">${esc(b.author)}</div>` : ''}
+        ${b.narrator ? `<div class="book-narrator">🎙 Narrated by ${esc(b.narrator)}</div>` : ''}
         ${b.series ? `<div class="book-series">📖 ${esc(b.series)}</div>` : ''}
         <div class="book-meta">
           ${fmtBadges}
