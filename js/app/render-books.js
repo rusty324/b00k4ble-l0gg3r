@@ -106,18 +106,18 @@ function render() {
     _statsRenderedAt = _booksMutation;
   }
 
-  const query = document.getElementById('searchInput').value.toLowerCase().trim();
+  const query = searchFold(document.getElementById('searchInput').value).trim();
   const sort  = document.getElementById('sortSelect').value;
 
   const key = `${query}|${sort}|${filters.format}|${filters.status}|${filters.genres.join('\u0000')}|${_booksMutation}`;
   if (_filteredCacheKey !== key || _filteredCache === null) {
     // Several genres widen rather than narrow — see GENRE_FILTERS.
     const bookGenreFilter = filters.genres.length
-      ? new Set(filters.genres.map(x => x.toLowerCase())) : null;
+      ? new Set(filters.genres.map(textKey)) : null;
     const fresh = books.filter(b => {
       if (filters.format !== 'all' && !b.formats.includes(filters.format)) return false;
       if (filters.status !== 'all' && b.status !== filters.status) return false;
-      if (bookGenreFilter && !(b.genre || []).some(g => bookGenreFilter.has(g.toLowerCase()))) return false;
+      if (bookGenreFilter && !(b.genre || []).some(g => bookGenreFilter.has(textKey(g)))) return false;
       if (query && !b._searchStr.includes(query)) return false;
       return true;
     });
@@ -249,9 +249,8 @@ function render() {
 function seriesSort(a, b) {
   function parseSeries(book) {
     if (!book.series) return null;
-    const match = book.series.match(/^(.+?)[\s#]+(\d+(?:\.\d+)?)$/);
-    if (match) return { name: match[1].trim().toLowerCase(), index: parseFloat(match[2]) };
-    return { name: book.series.toLowerCase(), index: 0 };
+    const { name, number } = splitSeries(book.series);
+    return { name: seriesKey(name), index: number ? parseFloat(number) : 0 };
   }
 
   const sa = parseSeries(a);

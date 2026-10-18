@@ -246,9 +246,9 @@ function genresFromSubjects(subjects, max = 3) {
   }
 
   const have = new Map((typeof allBookGenres === 'function' ? allBookGenres() : [])
-    .map(g => [g.toLowerCase(), g]));
+    .map(g => [textKey(g), g]));
   return names.map(([genre, aliases]) => {
-    for (const k of [genre, ...aliases]) if (have.has(k.toLowerCase())) return have.get(k.toLowerCase());
+    for (const k of [genre, ...aliases]) if (have.has(textKey(k))) return have.get(textKey(k));
     return genre;
   });
 }

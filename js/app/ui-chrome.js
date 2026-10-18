@@ -88,9 +88,9 @@ document.querySelectorAll('.modal-backdrop').forEach(el => {
 // Stored as one "Name #N" string, edited as two inputs. Shared so the Audible
 // lookup splits it exactly the way opening an existing book does.
 function setSeriesFields(series) {
-  const m = (series || '').match(/^(.+?)[\s#]+(\d+(?:\.\d+)?)$/);
-  document.getElementById('f-series').value      = m ? m[1].trim() : (series || '');
-  document.getElementById('f-seriesIndex').value = m ? m[2] : '';
+  const { name, number } = splitSeries(series);
+  document.getElementById('f-series').value      = name;
+  document.getElementById('f-seriesIndex').value = number;
 }
 
 // setFormats() replaces the whole selection; this adds one, keeping whatever
@@ -182,24 +182,20 @@ document.querySelectorAll('input[name="g-plat-pick"]').forEach(cb => {
 
 // ─── DATALISTS (author & series autocomplete) ─────────────────────────
 function populateDataLists() {
-  const authors = [...new Set(books.map(b => b.author).filter(Boolean))].sort();
+  // One suggestion per name, however its punctuation was typed ("O'Brian" / "O’Brian").
+  const authors = [...preferredSpellings(books.map(b => b.author)).values()].sort();
   document.getElementById('dl-authors').innerHTML =
     authors.map(a => `<option value="${esc(a)}">`).join('');
 
-  const seriesNames = [...new Set(
-    books.map(b => {
-      if (!b.series) return null;
-      const m = b.series.match(/^(.+?)[\s#]+\d+(?:\.\d+)?$/);
-      return m ? m[1].trim() : b.series;
-    }).filter(Boolean)
-  )].sort();
+  // One suggestion per series, however its apostrophes were typed.
+  const seriesNames = [...seriesSpellings().values()].sort();
 
   document.getElementById('dl-series').innerHTML =
     seriesNames.map(s => `<option value="${esc(s)}">`).join('');
 
   // Each narrator of a multi-narrator book is offered on its own.
-  const narrators = [...new Set(books.flatMap(b => String(b.narrator || '').split(','))
-    .map(n => n.trim()).filter(Boolean))].sort();
+  const narrators = [...preferredSpellings(books.flatMap(b => String(b.narrator || '').split(',')))
+    .values()].sort();
   const dl = document.getElementById('dl-narrators');
   if (dl) dl.innerHTML = narrators.map(n => `<option value="${esc(n)}">`).join('');
 }
@@ -221,14 +217,15 @@ const GENRE_AC_OPTIONS = {
   'm-genre': () => allMediaGenres(),
 };
 
-// Genres, deduplicated case-insensitively with the first-seen casing kept —
-// the whole point is that "Adventure" typed once becomes *the* suggestion
-// afterwards, not that "adventure" accumulates alongside it.
+// Genres, deduplicated by textKey (case, spacing, curly vs straight quotes)
+// with the first-seen spelling kept — the whole point is that "Adventure"
+// typed once becomes *the* suggestion afterwards, not that "adventure" or
+// "Children’s" accumulates alongside "Children's".
 function distinctGenres(items) {
   const seen = new Map();
   items.forEach(it => (it.genre || []).forEach(raw => {
     const value = String(raw).trim();
-    if (value && !seen.has(value.toLowerCase())) seen.set(value.toLowerCase(), value);
+    if (value && !seen.has(textKey(value))) seen.set(textKey(value), value);
   }));
   return [...seen.values()].sort((a, b) => a.localeCompare(b));
 }
@@ -342,13 +339,15 @@ document.addEventListener('click', e => {
   }
 });
 
-// Trimmed, non-empty, and not already present (case-insensitively — the
-// same fold the suggestions and the filter menu use).
+// Trimmed, non-empty, and not already present (by textKey — the same fold
+// the suggestions and the filter menu use). A genre the library already has
+// in another spelling ("sci-fi", "Children’s") takes the library's.
 function commitGenrePill(inputId, raw) {
-  const value = String(raw || '').trim();
-  if (!value) return false;
+  const typed = String(raw || '').trim();
+  if (!typed) return false;
+  const value = (GENRE_AC_OPTIONS[inputId]?.() || []).find(g => textKey(g) === textKey(typed)) || typed;
   const list = _genrePills[inputId] || (_genrePills[inputId] = []);
-  if (list.some(v => v.toLowerCase() === value.toLowerCase())) return false;
+  if (list.some(v => textKey(v) === textKey(value))) return false;
   list.push(value);
   return true;
 }
@@ -395,16 +394,16 @@ function genreAC(inputId) {
   const ac    = listACBox(inputId);
   if (!input || !ac) return;
 
-  const query = input.value.trim().toLowerCase();
+  const query = textKey(input.value);
   if (!query) { closeListAC(inputId); return; }
 
-  const already = new Set((_genrePills[inputId] || []).map(v => v.toLowerCase()));
+  const already = new Set((_genrePills[inputId] || []).map(textKey));
   const matches = (GENRE_AC_OPTIONS[inputId]?.() || [])
-    .filter(t => t.toLowerCase().includes(query) && !already.has(t.toLowerCase()))
+    .filter(t => textKey(t).includes(query) && !already.has(textKey(t)))
     // A prefix match is what was meant far more often than a mid-word one,
     // so "adv" offers "Adventure" before "Point-and-click Adventure".
-    .sort((a, b) => (a.toLowerCase().startsWith(query) ? 0 : 1)
-                  - (b.toLowerCase().startsWith(query) ? 0 : 1)
+    .sort((a, b) => (textKey(a).startsWith(query) ? 0 : 1)
+                  - (textKey(b).startsWith(query) ? 0 : 1)
                   || a.localeCompare(b));
 
   if (!matches.length) { closeListAC(inputId); return; }

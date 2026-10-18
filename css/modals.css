@@ -310,7 +310,17 @@ input[type="radio"], input[type="checkbox"] { display: none; }
 .missing-name { font-family: 'Playfair Display', serif; font-size: 15px; color: var(--amber-900); overflow-wrap: anywhere; }
 .missing-what { font-size: 13px; color: var(--text); margin-top: 0.2rem; overflow-wrap: anywhere; }
 .missing-have { font-size: 12px; color: var(--text-light); margin-top: 0.15rem; }
-.missing-item .btn { margin-top: 0.5rem; }
+.missing-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+.missing-ignored { font-size: 13px; color: var(--text-muted); }
+
+/* ─── FIND DUPLICATES ──────────────────────────────────────────────── */
+.dupes-intro { font-size: 14px; color: var(--text-muted); margin: 0.5rem 0 0; }
+.dupes-kind { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 500; color: var(--amber-900); margin: 1.25rem 0 0; }
+.dup-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.25rem 0.75rem; }
+.dup-row + .dup-row { border-top: 1px solid var(--border); margin-top: 0.6rem; padding-top: 0.6rem; }
+.dup-row-text { flex: 1 1 12rem; min-width: 0; overflow-wrap: anywhere; }
+.dup-row .missing-actions { margin-top: 0; }
+.dup-group > .missing-actions { border-top: 1px dashed var(--border-mid); margin-top: 0.6rem; padding-top: 0.6rem; }
 
 /* ─── BULK EDIT ────────────────────────────────────────────────────── */
 /* A round tick in each card's corner while selecting: empty, then filled. */

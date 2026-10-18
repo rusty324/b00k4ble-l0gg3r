@@ -63,17 +63,17 @@ function renderGames(listOnly = false) {
   // games that are either, which is what a list of checkboxes reads as. The
   // menu says so, so it is never left to guess.
   if (gameFilters.genres.length) {
-    const wanted = new Set(gameFilters.genres.map(x => x.toLowerCase()));
-    items = items.filter(g => (g.genre || []).some(x => wanted.has(String(x).toLowerCase())));
+    const wanted = new Set(gameFilters.genres.map(textKey));
+    items = items.filter(g => (g.genre || []).some(x => wanted.has(textKey(x))));
   }
   if (gameSearch.trim()) {
-    const q = gameSearch.toLowerCase().trim();
+    const q = searchFold(gameSearch).trim();
     items = items.filter(g =>
-      (g.title || '').toLowerCase().includes(q) ||
+      searchFold(g.title).includes(q) ||
       gamePlatformText(g).toLowerCase().includes(q) ||
-      (g.dlc || []).some(d => d.name.toLowerCase().includes(q)) ||
+      (g.dlc || []).some(d => searchFold(d.name).includes(q)) ||
       (g.year ? String(g.year) : '').includes(q) ||
-      (g.genre || []).some(x => x.toLowerCase().includes(q))
+      (g.genre || []).some(x => searchFold(x).includes(q))
     );
   }
 
@@ -270,7 +270,7 @@ function genreFilterRow(key) {
           </div>
           ${genres.map(g => `<label class="dropdown-opt">
             <input type="checkbox" value="${esc(g)}"
-                   ${chosen.some(x => x.toLowerCase() === g.toLowerCase()) ? 'checked' : ''}
+                   ${chosen.some(x => textKey(x) === textKey(g)) ? 'checked' : ''}
                    onchange="toggleGenre('${key}', this.value)">
             <span>${esc(g)}</span>
           </label>`).join('')}
@@ -313,7 +313,7 @@ function paintGenreButton(key) {
 // without reopening — the same reason the search box uses the listOnly path.
 function toggleGenre(key, value) {
   const chosen = GENRE_FILTERS[key].state().genres;
-  const i = chosen.findIndex(x => x.toLowerCase() === String(value).toLowerCase());
+  const i = chosen.findIndex(x => textKey(x) === textKey(value));
   if (i === -1) chosen.push(value);
   else chosen.splice(i, 1);
   paintGenreButton(key);

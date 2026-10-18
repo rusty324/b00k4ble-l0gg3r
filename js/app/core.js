@@ -289,6 +289,96 @@ function setLinksField(prefix, links) {
 // article has to be followed by whitespace.
 const LEADING_ARTICLE = /^(?:the|a|an)\s+/i;
 
+// ─── TYPOGRAPHIC PUNCTUATION ──────────────────────────────────────────
+// The same text arrives with plain or "smart" punctuation depending on where
+// it was typed: iOS Smart Punctuation (on by default) turns ' into ’, " into
+// “ ”, -- into — and ... into …, and Open Library, Audible and TMDb each use
+// either. So "Old Man's War" and "Old Man’s War" are one series, and
+// "Children's" and "Children’s" one genre. Folded only for comparing and
+// searching — what is stored and shown keeps the spelling it was given.
+const PUNCT_FOLD = [
+  [/[\u2018\u2019\u201A\u201B\u2032\u02BC\u0060\u00B4]/g, "'"],   // ‘ ’ ‚ ‛ ′ ʼ ` ´
+  [/[\u201C\u201D\u201E\u201F\u2033]/g, '"'],                    // “ ” „ ‟ ″
+  [/[\u2010-\u2015\u2212]/g, '-'],                                 // ‐ ‑ ‒ – — ― −
+  [/\u2026/g, '...'],                                               // …
+  [/[\u00A0\u2007\u202F]/g, ' '],                                   // non-breaking spaces
+];
+function foldPunct(s) {
+  let out = String(s == null ? '' : s);
+  for (const [re, plain] of PUNCT_FOLD) out = out.replace(re, plain);
+  return out;
+}
+// What search compares: folded, lowercased. Applied to both the query and
+// the text searched, so either spelling finds either.
+const searchFold = s => foldPunct(s).toLowerCase();
+// Two names that mean the same thing — series, genre, author, DLC: case,
+// spacing and typographic punctuation aside.
+const textKey = s => searchFold(s).replace(/\s+/g, ' ').trim();
+
+// One spelling per textKey among `values` — whichever is used most (the
+// first seen on a tie).
+function preferredSpellings(values) {
+  const counts = new Map();   // key -> Map(spelling -> uses)
+  for (const v of values) {
+    const s = String(v == null ? '' : v).trim();
+    if (!s) continue;
+    const k = textKey(s);
+    if (!counts.has(k)) counts.set(k, new Map());
+    const c = counts.get(k);
+    c.set(s, (c.get(s) || 0) + 1);
+  }
+  const out = new Map();
+  for (const [k, c] of counts) {
+    let best = null, bestN = 0;
+    for (const [s, n] of c) if (n > bestN) { best = s; bestN = n; }
+    out.set(k, best);
+  }
+  return out;
+}
+
+// ─── SERIES ───────────────────────────────────────────────────────────
+// A book's series is one "Name #N" string ("#" optional; N may be 4.5),
+// edited as two inputs. Every reader splits it here. A bundle — an omnibus
+// holding books 1 to 3 — is "Name #1-3", with any dash (iOS may have made a
+// typed "-" into "–").
+const SERIES_NUMBERED = /^(.+?)[\s#]+(\d+(?:\.\d+)?(?:\s*[-\u2010-\u2015]\s*\d+(?:\.\d+)?)?)$/;
+function splitSeries(series) {
+  const s = String(series || '').trim();
+  const m = s.match(SERIES_NUMBERED);
+  return m ? { name: m[1].trim(), number: m[2].replace(/\s+/g, '') } : { name: s, number: '' };
+}
+// The numbers a series number covers: "2" -> [2], "4.5" -> [4.5], and a
+// bundle "1-3" -> [1, 2, 3]. A range that runs backwards or implausibly far
+// (a typo, or "#1-300") counts as just its two ends.
+function seriesNumbers(number) {
+  const parts = String(number || '').split(/[-\u2010-\u2015]/).map(p => p.trim());
+  if (!parts[0]) return [];
+  const [a, b] = parts.map(Number);
+  if (!Number.isFinite(a)) return [];
+  if (!Number.isFinite(b) || b === a) return [a];
+  if (Number.isInteger(a) && Number.isInteger(b) && b > a && b - a <= 50)
+    return Array.from({ length: b - a + 1 }, (_, i) => a + i);
+  return [Math.min(a, b), Math.max(a, b)];
+}
+const seriesKey = textKey;
+
+// One spelling per series — whichever the most books use — keyed by
+// seriesKey. What the series suggestions offer, what "What am I missing?"
+// calls it, and what a new variant typed in the form becomes. excludeId
+// leaves one book out — the one being edited, whose own old spelling must
+// not outvote what is being typed over it.
+const seriesSpellings = (excludeId = null) =>
+  preferredSpellings(books.filter(b => b.id !== excludeId).map(b => splitSeries(b.series).name));
+
+// Gaps in a series the user chose to stop being told about ("What am I
+// missing?" → Ignore). Kept on the series's books themselves, so it syncs
+// and exports with them: Ignore writes the list to each book of the series,
+// and the series's ignored gaps are the union, so losing a book loses nothing.
+function normalizeIgnoredGaps(raw) {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= 500))].sort((a, b) => a - b);
+}
+
 // ─── DUPLICATE DETECTION ──────────────────────────────────────────────
 // Loose on spelling, strict on meaning. Case, accents, punctuation, "&" vs
 // "and" and a leading article are all ignored — "The Lord of the Rings" and
@@ -314,31 +404,38 @@ function dupAuthorKey(author) {
 //           both have one, so a remake is not a duplicate of the original.
 //   games — same title. Another platform is not another game: it belongs on
 //           the existing record's platform list.
+//   wishlist — same type and title, and creators that agree (as books).
+// The same rule decides both the add form's warning and ⋯ → Find duplicates
+// (js/app/duplicates-view.js), so the two can never disagree.
 function findDuplicate(kind, draft, excludeId = null) {
-  const tk = dupTitleKey(draft.title);
-  if (kind === 'books') {
-    const isbn = String(draft.isbn || '').replace(/[^0-9Xx]/g, '').toUpperCase();
-    const asin = String(draft.asin || '').toUpperCase();
-    const ak = dupAuthorKey(draft.author);
-    return books.find(b => b.id !== excludeId && (
-      (isbn && String(b.isbn || '').replace(/[^0-9Xx]/g, '').toUpperCase() === isbn) ||
-      (asin && String(b.asin || '').toUpperCase() === asin) ||
-      (tk && dupTitleKey(b.title) === tk &&
-        (!ak || !dupAuthorKey(b.author) || dupAuthorKey(b.author) === ak))
-    )) || null;
+  return collectionArray(kind).find(r => r.id !== excludeId && sameRecord(kind, draft, r)) || null;
+}
+
+const dupIsbn = r => String(r.isbn || '').replace(/[^0-9Xx]/g, '').toUpperCase();
+const dupAsin = r => String(r.asin || '').toUpperCase();
+// Names that agree: equal, or blank on either side (a blank rules nothing out).
+const namesAgree = (x, y) => { const a = dupAuthorKey(x), b = dupAuthorKey(y); return !a || !b || a === b; };
+
+// Whether a and b describe the same thing, per the rules above. Symmetric.
+function sameRecord(kind, a, b) {
+  const tk = dupTitleKey(a.title);
+  const sameTitle = !!tk && dupTitleKey(b.title) === tk;
+  switch (kind) {
+    case 'books':
+      return (!!dupIsbn(a) && dupIsbn(a) === dupIsbn(b)) || (!!dupAsin(a) && dupAsin(a) === dupAsin(b)) ||
+             (sameTitle && namesAgree(a.author, b.author));
+    case 'media': {
+      if ((a.type || 'movie') !== (b.type || 'movie')) return false;
+      const ya = String(a.year || '').trim(), yb = String(b.year || '').trim();
+      return (a.tmdbId != null && b.tmdbId != null && String(a.tmdbId) === String(b.tmdbId)) ||
+             (sameTitle && (!ya || !yb || ya === yb));
+    }
+    case 'games':
+      return sameTitle;
+    case 'wishlist':
+      return (a.type || 'book') === (b.type || 'book') && sameTitle && namesAgree(a.creator, b.creator);
   }
-  if (kind === 'media') {
-    const type = draft.type || 'movie';
-    const year = String(draft.year || '').trim();
-    return mediaLibrary.find(m => m.id !== excludeId && (m.type || 'movie') === type && (
-      (draft.tmdbId != null && m.tmdbId != null && String(m.tmdbId) === String(draft.tmdbId)) ||
-      (tk && dupTitleKey(m.title) === tk && (!year || !m.year || String(m.year) === year))
-    )) || null;
-  }
-  if (kind === 'games') {
-    return tk ? videoGames.find(g => g.id !== excludeId && dupTitleKey(g.title) === tk) || null : null;
-  }
-  return null;
+  return false;
 }
 
 function titleSortKey(title) {
@@ -459,7 +556,7 @@ function normalizeBook(b) {
     : String(b.narrator || '').trim();
   // Kept only while the book is Read, like a narrator only while it is an audiobook.
   const finished = status === 'read' ? normalizeFinished(b.finished) : '';
-  const _searchStr = [title, author, narrator, series, finished, b.isbn || '', b.asin || '', ...genre].join(' ').toLowerCase();
+  const _searchStr = searchFold([title, author, narrator, series, finished, b.isbn || '', b.asin || '', ...genre].join(' '));
 
   // Clamp rating to 0–5; out-of-range values (e.g. from imported JSON) cause
   // '★'.repeat(5 - rating) to throw a RangeError with a negative count.
@@ -471,6 +568,9 @@ function normalizeBook(b) {
     ...(b.asin != null ? { asin: String(b.asin).toUpperCase() } : {}),
   }, b.links));
   delete book.tags;   // the spread carried the old name in; only `genre` is stored
+  // Only a book in a series can carry its series's ignored gaps.
+  const ignoredGaps = series ? normalizeIgnoredGaps(b.ignoredGaps) : [];
+  if (ignoredGaps.length) book.ignoredGaps = ignoredGaps; else delete book.ignoredGaps;
   return book;
 }
 
@@ -558,7 +658,7 @@ function normalizeGameDlc(raw) {
   for (const d of raw) {
     // A plain string is accepted too, so a hand-edited file can just list names.
     const name = String(d && typeof d === 'object' ? d.name : d || '').trim();
-    const key = name.toLowerCase();
+    const key = textKey(name);
     if (!name || seen.has(key)) continue;
     seen.add(key);
     out.push({ name, owned: !(d && typeof d === 'object' && d.owned === false) });

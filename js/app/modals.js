@@ -155,12 +155,24 @@ function updateMediaStars(val) {
 
 
 // ─── BOOK SAVE / DELETE ────────────────────────────────────────────────
+// A series name typed exactly as another book spells it is kept as typed. A
+// new variant of an existing series — "Old Man’s War" where the library says
+// "Old Man's War" — takes the library's spelling, so the series does not
+// split in two (as + Genre reuses an existing genre's spelling). The book
+// being edited is left out, so changing the spelling of a series's only
+// book still sticks.
+function canonicalSeriesName(name, excludeId) {
+  if (!name) return name;
+  if (books.some(b => b.id !== excludeId && splitSeries(b.series).name === name)) return name;
+  return seriesSpellings(excludeId).get(seriesKey(name)) || name;
+}
+
 function saveBook() {
   const title = document.getElementById('f-title').value.trim();
   if (!title) { document.getElementById('f-title').focus(); return; }
 
   const author     = document.getElementById('f-author').value.trim();
-  const seriesName = document.getElementById('f-series').value.trim();
+  const seriesName = canonicalSeriesName(document.getElementById('f-series').value.trim(), editingId);
   const seriesIdx  = document.getElementById('f-seriesIndex').value.trim();
   const series     = seriesName && seriesIdx ? `${seriesName} #${seriesIdx}` : seriesName;
   const coverUrl   = document.getElementById('f-coverUrl').value.trim();
@@ -192,8 +204,10 @@ function saveBook() {
   if (editingId !== null) {
     const i = books.findIndex(b => b.id === editingId);
     if (i !== -1) {
+      // Ignored gaps belong to a series: a book moved to another one leaves them behind.
+      const sameSeries = seriesKey(splitSeries(series).name) === seriesKey(splitSeries(books[i].series).name);
       books[i] = normalizeBook({ ...books[i], title, author, narrator, finished, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
-        isbn: isbn || pendingScanCode || books[i].isbn || '', asin });
+        isbn: isbn || pendingScanCode || books[i].isbn || '', asin, ...(sameSeries ? {} : { ignoredGaps: [] }) });
     }
   } else {
     books.push(normalizeBook({ id: newId(), title, author, narrator, finished, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
@@ -895,7 +909,7 @@ function commitGameDlc() {
   const input = document.getElementById('g-dlc');
   const name = (input ? input.value : '').trim();
   if (input) input.value = '';
-  if (!name || _gameDlc.some(d => d.name.toLowerCase() === name.toLowerCase())) return false;
+  if (!name || _gameDlc.some(d => textKey(d.name) === textKey(name))) return false;
   _gameDlc.push({ name, owned: true });
   dlcEditor.render();
   return true;

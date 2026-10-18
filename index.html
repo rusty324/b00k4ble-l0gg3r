@@ -43,6 +43,7 @@
           <button class="settings-item" id="settingsImportBtn" onclick="document.getElementById('importFile').click(); closeSettingsMenu()">⬆ Import library</button>
           <button class="settings-item" id="settingsTmdbBtn" onclick="openTmdbKeyModal(); closeSettingsMenu()">🎬 TMDb API key…</button>
           <button class="settings-item" id="settingsGeminiBtn" onclick="openGeminiKeyModal(); closeSettingsMenu()">🔍 Image recognition key…</button>
+          <button class="settings-item" id="settingsDupesBtn" onclick="openDuplicates(); closeSettingsMenu()">🧹 Find duplicates…</button>
           <button class="settings-item" id="settingsSyncBtn" onclick="openSyncModal(); closeSettingsMenu()">🔄 Sync &amp; backup…</button>
         </div>
       </div>
@@ -730,6 +731,11 @@
   <div class="modal detail-modal" id="missingBody"></div>
 </div>
 
+<!-- ⋯ → Find duplicates — filled by openDuplicates() (js/app/duplicates-view.js) -->
+<div class="modal-backdrop" id="dupesModal" onclick="handleDupesBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="dupesTitle">
+  <div class="modal detail-modal" id="dupesBody"></div>
+</div>
+
 <!-- A library card's details — filled by openDetail() (js/app/detail-view.js) -->
 <div class="modal-backdrop" id="detailModal" onclick="handleDetailBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
   <div class="modal detail-modal" id="detailBody"></div>
@@ -796,6 +802,7 @@
 <script src="js/app/modals.js"></script>
 <script src="js/app/detail-view.js"></script>
 <script src="js/app/missing-view.js"></script>
+<script src="js/app/duplicates-view.js"></script>
 <script src="js/app/bulk-edit.js"></script>
 <script src="js/app/app-init.js"></script>
 <!-- Module, so deferred: app-init.js has already initialised by the time
