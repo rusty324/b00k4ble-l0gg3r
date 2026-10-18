@@ -754,7 +754,7 @@ function setGamePlatforms(list) {
   }));
   sortGamePlatforms();
   syncGamePlatformPicks();
-  renderGamePlatformEntries();
+  platformEditor.render();
 }
 
 // The tick boxes follow the list, not the other way round — removing a row
@@ -766,25 +766,25 @@ function syncGamePlatformPicks() {
   });
 }
 
-function renderGamePlatformEntries() {
-  const box = gamePlatformsBox();
-  if (!box) return;
-  box.innerHTML = _gamePlatforms.map(p => {
-    // PS Plus is a PlayStation subscription, so it is only offered where it
-    // could be true — the normalizer drops it elsewhere regardless.
-    const chips = formatsFor(p.platform).map(f =>
-      `<button type="button" class="fmt-chip${(p.formats || []).includes(f) ? ' active' : ''}"
-               aria-pressed="${(p.formats || []).includes(f)}"
-               onclick="toggleGamePlatformFormat('${p.platform}','${f}')"
-       >${GAME_FORMAT_ICON[f]} ${esc(GAME_FORMAT_LABEL[f])}</button>`).join('');
-    return `<div class="platform-entry">
-      <span class="platform-entry-name">${esc(platformLabel(p.platform))}</span>
-      <div class="platform-entry-formats">${chips}</div>
-      <button type="button" class="platform-entry-remove" aria-label="Remove ${esc(platformLabel(p.platform))}"
-              onclick="removeGamePlatform('${p.platform}')">&times;</button>
-    </div>`;
-  }).join('');
-}
+// The rows under the platform buttons. PS Plus is a PlayStation subscription,
+// so it is only offered where it could be true — the normalizer drops it
+// elsewhere regardless.
+const platformEditor = createRowEditor({
+  box: 'g-platform-entries',
+  rows: () => _gamePlatforms,
+  label: p => platformLabel(p.platform),
+  chips: p => formatsFor(p.platform).map(f =>
+    ({ key: f, text: `${GAME_FORMAT_ICON[f]} ${GAME_FORMAT_LABEL[f]}`, on: p.formats.includes(f) })),
+  onChip: (p, f) => {
+    const i = p.formats.indexOf(f);
+    if (i === -1) p.formats.push(f); else p.formats.splice(i, 1);
+  },
+  // The × unticks the matching button too, so the two never disagree.
+  onRemove: p => {
+    _gamePlatforms = _gamePlatforms.filter(x => x !== p);
+    syncGamePlatformPicks();
+  },
+});
 
 // From a platform button. Unticking drops that platform's formats with it —
 // they describe a copy the user just said they do not have.
@@ -794,50 +794,31 @@ function toggleGamePlatform(value) {
   else _gamePlatforms.splice(i, 1);
   sortGamePlatforms();
   syncGamePlatformPicks();
-  renderGamePlatformEntries();
+  platformEditor.render();
   if (_gamePlatforms.length) hideGamePlatformError();
 }
 
-function removeGamePlatform(value) {
-  _gamePlatforms = _gamePlatforms.filter(p => p.platform !== value);
-  syncGamePlatformPicks();
-  renderGamePlatformEntries();
-}
-
-function toggleGamePlatformFormat(platform, fmt) {
-  const entry = _gamePlatforms.find(p => p.platform === platform);
-  if (!entry) return;
-  const i = entry.formats.indexOf(fmt);
-  if (i === -1) entry.formats.push(fmt);
-  else entry.formats.splice(i, 1);
-  renderGamePlatformEntries();
-}
-
 // ─── GAME MODAL: DLC ─────────────────────────────────────────────────
-// Working copy, like _gamePlatforms. Rows are addressed by index rather than
-// by name, so a name never has to be escaped into an inline handler.
+// Working copy, like _gamePlatforms.
 let _gameDlc = [];   // [{ name, owned }]
 
 function setGameDlc(list) {
   _gameDlc = (Array.isArray(list) ? list : []).map(d => ({ name: d.name, owned: d.owned !== false }));
   const input = document.getElementById('g-dlc');
   if (input) input.value = '';
-  renderGameDlc();
+  dlcEditor.render();
 }
 
-function renderGameDlc() {
-  const box = document.getElementById('g-dlc-entries');
-  if (!box) return;
-  box.innerHTML = _gameDlc.map((d, i) => `<div class="platform-entry">
-      <span class="platform-entry-name dlc-name">${esc(d.name)}</span>
-      <div class="platform-entry-formats">
-        <button type="button" class="fmt-chip${d.owned ? ' active' : ''}" aria-pressed="${d.owned}"
-                onclick="toggleGameDlcOwned(${i})">${d.owned ? '✓ Owned' : 'Wishlist'}</button>
-      </div>
-      <button type="button" class="platform-entry-remove" aria-label="Remove ${esc(d.name)}"
-              onclick="removeGameDlc(${i})">&times;</button>
-    </div>`).join('');
-}
+// One row per add-on: its name, a chip that flips Owned/Wishlist, and ×.
+const dlcEditor = createRowEditor({
+  box: 'g-dlc-entries',
+  rows: () => _gameDlc,
+  label: d => d.name,
+  labelClass: 'dlc-name',
+  chips: d => [{ key: 'owned', text: d.owned ? '✓ Owned' : 'Wishlist', on: d.owned }],
+  onChip: d => { d.owned = !d.owned; },
+  onRemove: (d, i) => { _gameDlc.splice(i, 1); },
+});
 
 // Trimmed, non-empty and not already listed (case-insensitively, the same fold
 // the genre pills use). Returns whether a row was added.
@@ -847,7 +828,7 @@ function commitGameDlc() {
   if (input) input.value = '';
   if (!name || _gameDlc.some(d => d.name.toLowerCase() === name.toLowerCase())) return false;
   _gameDlc.push({ name, owned: true });
-  renderGameDlc();
+  dlcEditor.render();
   return true;
 }
 
@@ -857,15 +838,6 @@ function gameDlcKey(e) {
   if (e.key !== 'Enter') return;
   e.preventDefault();
   commitGameDlc();
-}
-
-function toggleGameDlcOwned(i) {
-  if (_gameDlc[i]) { _gameDlc[i].owned = !_gameDlc[i].owned; renderGameDlc(); }
-}
-
-function removeGameDlc(i) {
-  _gameDlc.splice(i, 1);
-  renderGameDlc();
 }
 
 function hideGamePlatformError() {

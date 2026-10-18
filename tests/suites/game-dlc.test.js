@@ -111,6 +111,18 @@ const chips = page => page.locator('#g-dlc-entries .fmt-chip').allTextContents()
       { name: 'Overlord', owned: true }, { name: 'Awakening, Part 2', owned: true }, { name: 'Genesis', owned: true }]), J(saved));
   check('and the card reflects it (4/5 owned)', (await card('Mass Effect 2').locator('.badge-dlc').textContent()) === 'DLC 4/5');
 
+  // ── 4b. Any name is safe: quotes, apostrophes, markup ───────────────
+  await card('Mass Effect 2').locator('button', { hasText: 'Edit' }).click(); await page.waitForSelector('#gameModal.open');
+  const nasty = `Kasumi's "Stolen" Memory <b>x</b> ');alert(1);//`;
+  await page.fill('#g-dlc', nasty); await page.press('#g-dlc', 'Enter');
+  check('a name with quotes and markup shows as plain text', (await rowNames(page)).includes(nasty), J(await rowNames(page)));
+  const row = page.locator('#g-dlc-entries .platform-entry').last();
+  await row.locator('.fmt-chip').click();
+  check('its chip still toggles', (await chips(page)).at(-1) === 'Wishlist', J(await chips(page)));
+  await page.locator('#g-dlc-entries .platform-entry').last().locator('.platform-entry-remove').click();
+  check('and its × still removes it', !(await rowNames(page)).includes(nasty));
+  await page.evaluate(() => closeGameModal());
+
   // ── 5. Adding a new game; removing the last DLC ─────────────────────
   await page.click('#addBtn'); await page.waitForSelector('#gameModal.open'); await page.waitForTimeout(150);
   check('a new game starts with no rows, and nothing carried over from the last edit', (await rowNames(page)).length === 0 && (await page.inputValue('#g-dlc')) === '');
