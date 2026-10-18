@@ -23,9 +23,10 @@ in `js/app/app-init.js` for how the pieces fit together.)
 tracker) and its docs still describe that project in places. Where they did,
 they have been corrected to this repo. What did *not* come across is the test
 suite it refers to: `tests/run.mjs`, `tests/lib.mjs`, `tests/ghsync-package.mjs`
-and `tests/crypto-drift.mjs` do not exist here. This repo keeps its Playwright
-suites outside the repository entirely, so there is no committed regression net
-for the core — see Testing below before changing `store.js`.
+and `tests/crypto-drift.mjs` do not exist here. This repo's own Playwright
+suites live in `tests/` (see the root `CLAUDE.md`), and several of them drive
+this package against a stubbed GitHub — see Testing below before changing
+`store.js`.
 
 ## Files
 
@@ -159,12 +160,13 @@ It is isomorphic (WebCrypto only), so Node workflows can import the same file.
 There is no build and no unit-testable seam worth mocking; test through the
 real page in Chromium.
 
-**This repo has no committed tests** — not for ghsync, not for the app. Its
-Playwright suites are written and run outside the repository, so nothing here
-guards `store.js` against a regression. If you change the core, write a suite
-that drives a real page with `page.route('https://api.github.com/**', …)`
-stubbed: 404 reads so writes create, 201 writes, and record every call so you
-can assert on the request bodies.
+The suites in `tests/suites/` that guard this package: `sync-basics` (nothing
+sent before a repo and token, only the private repo is ever addressed, the
+offline queue, another device's change arriving), `sync-status` (every failure
+mode and what the panel says, `null` remote files, sha conflicts merging by
+id) and `sync-large-files` (real-sized libraries, plain and encrypted). They
+drive a real page with `page.route('https://api.github.com/**', …)` acting as
+a fake GitHub with real sha semantics. If you change the core, extend them.
 
 Whatever else you change, keep these covered: nothing is sent to GitHub before
 a repo *and* a token exist; every request targets the private repo and never

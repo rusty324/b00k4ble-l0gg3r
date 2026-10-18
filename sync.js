@@ -114,7 +114,15 @@ function seedFromApp() {
     const path = store.files[collection];
     if (store.cache.getData(path) != null) continue;
     const records = window.syncSnapshot?.(collection);
-    if (Array.isArray(records) && records.length) store.cache.setData(path, records);
+    if (Array.isArray(records) && records.length) {
+      store.cache.setData(path, records);
+      // Marked unsent, so the first refresh does not overwrite it with the
+      // repo's copy (refresh() skips dirty paths) — that overwrite silently
+      // replaced a library that existed here before sync was connected (#34).
+      // Instead the startup flush pushes it: GitHub answers with a conflict,
+      // mergeRemote() combines both sides by id, and the union is what lands.
+      store.cache.markDirty(path);
+    }
   }
 }
 

@@ -1,6 +1,6 @@
 // render-books.js — the Books tab: cover-image fetch, filters,
-// debounced search, the genre filter row, stats bar, the main
-// render() and pagination. Split out of app.js; the series-sort
+// debounced search, the genre filter row, the main render()
+// and pagination. Split out of app.js; the series-sort
 // helper and pagination were relocated here from later in the
 // original file, since both are books-tab-only.
 
@@ -94,54 +94,14 @@ function renderBookGenreFilter() {
 }
 
 
-// ─── STATS BAR ────────────────────────────────────────────────────────
-function renderStats() {
-  const total    = books.length;
-  const read     = books.filter(b => b.status === 'read').length;
-  const physical = books.filter(b => b.formats.includes('physical')).length;
-  const ebook    = books.filter(b => b.formats.includes('ebook')).length;
-  const audio    = books.filter(b => b.formats.includes('audio')).length;
-  const rated    = books.filter(b => b.rating > 0);
-
-  const avg = rated.length
-    ? (rated.reduce((sum, b) => sum + b.rating, 0) / rated.length).toFixed(1)
-    : '—';
-
-  document.getElementById('statsBar').innerHTML = `
-    <div class="stat-card">
-      <div class="stat-label">Total</div>
-      <div class="stat-value">${total}</div>
-      <div class="stat-sub">${read} read · ${books.filter(b => b.status === 'reading').length} in progress</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Physical</div>
-      <div class="stat-value">${physical}</div>
-      <div class="stat-sub">${total ? Math.round(physical / total * 100) : 0}% of library</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">E-books</div>
-      <div class="stat-value">${ebook}</div>
-      <div class="stat-sub">${total ? Math.round(ebook / total * 100) : 0}% of library</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Audiobooks</div>
-      <div class="stat-value">${audio}</div>
-      <div class="stat-sub">${total ? Math.round(audio / total * 100) : 0}% of library</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Avg rating</div>
-      <div class="stat-value">${avg}</div>
-      <div class="stat-sub">${rated.length} rated</div>
-    </div>`;
-}
-
-
 // ─── MAIN RENDER (books tab) ──────────────────────────────────────────
 function render() {
-  // Stats and tag pills only depend on the books array, not on search/
-  // filter/page state — skip the six full-library passes unless it changed.
+  // First, so an early return below (an empty library, say) cannot skip it.
+  const missingSlot = document.getElementById('booksMissing');
+  if (missingSlot) missingSlot.innerHTML = listTools('books');
+  // The genre filter only depends on the books array, not on search/
+  // filter/page state — skip the full-library pass unless it changed.
   if (_statsRenderedAt !== _booksMutation) {
-    renderStats();
     renderBookGenreFilter();
     _statsRenderedAt = _booksMutation;
   }
@@ -169,6 +129,10 @@ function render() {
         case 'title-desc': return titleSortKey(b.title).localeCompare(titleSortKey(a.title));
         case 'author-asc': return authorSortKey(a.author).localeCompare(authorSortKey(b.author));
         case 'rating-desc': return (b.rating || 0) - (a.rating || 0);
+        // Most recent month first; books with no finished month after them,
+        // newest added first among those.
+        case 'finished-desc':
+          return (b.finished || '').localeCompare(a.finished || '') || b.id - a.id;
         case 'series-asc': return seriesSort(a, b);
         default:           return b.id - a.id;
       }
@@ -203,6 +167,9 @@ function render() {
   const fmtCls    = { physical: 'badge-physical', ebook: 'badge-ebook', audio: 'badge-audio' };
   const stCls     = { read: 'badge-read', reading: 'badge-reading', want: 'badge-want' };
   const stLabel   = { read: 'Read', reading: 'Reading', want: 'Want to read' };
+  // "Read · Jun 2025" when the month is known.
+  const statusText = b => (b.status === 'read' && b.finished)
+    ? `Read · ${finishedLabel(b.finished)}` : (stLabel[b.status] || b.status);
 
   let html;
   if (viewMode === 'list') {
@@ -217,13 +184,13 @@ function render() {
       const fmtBadges = b.formats.map(f =>
         `<span class="badge ${fmtCls[f] || ''}" title="${esc(f)}">${fmtIcon[f] || esc(f)}</span>`
       ).join('');
-      return `<div class="book-row">
+      return `<div class="book-row" data-detail="books:${b.id}">
         ${thumbHtml}
         <div class="book-row-content">
           <div class="book-row-title">${esc(b.title)}</div>
           <div class="book-row-meta">
             <div class="book-row-author">${esc(b.author || '')}${b.narrator ? ` <span class="book-row-narrator">· 🎙 ${esc(b.narrator)}</span>` : ''}</div>
-            <div class="book-row-badges">${fmtBadges}<span class="badge ${stCls[b.status] || 'badge-want'}">${stLabel[b.status] || esc(b.status)}</span></div>
+            <div class="book-row-badges">${fmtBadges}<span class="badge ${stCls[b.status] || 'badge-want'}">${esc(statusText(b))}</span></div>
             <div class="book-row-actions">
               ${renderLinkButtons(b.links, true)}
               <button class="btn btn-sm" onclick="openEditModal(${b.id})" title="Edit">✏</button>
@@ -237,8 +204,6 @@ function render() {
     html = page.map(b => {
       const fmtBadges = b.formats.map(f =>
         `<span class="badge ${fmtCls[f] || ''}">${fmtLabels[f] || esc(f)}</span>`).join('');
-      const tagBadges = (b.genre || []).map(t =>
-        `<span class="badge badge-tag">${esc(t)}</span>`).join('');
       const r = Math.max(0, Math.min(5, b.rating || 0));
       const stars = r > 0
         ? '★'.repeat(r) + `<span class="empty">${'★'.repeat(5 - r)}</span>`
@@ -251,37 +216,15 @@ function render() {
         ? `<img class="book-card-cover" src="${esc(cachedCover)}" alt="" loading="lazy">`
         : `<div class="book-card-initial" data-book-id="${b.id}">${firstLetter}</div>`;
 
-      return `<div class="book-card">
+      return `<div class="book-card" data-detail="books:${b.id}" tabindex="0" role="button" aria-label="${esc(b.title)} — details">
         ${coverHtml}
         <div class="book-title">${esc(b.title)}</div>
         ${b.author ? `<div class="book-author">${esc(b.author)}</div>` : ''}
-        ${b.narrator ? `<div class="book-narrator">🎙 Narrated by ${esc(b.narrator)}</div>` : ''}
         ${b.series ? `<div class="book-series">📖 ${esc(b.series)}</div>` : ''}
         <div class="book-meta">
           ${fmtBadges}
-          <span class="badge ${stCls[b.status] || 'badge-want'}">${stLabel[b.status] || esc(b.status)}</span>
+          <span class="badge ${stCls[b.status] || 'badge-want'}">${esc(statusText(b))}</span>
           ${stars ? `<span class="stars">${stars}</span>` : ''}
-        </div>
-        ${tagBadges ? `<div class="book-tags">${tagBadges}</div>` : ''}
-        ${b.notes ? `<div class="book-notes">${esc(b.notes)}</div>` : ''}
-        <div class="book-actions">
-          ${renderLinkButtons(b.links)}
-          <button class="btn btn-sm" onclick="openEditModal(${b.id})">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-            Edit
-          </button>
-          <button class="btn btn-sm btn-danger" onclick="deleteBook(${b.id})">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-              <path d="M10 11v6"/><path d="M14 11v6"/>
-              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-            </svg>
-            Delete
-          </button>
         </div>
       </div>`;
     });

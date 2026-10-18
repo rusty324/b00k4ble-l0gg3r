@@ -11,7 +11,7 @@
 // only ever fail to identify anything.
 function scanButtonMode() {
   if (activeTab === 'media') return geminiEnabled() ? 'identify' : 'none';
-  if (activeTab === 'games') return 'none';
+  if (activeTab === 'games' || activeTab === 'stats') return 'none';
   return 'scan';
 }
 

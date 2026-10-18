@@ -39,6 +39,7 @@ function renderMedia(listOnly = false) {
       default:            return b.id - a.id; // added-desc
     }
   });
+  _shownIds.media = items.map(m => m.id);   // what bulk edit's "Select all" means
 
   const typeIcon  = { movie: '🎬', tv: '📺' };
   const stCls     = { want: 'badge-want', watched: 'badge-watched' };
@@ -48,9 +49,6 @@ function renderMedia(listOnly = false) {
   const fmtTitle  = (m, f) => (MEDIA_FORMAT_LABEL[f] || f) + (m.editions && m.editions[f] ? ` — ${m.editions[f]}` : '');
   const seasonsBadge = m => m.type === 'tv' && m.seasons && m.seasons.length
     ? `<span class="badge badge-seasons">${esc(seasonsText(m.seasons, m.seasonCount))}</span>` : '';
-  // The card spells editions out; the list row leaves them to the tooltip.
-  const editionLines = m => Object.entries(m.editions || {}).map(([f, e]) =>
-    `<div class="media-edition">${fmtIcons[f] || ''} ${esc(MEDIA_FORMAT_LABEL[f] || f)} · ${esc(e)}</div>`).join('');
 
   // Filter toolbar
   const typePills = [['all','All'],['movie','🎬 Movies'],['tv','📺 TV Shows']].map(([v,l]) =>
@@ -95,6 +93,7 @@ function renderMedia(listOnly = false) {
       <span class="filter-label">Sort</span>
       ${sortSelect}
     </div>
+    <div class="missing-slot">${listTools('media')}</div>
   </div>`;
 
   let contentHtml;
@@ -118,7 +117,7 @@ function renderMedia(listOnly = false) {
       const icon    = typeIcon[m.type] || '🎬';
       const formats = (m.formats || []).map(f => fmtIcons[f] || '').join(' ');
       const fmtTip  = (m.formats || []).map(f => fmtTitle(m, f)).join('; ');
-      return `<div class="book-row">
+      return `<div class="book-row" data-detail="media:${m.id}">
         ${m.posterUrl
           ? `<img class="book-row-thumb" src="${esc(m.posterUrl)}" alt="" loading="lazy">`
           : `<div class="book-row-initial" style="font-size:18px;background:none;color:var(--text)">${icon}</div>`}
@@ -144,15 +143,13 @@ function renderMedia(listOnly = false) {
   } else {
     const cards = items.map(m => {
       const icon      = typeIcon[m.type] || '🎬';
-      const genreTags = (m.genre || []).map(g =>
-        `<span class="badge badge-tag">${esc(g)}</span>`).join('');
       const fmtBadges = (m.formats || []).map(f =>
         `<span class="badge badge-media" title="${esc(fmtTitle(m, f))}">${fmtIcons[f] || esc(f)}</span>`).join('');
       const mr = Math.max(0, Math.min(5, m.rating || 0));
       const stars = mr > 0
         ? `<span class="stars">${'★'.repeat(mr)}<span class="empty">${'★'.repeat(5-mr)}</span></span>`
         : '';
-      return `<div class="book-card">
+      return `<div class="book-card" data-detail="media:${m.id}" tabindex="0" role="button" aria-label="${esc(m.title)} — details">
         ${m.posterUrl
           ? `<img class="book-card-cover" src="${esc(m.posterUrl)}" alt="" loading="lazy">`
           : `<div class="media-card-placeholder">${icon}</div>`}
@@ -163,28 +160,6 @@ function renderMedia(listOnly = false) {
           ${fmtBadges}
           ${seasonsBadge(m)}
           ${stars}
-        </div>
-        ${editionLines(m)}
-        ${genreTags ? `<div class="book-tags">${genreTags}</div>` : ''}
-        ${m.notes ? `<div class="book-notes">${esc(m.notes)}</div>` : ''}
-        <div class="book-actions">
-          ${renderLinkButtons(m.links)}
-          <button class="btn btn-sm" onclick="openMediaModal(${m.id})">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-            Edit
-          </button>
-          <button class="btn btn-sm btn-danger" onclick="deleteMediaItem(${m.id})">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-              <path d="M10 11v6"/><path d="M14 11v6"/>
-              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-            </svg>
-            Delete
-          </button>
         </div>
       </div>`;
     }).join('');

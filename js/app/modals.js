@@ -8,7 +8,7 @@ function openAddModal() {
   currentRating = 0;
   document.getElementById('modalTitle').textContent = 'Add a book';
 
-  ['f-title', 'f-author', 'f-narrator', 'f-series', 'f-seriesIndex', 'f-notes', 'f-coverUrl', 'f-isbn', 'f-asin', 'f-ol']
+  ['f-title', 'f-author', 'f-narrator', 'f-series', 'f-seriesIndex', 'f-notes', 'f-coverUrl', 'f-isbn', 'f-asin', 'f-ol', 'f-finished']
     .forEach(id => document.getElementById(id).value = '');
   setGenreValues('f-genre', []);
   setLinksField('f', []);
@@ -37,6 +37,7 @@ function openEditModal(id) {
   document.getElementById('f-title').value  = b.title;
   document.getElementById('f-author').value = b.author || '';
   document.getElementById('f-narrator').value = b.narrator || '';
+  document.getElementById('f-finished').value = b.finished || '';
   setSeriesFields(b.series);
   setGenreValues('f-genre', b.genre);
   document.getElementById('f-notes').value  = b.notes || '';
@@ -58,9 +59,70 @@ function openEditModal(id) {
   resetDup('books');      // a warning left from an earlier add must not linger here
 }
 
+// ─── WISHLIST → LIBRARY ("Got it") ────────────────────────────────────
+// Bought something on the wishlist: open the matching library tab's add form
+// filled in from the wishlist item, so formats, platform, status and the rest
+// can be set before saving. The wishlist entry is removed only once that save
+// completes; cancelling leaves it where it was and goes back to the wishlist.
+// The removal needs nothing special for sync — the save point notices the id
+// has gone and leaves a tombstone, like any delete.
+let _wishlistMove = null;    // { id, kind, title } while an add form is filling from one
+
+const WISH_TARGET = { book: 'books', movie: 'media', tv: 'media', game: 'games' };
+const MOVE_TITLE  = 'Add from your wishlist';
+
+function gotWishlistItem(id) {
+  const w = bookWishlist.find(x => x.id === id);
+  if (!w) return;
+  const kind = WISH_TARGET[w.type] || 'books';
+  const set = (fid, v) => { const el = document.getElementById(fid); if (el && v) el.value = v; };
+  switchTab(kind);
+  if (kind === 'books') {
+    openAddModal();
+    set('f-title', w.title); set('f-author', w.creator); set('f-isbn', w.isbn); set('f-notes', w.notes);
+    setLinksField('f', w.links || []);
+    document.getElementById('modalTitle').textContent = MOVE_TITLE;
+  } else if (kind === 'media') {
+    openMediaModal(null);
+    set('m-title', w.title); set('m-notes', w.notes);
+    setMediaRadio('m-type', w.type === 'tv' ? 'tv' : 'movie');
+    syncMediaSeasons();
+    setLinksField('m', w.links || []);
+    document.getElementById('mediaModalTitle').textContent = MOVE_TITLE;
+  } else {
+    openGameModal(null);
+    set('g-title', w.title); set('g-notes', w.notes);
+    setLinksField('g', w.links || []);
+    gameAutofillSoon();        // a store link ticks its own platform
+    document.getElementById('gameModalTitle').textContent = MOVE_TITLE;
+  }
+  // Set after the open* call, which resets the form state this lives beside.
+  _wishlistMove = { id, kind, title: w.title };
+  paintDup(kind);              // already in the library? say so before the save
+}
+
+// After a successful add on `kind`'s form.
+function completeWishlistMove(kind) {
+  const move = _wishlistMove;
+  if (!move || move.kind !== kind) return;
+  _wishlistMove = null;
+  bookWishlist = bookWishlist.filter(w => w.id !== move.id);
+  saveWishlist();
+  flashBanner(`Moved “${move.title}” from your wishlist into your library.`);
+}
+
+// A form closing without that save: the wishlist keeps the item, and the
+// view goes back to where the move started.
+function cancelWishlistMove() {
+  if (!_wishlistMove) return;
+  _wishlistMove = null;
+  switchTab('wishlist');
+}
+
 function closeModal() {
   pendingScanCode = null;
   document.getElementById('modal').classList.remove('open');
+  cancelWishlistMove();
 }
 
 function handleBackdropClick(e) {
@@ -124,20 +186,23 @@ function saveBook() {
   const notes  = document.getElementById('f-notes').value.trim();
   // Only an audiobook has one; normalizeBook enforces the same.
   const narrator = formats.includes('audio') ? document.getElementById('f-narrator').value.trim() : '';
+  // Only a Read book has one; normalizeBook enforces the same.
+  const finished = status === 'read' ? document.getElementById('f-finished').value.trim() : '';
 
   if (editingId !== null) {
     const i = books.findIndex(b => b.id === editingId);
     if (i !== -1) {
-      books[i] = normalizeBook({ ...books[i], title, author, narrator, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
+      books[i] = normalizeBook({ ...books[i], title, author, narrator, finished, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
         isbn: isbn || pendingScanCode || books[i].isbn || '', asin });
     }
   } else {
-    books.push(normalizeBook({ id: newId(), title, author, narrator, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
+    books.push(normalizeBook({ id: newId(), title, author, narrator, finished, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
       ...(isbn || pendingScanCode ? { isbn: isbn || pendingScanCode } : {}),
       ...(asin ? { asin } : {}) }));
   }
 
   save();
+  if (editingId === null) completeWishlistMove('books');
   closeModal();
   render();
 }
@@ -414,6 +479,7 @@ function closeMediaModal() {
   pendingTmdb = null;
   closeTmdbAC();
   document.getElementById('mediaModal').classList.remove('open');
+  cancelWishlistMove();
 }
 
 function handleMediaBackdrop(e) {
@@ -448,6 +514,7 @@ function saveMediaItem() {
   }
 
   saveMedia();
+  if (mediaEditingId === null) completeWishlistMove('media');
   closeMediaModal();
   renderPage();
 }
@@ -555,7 +622,9 @@ function dupBlocksSave(kind) {
   return true;
 }
 
-function openDuplicate(kind, id) { DUP_FORMS[kind].open(id); }
+// Choosing the existing entry ends a wishlist move without going back to the
+// wishlist: the item stays there, and the library entry opens where it lives.
+function openDuplicate(kind, id) { _wishlistMove = null; DUP_FORMS[kind].open(id); }
 
 function resetDup(kind) {
   _dupAck[kind] = undefined;
@@ -754,7 +823,7 @@ function setGamePlatforms(list) {
   }));
   sortGamePlatforms();
   syncGamePlatformPicks();
-  renderGamePlatformEntries();
+  platformEditor.render();
 }
 
 // The tick boxes follow the list, not the other way round — removing a row
@@ -766,25 +835,25 @@ function syncGamePlatformPicks() {
   });
 }
 
-function renderGamePlatformEntries() {
-  const box = gamePlatformsBox();
-  if (!box) return;
-  box.innerHTML = _gamePlatforms.map(p => {
-    // PS Plus is a PlayStation subscription, so it is only offered where it
-    // could be true — the normalizer drops it elsewhere regardless.
-    const chips = formatsFor(p.platform).map(f =>
-      `<button type="button" class="fmt-chip${(p.formats || []).includes(f) ? ' active' : ''}"
-               aria-pressed="${(p.formats || []).includes(f)}"
-               onclick="toggleGamePlatformFormat('${p.platform}','${f}')"
-       >${GAME_FORMAT_ICON[f]} ${esc(GAME_FORMAT_LABEL[f])}</button>`).join('');
-    return `<div class="platform-entry">
-      <span class="platform-entry-name">${esc(platformLabel(p.platform))}</span>
-      <div class="platform-entry-formats">${chips}</div>
-      <button type="button" class="platform-entry-remove" aria-label="Remove ${esc(platformLabel(p.platform))}"
-              onclick="removeGamePlatform('${p.platform}')">&times;</button>
-    </div>`;
-  }).join('');
-}
+// The rows under the platform buttons. PS Plus is a PlayStation subscription,
+// so it is only offered where it could be true — the normalizer drops it
+// elsewhere regardless.
+const platformEditor = createRowEditor({
+  box: 'g-platform-entries',
+  rows: () => _gamePlatforms,
+  label: p => platformLabel(p.platform),
+  chips: p => formatsFor(p.platform).map(f =>
+    ({ key: f, text: `${GAME_FORMAT_ICON[f]} ${GAME_FORMAT_LABEL[f]}`, on: p.formats.includes(f) })),
+  onChip: (p, f) => {
+    const i = p.formats.indexOf(f);
+    if (i === -1) p.formats.push(f); else p.formats.splice(i, 1);
+  },
+  // The × unticks the matching button too, so the two never disagree.
+  onRemove: p => {
+    _gamePlatforms = _gamePlatforms.filter(x => x !== p);
+    syncGamePlatformPicks();
+  },
+});
 
 // From a platform button. Unticking drops that platform's formats with it —
 // they describe a copy the user just said they do not have.
@@ -794,50 +863,31 @@ function toggleGamePlatform(value) {
   else _gamePlatforms.splice(i, 1);
   sortGamePlatforms();
   syncGamePlatformPicks();
-  renderGamePlatformEntries();
+  platformEditor.render();
   if (_gamePlatforms.length) hideGamePlatformError();
 }
 
-function removeGamePlatform(value) {
-  _gamePlatforms = _gamePlatforms.filter(p => p.platform !== value);
-  syncGamePlatformPicks();
-  renderGamePlatformEntries();
-}
-
-function toggleGamePlatformFormat(platform, fmt) {
-  const entry = _gamePlatforms.find(p => p.platform === platform);
-  if (!entry) return;
-  const i = entry.formats.indexOf(fmt);
-  if (i === -1) entry.formats.push(fmt);
-  else entry.formats.splice(i, 1);
-  renderGamePlatformEntries();
-}
-
 // ─── GAME MODAL: DLC ─────────────────────────────────────────────────
-// Working copy, like _gamePlatforms. Rows are addressed by index rather than
-// by name, so a name never has to be escaped into an inline handler.
+// Working copy, like _gamePlatforms.
 let _gameDlc = [];   // [{ name, owned }]
 
 function setGameDlc(list) {
   _gameDlc = (Array.isArray(list) ? list : []).map(d => ({ name: d.name, owned: d.owned !== false }));
   const input = document.getElementById('g-dlc');
   if (input) input.value = '';
-  renderGameDlc();
+  dlcEditor.render();
 }
 
-function renderGameDlc() {
-  const box = document.getElementById('g-dlc-entries');
-  if (!box) return;
-  box.innerHTML = _gameDlc.map((d, i) => `<div class="platform-entry">
-      <span class="platform-entry-name dlc-name">${esc(d.name)}</span>
-      <div class="platform-entry-formats">
-        <button type="button" class="fmt-chip${d.owned ? ' active' : ''}" aria-pressed="${d.owned}"
-                onclick="toggleGameDlcOwned(${i})">${d.owned ? '✓ Owned' : 'Wishlist'}</button>
-      </div>
-      <button type="button" class="platform-entry-remove" aria-label="Remove ${esc(d.name)}"
-              onclick="removeGameDlc(${i})">&times;</button>
-    </div>`).join('');
-}
+// One row per add-on: its name, a chip that flips Owned/Wishlist, and ×.
+const dlcEditor = createRowEditor({
+  box: 'g-dlc-entries',
+  rows: () => _gameDlc,
+  label: d => d.name,
+  labelClass: 'dlc-name',
+  chips: d => [{ key: 'owned', text: d.owned ? '✓ Owned' : 'Wishlist', on: d.owned }],
+  onChip: d => { d.owned = !d.owned; },
+  onRemove: (d, i) => { _gameDlc.splice(i, 1); },
+});
 
 // Trimmed, non-empty and not already listed (case-insensitively, the same fold
 // the genre pills use). Returns whether a row was added.
@@ -847,7 +897,7 @@ function commitGameDlc() {
   if (input) input.value = '';
   if (!name || _gameDlc.some(d => d.name.toLowerCase() === name.toLowerCase())) return false;
   _gameDlc.push({ name, owned: true });
-  renderGameDlc();
+  dlcEditor.render();
   return true;
 }
 
@@ -857,15 +907,6 @@ function gameDlcKey(e) {
   if (e.key !== 'Enter') return;
   e.preventDefault();
   commitGameDlc();
-}
-
-function toggleGameDlcOwned(i) {
-  if (_gameDlc[i]) { _gameDlc[i].owned = !_gameDlc[i].owned; renderGameDlc(); }
-}
-
-function removeGameDlc(i) {
-  _gameDlc.splice(i, 1);
-  renderGameDlc();
 }
 
 function hideGamePlatformError() {
@@ -927,6 +968,7 @@ function openGameModal(id) {
 
 function closeGameModal() {
   document.getElementById('gameModal').classList.remove('open');
+  cancelWishlistMove();
 }
 
 function handleGameBackdrop(e) {
@@ -966,6 +1008,7 @@ function saveGameItem() {
   }
 
   saveGames();
+  if (gameEditingId === null) completeWishlistMove('games');
   closeGameModal();
   renderPage();
 }

@@ -19,7 +19,19 @@
   .header-actions { width: 100%; justify-content: flex-end; gap: 0.4rem; flex-wrap: nowrap; }
   .btn, .pill, .genre-pill, .fmt-chip { min-height: 44px; }
   .search-clear { width: 44px; height: 44px; right: 0; }
+  /* The detail sheet rises from the bottom edge, full width, like a native sheet. */
+  #detailModal { align-items: flex-end; padding: 0; }
+  .detail-modal { max-width: none; width: 100%; border-radius: 16px 16px 0 0; max-height: 88vh; }
+  .detail-cover { width: 84px; flex-basis: 84px; }
   .season-chip { min-width: 44px; }
+  /* Bulk edit's bar and genre sheet: full width, the actions sharing a line. */
+  #bulkModal { align-items: flex-end; padding: 0; }
+  .bulk-bar-info, .bulk-bar-actions { width: 100%; }
+  .bulk-bar-info { justify-content: space-between; }
+  .bulk-bar-actions > * { flex: 1 1 auto; }
+  .bulk-bar .sort-select { width: 100%; flex-basis: 100%; min-height: 44px; }
+  .bulk-mode main { padding-bottom: 12rem; }
+  .bulk-mode .scroll-top-btn { bottom: 12rem; }
   /* Three 44px chips will not sit beside a platform name on a phone, and
      letting them wrap in a side column stacks them one per line. Give the
      name its own line instead, float the × into the corner, and the chips

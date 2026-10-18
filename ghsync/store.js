@@ -229,7 +229,10 @@ export function createStore(opts) {
       // token — GitHub answers 404, not 403, for a private repo the token
       // cannot see. Retrying will not change that, so it is an error the user
       // has to act on, not a "pending" that looks like it will resolve.
-      if (e instanceof AuthError || e instanceof NotFoundError) setStatus('error', e);
+      // A remote file that will not parse (past the Contents API's 1 MB read
+      // limit, or damaged) surfaces here when a push has to merge with it —
+      // the same unretryable failure refresh() reports, so the same status.
+      if (e instanceof AuthError || e instanceof NotFoundError || e instanceof SyntaxError) setStatus('error', e);
       else setStatus('pending', e); // network or transient: stays queued
     }
   }
@@ -253,7 +256,15 @@ export function createStore(opts) {
     const local = cache.getData(path) ?? [];
     const byId = new Map();
     for (const r of remote) byId.set(r.id, r);
-    for (const r of local) byId.set(r.id, r); // local dirty records win
+    for (const r of local) {
+      // Local dirty records win — except over a deletion. A record with
+      // `deleted: true` is a tombstone; letting a live copy beat it is how a
+      // deleted record came back (a stale device, or a delete racing an edit).
+      // Ids are never reused, so a deletion is always final.
+      const other = byId.get(r.id);
+      if (other && other.deleted && !r.deleted) continue;
+      byId.set(r.id, r);
+    }
     cache.setData(path, [...byId.values()]);
     cache.setSha(path, sha);
     if (collection) emit({ type: 'changed', collection });

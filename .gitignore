@@ -24,3 +24,6 @@ data/
 
 __pycache__/
 *.pyc
+
+# Test dependencies (tests/package.json); never part of the site.
+tests/node_modules/

@@ -64,6 +64,7 @@
     <button class="tab"        data-tab="media"    onclick="switchTab('media')">🎬 Movies & TV</button>
     <button class="tab"        data-tab="games"    onclick="switchTab('games')">🎮 Games</button>
     <button class="tab"        data-tab="wishlist" onclick="switchTab('wishlist')">📋 Wishlist</button>
+    <button class="tab"        data-tab="stats"    onclick="switchTab('stats')">📊 Stats</button>
   </div>
 </header>
 
@@ -76,9 +77,6 @@
 
   <!-- ── Books tab content ─────────────────────────────────────────── -->
   <div id="booksSection">
-    <!-- Stats row — filled by renderStats() -->
-    <div class="stats-bar" id="statsBar"></div>
-
     <!-- Search + sort toolbar -->
     <div class="toolbar">
       <div class="search-wrap">
@@ -93,6 +91,7 @@
         <option value="title-desc">Title Z–A</option>
         <option value="author-asc">Author A–Z (surname)</option>
         <option value="rating-desc">Rating ↓</option>
+        <option value="finished-desc">Recently finished</option>
         <option value="series-asc">Series</option>
       </select>
     </div>
@@ -124,11 +123,12 @@
     <div id="bookGenreFilter"></div>
 
     <!-- Book cards / list rows injected here -->
+    <div class="missing-slot" id="booksMissing"></div>
     <div class="books-grid" id="booksGrid"></div>
     <div class="pagination" id="pagination"></div>
   </div>
 
-  <!-- ── Non-book tab content ──────────────────────────────────────── -->
+  <!-- ── Non-book tab content (Movies & TV, Games, Wishlist, Stats) ── -->
   <div id="altContent" style="display:none"></div>
 </main>
 
@@ -211,6 +211,12 @@
         <label class="radio-btn" for="st-reading">Reading<input type="radio" name="status" id="st-reading" value="reading"></label>
         <label class="radio-btn" for="st-read">Read<input type="radio" name="status" id="st-read" value="read"></label>
       </div>
+    </div>
+
+    <!-- Read only: the month it was finished (syncFinishedField) -->
+    <div class="form-group" id="f-finished-group" style="display:none">
+      <label for="f-finished">Finished <span class="opt">(month and year)</span></label>
+      <input type="month" class="plain" id="f-finished" placeholder="YYYY-MM" style="max-width:220px" autocomplete="off">
     </div>
 
     <div class="form-group">
@@ -719,8 +725,38 @@
   </div>
 </div>
 
+<!-- "What am I missing?" — filled by openMissing() (js/app/missing-view.js) -->
+<div class="modal-backdrop" id="missingModal" onclick="handleMissingBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="missingTitle">
+  <div class="modal detail-modal" id="missingBody"></div>
+</div>
+
+<!-- A library card's details — filled by openDetail() (js/app/detail-view.js) -->
+<div class="modal-backdrop" id="detailModal" onclick="handleDetailBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+  <div class="modal detail-modal" id="detailBody"></div>
+</div>
+
+<!-- Bulk edit: the action bar shown while selecting, and the genre sheet
+     (js/app/bulk-edit.js) -->
+<div class="bulk-bar" id="bulkBar" hidden role="toolbar" aria-label="Selected items">
+  <div class="bulk-bar-info">
+    <span id="bulkCount" aria-live="polite"></span>
+    <button type="button" class="btn btn-sm" id="bulkAll" onclick="bulkSelectAll()"></button>
+  </div>
+  <div class="bulk-bar-actions">
+    <select id="bulkStatus" class="sort-select bulk-act" aria-label="Set status of selected" onchange="bulkSetStatus(this.value)"></select>
+    <button type="button" class="btn btn-sm bulk-act" onclick="openBulkGenre('add')">+ Genre</button>
+    <button type="button" class="btn btn-sm bulk-act" onclick="openBulkGenre('remove')">− Genre</button>
+    <button type="button" class="btn btn-sm btn-danger bulk-act" onclick="bulkDelete()">Delete</button>
+    <button type="button" class="btn btn-sm btn-primary" onclick="endBulk()">Done</button>
+  </div>
+</div>
+<div class="modal-backdrop" id="bulkModal" onclick="handleBulkBackdrop(event)" role="dialog" aria-modal="true">
+  <div class="modal detail-modal" id="bulkBody"></div>
+</div>
+
 <!-- Tap a cover to see it full size. Closes on a tap anywhere, since on a
      phone hunting for a small × is worse than tapping the picture again. -->
+
 <div class="modal-backdrop lightbox" id="lightbox" role="dialog" aria-modal="true"
      aria-label="Cover image" onclick="closeCover()">
   <button class="lightbox-close" type="button" aria-label="Close">&times;</button>
@@ -754,8 +790,13 @@
 <script src="js/app/render-media.js"></script>
 <script src="js/app/render-games.js"></script>
 <script src="js/app/render-wishlist.js"></script>
+<script src="js/app/render-stats.js"></script>
 <script src="js/app/ui-chrome.js"></script>
+<script src="js/app/row-editor.js"></script>
 <script src="js/app/modals.js"></script>
+<script src="js/app/detail-view.js"></script>
+<script src="js/app/missing-view.js"></script>
+<script src="js/app/bulk-edit.js"></script>
 <script src="js/app/app-init.js"></script>
 <!-- Module, so deferred: app-init.js has already initialised by the time
      this runs, which is what lets the app stay standalone and local-first. -->

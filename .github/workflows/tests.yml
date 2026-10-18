@@ -1,0 +1,43 @@
+# Runs the Playwright suites in tests/ on every push, in Chromium and in
+# WebKit — Safari's engine, and so every iPhone browser. WebKit is the one that
+# matters most for this app: the "Maximum call stack size exceeded" sync bug
+# only ever happened there.
+name: Tests
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false          # a WebKit failure should not hide Chromium's result
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+      - name: Install test dependencies
+        working-directory: tests
+        run: npm ci
+      - name: Install ${{ matrix.browser }}
+        working-directory: tests
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+      - name: Run suites
+        run: node tests/run.js
+        env:
+          BROWSER: ${{ matrix.browser }}
+          SHOT_DIR: ${{ runner.temp }}/shots
+      - name: Keep screenshots from a failed run
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-${{ matrix.browser }}
+          path: ${{ runner.temp }}/shots
+          if-no-files-found: ignore

@@ -147,7 +147,7 @@ function applyLinks(obj, raw) {
 // whether or not it was touched, so without this a book edited once picks up
 // isbn:"", asin:"", coverUrl:"" and notes:"" for good — carried in every
 // export and every push after that. An empty field is absence, not a value.
-const OPTIONAL_TEXT = ['isbn', 'asin', 'coverUrl', 'posterUrl', 'notes', 'year', 'narrator'];
+const OPTIONAL_TEXT = ['isbn', 'asin', 'coverUrl', 'posterUrl', 'notes', 'year', 'narrator', 'finished'];
 
 function dropEmpty(obj) {
   for (const k of OPTIONAL_TEXT) {
@@ -405,6 +405,25 @@ function normalizeId(raw) {
   return hasValidId(raw) ? +raw : newId();
 }
 
+// When a book was finished, to the month: "YYYY-MM". Deliberately no day — a
+// reading log, not a diary. A full date ("2025-06-14") is cut back to its
+// month; anything unparseable, or a month that cannot have happened yet beyond
+// next year, is dropped rather than shown wrong.
+function normalizeFinished(raw) {
+  const m = String(raw || '').trim().match(/^(\d{4})-(\d{1,2})(?:$|-)/);
+  if (!m) return '';
+  const year = +m[1], month = +m[2];
+  if (year < 1900 || year > new Date().getFullYear() + 1 || month < 1 || month > 12) return '';
+  return `${m[1]}-${String(month).padStart(2, '0')}`;
+}
+
+// "Jun 2025", in the reader's own month names.
+function finishedLabel(f) {
+  if (!f) return '';
+  const [y, m] = f.split('-').map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+}
+
 function normalizeBook(b) {
   const author = Array.isArray(b.author)
     ? b.author.join(', ')
@@ -438,14 +457,16 @@ function normalizeBook(b) {
   const narrator = !formats.includes('audio') ? ''
     : Array.isArray(b.narrator) ? b.narrator.map(String).map(s => s.trim()).filter(Boolean).join(', ')
     : String(b.narrator || '').trim();
-  const _searchStr = [title, author, narrator, series, b.isbn || '', b.asin || '', ...genre].join(' ').toLowerCase();
+  // Kept only while the book is Read, like a narrator only while it is an audiobook.
+  const finished = status === 'read' ? normalizeFinished(b.finished) : '';
+  const _searchStr = [title, author, narrator, series, finished, b.isbn || '', b.asin || '', ...genre].join(' ').toLowerCase();
 
   // Clamp rating to 0–5; out-of-range values (e.g. from imported JSON) cause
   // '★'.repeat(5 - rating) to throw a RangeError with a negative count.
   const rating = Number.isFinite(+b.rating) ? Math.max(0, Math.min(5, Math.round(+b.rating))) : 0;
 
   const book = dropEmpty(applyLinks({
-    ...b, id: normalizeId(b.id), title, series, author, narrator, status, formats, genre, rating, _searchStr,
+    ...b, id: normalizeId(b.id), title, series, author, narrator, finished, status, formats, genre, rating, _searchStr,
     ...(b.isbn != null ? { isbn: String(b.isbn) } : {}),
     ...(b.asin != null ? { asin: String(b.asin).toUpperCase() } : {}),
   }, b.links));
@@ -600,17 +621,22 @@ function normalizeSeasons(raw) {
 
 // "Season 1", "Seasons 1–3, 5", with "of 8" when the total is known, and
 // "All 8 seasons" when every one is owned.
+// [1, 2, 3, 5] -> "1–3, 5". Input ascending. `prefix` goes before each run
+// ("#" for series numbers: "#1–3, #5").
+function compressRanges(nums, prefix = '') {
+  const runs = [];
+  for (const n of nums) {
+    const last = runs[runs.length - 1];
+    if (last && n === last[1] + 1) last[1] = n; else runs.push([n, n]);
+  }
+  return runs.map(([a, b]) => a === b ? `${prefix}${a}` : `${prefix}${a}\u2013${prefix}${b}`).join(', ');
+}
+
 function seasonsText(seasons, count) {
   if (!seasons || !seasons.length) return '';
   if (count && seasons.length === count && seasons[seasons.length - 1] === count)
     return count === 1 ? 'The only season' : `All ${count} seasons`;
-  const runs = [];
-  for (const n of seasons) {
-    const last = runs[runs.length - 1];
-    if (last && n === last[1] + 1) last[1] = n; else runs.push([n, n]);
-  }
-  const list = runs.map(([a, b]) => a === b ? `${a}` : `${a}\u2013${b}`).join(', ');
-  return `${seasons.length === 1 ? 'Season' : 'Seasons'} ${list}${count ? ` of ${count}` : ''}`;
+  return `${seasons.length === 1 ? 'Season' : 'Seasons'} ${compressRanges(seasons)}${count ? ` of ${count}` : ''}`;
 }
 
 // Normalize media items — coerces every field the render/sort/search paths
