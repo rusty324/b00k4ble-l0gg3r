@@ -77,6 +77,14 @@ function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(b => {
     b.classList.toggle('active', b.dataset.tab === tab);
   });
+  // On a phone the tab bar scrolls sideways; keep the chosen tab in view
+  // (Stats, last in the row, starts off-screen after a reload onto it).
+  const activeBtn = document.querySelector(`.tab[data-tab="${tab}"]`);
+  const bar = activeBtn && activeBtn.parentElement;
+  if (bar && bar.scrollWidth > bar.clientWidth) {
+    const left = activeBtn.getBoundingClientRect().left - bar.getBoundingClientRect().left + bar.scrollLeft;
+    bar.scrollLeft = Math.max(0, left - (bar.clientWidth - activeBtn.offsetWidth) / 2);
+  }
 
   // View toggle visible on books, media, and games tabs
   document.getElementById('viewToggleBtn').style.display =
@@ -89,6 +97,9 @@ function switchTab(tab) {
     'games':    'Add game'
   };
   document.getElementById('addBtnLabel').textContent = labels[tab] || 'Add';
+  // Stats has nothing to add, export or import: those all act on one list.
+  const hasList = tab !== 'stats';
+  document.getElementById('addBtn').style.display = hasList ? '' : 'none';
 
   syncScanButton();
 
@@ -102,8 +113,8 @@ function switchTab(tab) {
   const io = ioLabels[tab] || ioLabels.books;
   const expEl = document.getElementById('settingsExportBtn');
   const impEl = document.getElementById('settingsImportBtn');
-  if (expEl) expEl.textContent = io.exp;
-  if (impEl) impEl.textContent = io.imp;
+  if (expEl) { expEl.textContent = io.exp; expEl.style.display = hasList ? '' : 'none'; }
+  if (impEl) { impEl.textContent = io.imp; impEl.style.display = hasList ? '' : 'none'; }
 
   const booksSection = document.getElementById('booksSection');
   const altContent   = document.getElementById('altContent');
@@ -133,6 +144,7 @@ function renderPage() {
     case 'media':    renderMedia();     break;
     case 'wishlist': renderWishlist();  break;
     case 'games':    renderGames();     break;
+    case 'stats':    renderStatsTab();  break;
   }
 }
 

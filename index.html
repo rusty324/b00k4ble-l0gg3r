@@ -64,6 +64,7 @@
     <button class="tab"        data-tab="media"    onclick="switchTab('media')">🎬 Movies & TV</button>
     <button class="tab"        data-tab="games"    onclick="switchTab('games')">🎮 Games</button>
     <button class="tab"        data-tab="wishlist" onclick="switchTab('wishlist')">📋 Wishlist</button>
+    <button class="tab"        data-tab="stats"    onclick="switchTab('stats')">📊 Stats</button>
   </div>
 </header>
 
@@ -76,9 +77,6 @@
 
   <!-- ── Books tab content ─────────────────────────────────────────── -->
   <div id="booksSection">
-    <!-- Stats row — filled by renderStats() -->
-    <div class="stats-bar" id="statsBar"></div>
-
     <!-- Search + sort toolbar -->
     <div class="toolbar">
       <div class="search-wrap">
@@ -130,7 +128,7 @@
     <div class="pagination" id="pagination"></div>
   </div>
 
-  <!-- ── Non-book tab content ──────────────────────────────────────── -->
+  <!-- ── Non-book tab content (Movies & TV, Games, Wishlist, Stats) ── -->
   <div id="altContent" style="display:none"></div>
 </main>
 
@@ -792,6 +790,7 @@
 <script src="js/app/render-media.js"></script>
 <script src="js/app/render-games.js"></script>
 <script src="js/app/render-wishlist.js"></script>
+<script src="js/app/render-stats.js"></script>
 <script src="js/app/ui-chrome.js"></script>
 <script src="js/app/row-editor.js"></script>
 <script src="js/app/modals.js"></script>

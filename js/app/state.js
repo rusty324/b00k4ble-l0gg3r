@@ -20,13 +20,13 @@ let viewMode = localStorage.getItem('viewMode') || 'card';
 let _filteredCache = null;
 let _filteredCacheKey = '';
 let _booksMutation = 0;
-let _statsRenderedAt = -1;   // _booksMutation value at last stats/tag-filter render
+let _statsRenderedAt = -1;   // _booksMutation value at last genre-filter render
 const _coverCache = {};
 
 // Tab state
 let activeTab = localStorage.getItem('activeTab') || 'books';
 // Migrate old tab IDs that no longer exist
-if (!['books', 'media', 'wishlist', 'games'].includes(activeTab)) activeTab = 'books';
+if (!['books', 'media', 'wishlist', 'games', 'stats'].includes(activeTab)) activeTab = 'books';
 
 // Book wishlist (combined: books, movies, TV — lightweight scratch-pad)
 let bookWishlist = JSON.parse(localStorage.getItem('bookWishlist') || '[]')

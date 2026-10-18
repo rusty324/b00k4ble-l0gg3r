@@ -47,9 +47,11 @@ const BOOKS = [
   const badge = t => page.locator('#booksGrid .book-card', { hasText: t }).locator('.badge-read').textContent();
   check('a Read card shows the month', (await badge('Hyperion')) === `Read · May ${Y}`, await badge('Hyperion'));
   check('a Read card with no month just says Read', (await badge('Middlemarch')) === 'Read');
+  await page.click('.tab[data-tab="stats"]'); await page.waitForTimeout(200);
   const stat = await page.evaluate(Y => { const c = [...document.querySelectorAll('.stat-card')].find(c => c.textContent.includes(`Read in ${Y}`));
     return c && { v: c.querySelector('.stat-value').textContent, sub: c.querySelector('.stat-sub').textContent }; }, Y);
-  check(`the stats bar counts books read in ${Y}, with last year for scale`, !!stat && stat.v === '2' && stat.sub === `1 in ${Y - 1}`, J(stat));
+  check(`the Stats tab counts books read in ${Y}, with last year for scale`, !!stat && stat.v === '2' && stat.sub === `1 in ${Y - 1}`, J(stat));
+  await page.click('.tab[data-tab="books"]'); await page.waitForTimeout(200);
   await page.selectOption('#sortSelect', 'finished-desc'); await page.waitForTimeout(300);
   const order = await page.evaluate(() => [...document.querySelectorAll('#booksGrid .book-title')].map(e => e.textContent));
   check('"Recently finished" sorts newest month first, undated after', J(order.slice(0, 3)) === J(['Hyperion', 'Dune', 'Emma']), J(order));

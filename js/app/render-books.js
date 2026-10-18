@@ -1,6 +1,6 @@
 // render-books.js — the Books tab: cover-image fetch, filters,
-// debounced search, the genre filter row, stats bar, the main
-// render() and pagination. Split out of app.js; the series-sort
+// debounced search, the genre filter row, the main render()
+// and pagination. Split out of app.js; the series-sort
 // helper and pagination were relocated here from later in the
 // original file, since both are books-tab-only.
 
@@ -94,66 +94,14 @@ function renderBookGenreFilter() {
 }
 
 
-// ─── STATS BAR ────────────────────────────────────────────────────────
-function renderStats() {
-  const total    = books.length;
-  const read     = books.filter(b => b.status === 'read').length;
-  const physical = books.filter(b => b.formats.includes('physical')).length;
-  const ebook    = books.filter(b => b.formats.includes('ebook')).length;
-  const audio    = books.filter(b => b.formats.includes('audio')).length;
-  const rated    = books.filter(b => b.rating > 0);
-
-  const avg = rated.length
-    ? (rated.reduce((sum, b) => sum + b.rating, 0) / rated.length).toFixed(1)
-    : '—';
-
-  // Read this calendar year, from the finished month; and last year for scale.
-  const year = new Date().getFullYear();
-  const readIn = y => books.filter(b => b.status === 'read' && (b.finished || '').startsWith(`${y}-`)).length;
-
-  document.getElementById('statsBar').innerHTML = `
-    <div class="stat-card">
-      <div class="stat-label">Total</div>
-      <div class="stat-value">${total}</div>
-      <div class="stat-sub">${read} read · ${books.filter(b => b.status === 'reading').length} in progress</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Read in ${year}</div>
-      <div class="stat-value">${readIn(year)}</div>
-      <div class="stat-sub">${readIn(year - 1)} in ${year - 1}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Physical</div>
-      <div class="stat-value">${physical}</div>
-      <div class="stat-sub">${total ? Math.round(physical / total * 100) : 0}% of library</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">E-books</div>
-      <div class="stat-value">${ebook}</div>
-      <div class="stat-sub">${total ? Math.round(ebook / total * 100) : 0}% of library</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Audiobooks</div>
-      <div class="stat-value">${audio}</div>
-      <div class="stat-sub">${total ? Math.round(audio / total * 100) : 0}% of library</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Avg rating</div>
-      <div class="stat-value">${avg}</div>
-      <div class="stat-sub">${rated.length} rated</div>
-    </div>`;
-}
-
-
 // ─── MAIN RENDER (books tab) ──────────────────────────────────────────
 function render() {
   // First, so an early return below (an empty library, say) cannot skip it.
   const missingSlot = document.getElementById('booksMissing');
   if (missingSlot) missingSlot.innerHTML = listTools('books');
-  // Stats and tag pills only depend on the books array, not on search/
-  // filter/page state — skip the six full-library passes unless it changed.
+  // The genre filter only depends on the books array, not on search/
+  // filter/page state — skip the full-library pass unless it changed.
   if (_statsRenderedAt !== _booksMutation) {
-    renderStats();
     renderBookGenreFilter();
     _statsRenderedAt = _booksMutation;
   }
