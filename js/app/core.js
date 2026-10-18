@@ -404,31 +404,38 @@ function dupAuthorKey(author) {
 //           both have one, so a remake is not a duplicate of the original.
 //   games — same title. Another platform is not another game: it belongs on
 //           the existing record's platform list.
+//   wishlist — same type and title, and creators that agree (as books).
+// The same rule decides both the add form's warning and ⋯ → Find duplicates
+// (js/app/duplicates-view.js), so the two can never disagree.
 function findDuplicate(kind, draft, excludeId = null) {
-  const tk = dupTitleKey(draft.title);
-  if (kind === 'books') {
-    const isbn = String(draft.isbn || '').replace(/[^0-9Xx]/g, '').toUpperCase();
-    const asin = String(draft.asin || '').toUpperCase();
-    const ak = dupAuthorKey(draft.author);
-    return books.find(b => b.id !== excludeId && (
-      (isbn && String(b.isbn || '').replace(/[^0-9Xx]/g, '').toUpperCase() === isbn) ||
-      (asin && String(b.asin || '').toUpperCase() === asin) ||
-      (tk && dupTitleKey(b.title) === tk &&
-        (!ak || !dupAuthorKey(b.author) || dupAuthorKey(b.author) === ak))
-    )) || null;
+  return collectionArray(kind).find(r => r.id !== excludeId && sameRecord(kind, draft, r)) || null;
+}
+
+const dupIsbn = r => String(r.isbn || '').replace(/[^0-9Xx]/g, '').toUpperCase();
+const dupAsin = r => String(r.asin || '').toUpperCase();
+// Names that agree: equal, or blank on either side (a blank rules nothing out).
+const namesAgree = (x, y) => { const a = dupAuthorKey(x), b = dupAuthorKey(y); return !a || !b || a === b; };
+
+// Whether a and b describe the same thing, per the rules above. Symmetric.
+function sameRecord(kind, a, b) {
+  const tk = dupTitleKey(a.title);
+  const sameTitle = !!tk && dupTitleKey(b.title) === tk;
+  switch (kind) {
+    case 'books':
+      return (!!dupIsbn(a) && dupIsbn(a) === dupIsbn(b)) || (!!dupAsin(a) && dupAsin(a) === dupAsin(b)) ||
+             (sameTitle && namesAgree(a.author, b.author));
+    case 'media': {
+      if ((a.type || 'movie') !== (b.type || 'movie')) return false;
+      const ya = String(a.year || '').trim(), yb = String(b.year || '').trim();
+      return (a.tmdbId != null && b.tmdbId != null && String(a.tmdbId) === String(b.tmdbId)) ||
+             (sameTitle && (!ya || !yb || ya === yb));
+    }
+    case 'games':
+      return sameTitle;
+    case 'wishlist':
+      return (a.type || 'book') === (b.type || 'book') && sameTitle && namesAgree(a.creator, b.creator);
   }
-  if (kind === 'media') {
-    const type = draft.type || 'movie';
-    const year = String(draft.year || '').trim();
-    return mediaLibrary.find(m => m.id !== excludeId && (m.type || 'movie') === type && (
-      (draft.tmdbId != null && m.tmdbId != null && String(m.tmdbId) === String(draft.tmdbId)) ||
-      (tk && dupTitleKey(m.title) === tk && (!year || !m.year || String(m.year) === year))
-    )) || null;
-  }
-  if (kind === 'games') {
-    return tk ? videoGames.find(g => g.id !== excludeId && dupTitleKey(g.title) === tk) || null : null;
-  }
-  return null;
+  return false;
 }
 
 function titleSortKey(title) {
