@@ -1,7 +1,7 @@
 // Sync must not lose data: connecting a device that already has a library
 // merges instead of replacing it (#34), and a deletion stays deleted no matter
 // which device is stale (tombstones).
-const { launch, BASE, reporter } = require('../lib');
+const { launch, BASE, reporter, viaDetail } = require('../lib');
 const { check, finish, crash } = reporter();
 const J = JSON.stringify;
 const b64 = s => Buffer.from(s).toString('base64');
@@ -66,7 +66,7 @@ const st = page => page.evaluate(() => ({ s: ghStore.syncStatus().status, q: ghS
   check('and everything is synced', J(await st(d1.page)) === J({ s: 'ok', q: 0 }), J(await st(d1.page)));
 
   // ── 2. Deleting leaves a tombstone in the repo, nowhere else ─────────
-  await d1.page.locator('#booksGrid .book-card', { hasText: 'Bravo' }).locator('button', { hasText: 'Delete' }).click();
+  await viaDetail(d1.page.locator('#booksGrid .book-card', { hasText: 'Bravo' }), 'Delete');
   await d1.page.waitForTimeout(1200);
   const tomb = remoteBooks().find(r => r.id === B.id);
   check('the deletion reaches the repo as a tombstone', !!tomb && tomb.deleted === true && tomb.deletedAt > 0 && !('title' in tomb), J(tomb));
@@ -92,7 +92,7 @@ const st = page => page.evaluate(() => ({ s: ghStore.syncStatus().status, q: ghS
   // Another device adds Delta; this device has not seen it and deletes Charlie.
   const theirs = [...remoteBooks(), D];
   remote['data/books.json'] = { sha: 'other-device', text: J(theirs, null, 2) };
-  await d1.page.locator('#booksGrid .book-card', { hasText: 'Charlie' }).locator('button', { hasText: 'Delete' }).click();
+  await viaDetail(d1.page.locator('#booksGrid .book-card', { hasText: 'Charlie' }), 'Delete');
   await d1.page.waitForTimeout(1500);
   check('the conflict merges: their addition kept, this deletion kept', liveIds(remoteBooks()) === 'Alpha,Delta', liveIds(remoteBooks()));
   check('and this device shows exactly that', await titles(d1.page) === 'Alpha,Delta', await titles(d1.page));
@@ -118,7 +118,7 @@ const st = page => page.evaluate(() => ({ s: ghStore.syncStatus().status, q: ghS
   // ── 8. Local-only: deletions are recorded, nothing is sent ──────────
   await d1.ctx.close();      // nothing else running while the local-only device is checked
   const d4 = await device(browser, { books: [A, B], repo: false });
-  await d4.page.locator('#booksGrid .book-card', { hasText: 'Bravo' }).locator('button', { hasText: 'Delete' }).click();
+  await viaDetail(d4.page.locator('#booksGrid .book-card', { hasText: 'Bravo' }), 'Delete');
   await d4.page.waitForTimeout(500);
   check('without sync, a delete is still recorded for when sync is connected',
     await d4.page.evaluate(id => !!(readTombs().books || {})[id], B.id) && d4.asked.length === 0, J(d4.asked));

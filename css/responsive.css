@@ -19,6 +19,10 @@
   .header-actions { width: 100%; justify-content: flex-end; gap: 0.4rem; flex-wrap: nowrap; }
   .btn, .pill, .genre-pill, .fmt-chip { min-height: 44px; }
   .search-clear { width: 44px; height: 44px; right: 0; }
+  /* The detail sheet rises from the bottom edge, full width, like a native sheet. */
+  #detailModal { align-items: flex-end; padding: 0; }
+  .detail-modal { max-width: none; width: 100%; border-radius: 16px 16px 0 0; max-height: 88vh; }
+  .detail-cover { width: 84px; flex-basis: 84px; }
   .season-chip { min-width: 44px; }
   /* Three 44px chips will not sit beside a platform name on a phone, and
      letting them wrap in a side column stacks them one per line. Give the

@@ -2,7 +2,7 @@
 // and import. Broad and shallow on purpose — a tripwire for "something basic
 // broke", with the feature suites covering each area in depth.
 const fs = require('fs');
-const { launch, BASE, reporter } = require('../lib');
+const { launch, BASE, reporter, viaDetail } = require('../lib');
 const { check, finish, crash } = reporter();
 const J = JSON.stringify;
 
@@ -47,13 +47,13 @@ const BOOKS = [
   check('adding a book saves it and shows it', (await bookTitles()).includes('A Wizard of Earthsea'));
   check('…and it is persisted', await page.evaluate(() => JSON.parse(localStorage.getItem('myLibrary')).some(b => b.title === 'A Wizard of Earthsea')));
 
-  await page.locator('#booksGrid .book-card', { hasText: 'Emma' }).locator('button', { hasText: 'Edit' }).click();
+  await viaDetail(page.locator('#booksGrid .book-card', { hasText: 'Emma' }), 'Edit');
   await page.waitForSelector('#modal.open');
   await page.click('label[for="st-read"]');
   await page.click('button[onclick="saveBook()"]'); await page.waitForTimeout(400);
   check('editing a book saves the change', await page.evaluate(() => books.find(b => b.title === 'Emma').status) === 'read');
 
-  await page.locator('#booksGrid .book-card', { hasText: 'A Wizard of Earthsea' }).locator('button', { hasText: 'Delete' }).click();
+  await viaDetail(page.locator('#booksGrid .book-card', { hasText: 'A Wizard of Earthsea' }), 'Delete');
   await page.waitForTimeout(400);
   check('deleting a book removes it', !(await bookTitles()).includes('A Wizard of Earthsea'));
 
@@ -78,7 +78,7 @@ const BOOKS = [
   await page.fill('#m-title', 'Airplane!'); await page.fill('#m-year', '1980');
   await page.click('button[onclick="saveMediaItem()"]'); await page.waitForTimeout(400);
   check('adding a movie shows it', J(await altTitles()) === '["Airplane!"]', J(await altTitles()));
-  await page.locator('#altContent .book-card', { hasText: 'Airplane!' }).locator('button', { hasText: 'Delete' }).click(); await page.waitForTimeout(400);
+  await viaDetail(page.locator('#altContent .book-card', { hasText: 'Airplane!' }), 'Delete'); await page.waitForTimeout(400);
   check('deleting it empties the tab', (await altTitles()).length === 0);
 
   // ── Games ──────────────────────────────────────────────────────────

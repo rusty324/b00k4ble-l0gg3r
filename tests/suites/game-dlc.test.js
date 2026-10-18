@@ -1,5 +1,5 @@
 // DLC & expansions on the Games tab.
-const { launch, BASE, REPO, tmp, shot } = require('../lib');
+const { launch, BASE, REPO, tmp, shot, viaDetail, closeDetailSheet } = require('../lib');
 const results = [];
 const check = (n, ok, d='') => results.push(`${ok?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);
 const J = JSON.stringify;
@@ -63,9 +63,12 @@ const chips = page => page.locator('#g-dlc-entries .fmt-chip').allTextContents()
   check('no DLC, no badge and no line', (await card('Celeste').locator('.badge-dlc, .book-dlc').count()) === 0);
   check('the badge title names every item and flags the wishlisted one',
     (await card('Mass Effect 2').locator('.badge-dlc').getAttribute('title')) === 'Lair of the Shadow Broker, Arrival, Overlord (wishlist)');
-  check('the card lists the names, wishlisted ones muted',
-    J(await card('Mass Effect 2').locator('.book-dlc .dlc-owned').allTextContents()) === '["Lair of the Shadow Broker","Arrival"]' &&
-    J(await card('Mass Effect 2').locator('.book-dlc .dlc-want').allTextContents()) === '["Overlord"]');
+  check('the card itself stays short: no line of names', (await card('Mass Effect 2').locator('.dlc-owned, .dlc-want').count()) === 0);
+  await viaDetail(card('Mass Effect 2'));
+  check('its detail sheet lists the names, wishlisted ones muted and marked',
+    J(await page.locator('#detailModal .dlc-owned').allTextContents()) === '["Lair of the Shadow Broker","Arrival"]' &&
+    J(await page.locator('#detailModal .dlc-want').allTextContents()) === '["Overlord (wishlist)"]');
+  await closeDetailSheet(page);
   await page.click('#viewToggleBtn'); await page.waitForTimeout(300);
   check('list view carries the badge too',
     (await page.locator('#gameListWrap .book-row', { hasText: 'Mass Effect 2' }).locator('.badge-dlc').textContent()) === 'DLC 2/3');
@@ -77,7 +80,7 @@ const chips = page => page.locator('#g-dlc-entries .fmt-chip').allTextContents()
   await page.fill('#gameSearchInput', ''); await page.waitForTimeout(300);
 
   // ── 4. The editor ───────────────────────────────────────────────────
-  await card('Mass Effect 2').locator('button', { hasText: 'Edit' }).click();
+  await viaDetail(card('Mass Effect 2'), 'Edit');
   await page.waitForSelector('#gameModal.open'); await page.waitForTimeout(150);
   check('editing repopulates the rows in order', J(await rowNames(page)) === '["Lair of the Shadow Broker","Arrival","Overlord"]', J(await rowNames(page)));
   check('with owned/wishlist per row', J(await chips(page)) === '["✓ Owned","✓ Owned","Wishlist"]', J(await chips(page)));
@@ -112,7 +115,7 @@ const chips = page => page.locator('#g-dlc-entries .fmt-chip').allTextContents()
   check('and the card reflects it (4/5 owned)', (await card('Mass Effect 2').locator('.badge-dlc').textContent()) === 'DLC 4/5');
 
   // ── 4b. Any name is safe: quotes, apostrophes, markup ───────────────
-  await card('Mass Effect 2').locator('button', { hasText: 'Edit' }).click(); await page.waitForSelector('#gameModal.open');
+  await viaDetail(card('Mass Effect 2'), 'Edit'); await page.waitForSelector('#gameModal.open');
   const nasty = `Kasumi's "Stolen" Memory <b>x</b> ');alert(1);//`;
   await page.fill('#g-dlc', nasty); await page.press('#g-dlc', 'Enter');
   check('a name with quotes and markup shows as plain text', (await rowNames(page)).includes(nasty), J(await rowNames(page)));
@@ -131,7 +134,7 @@ const chips = page => page.locator('#g-dlc-entries .fmt-chip').allTextContents()
   await page.click('button[onclick="saveGameItem()"]'); await page.waitForTimeout(400);
   check('a new game saves its DLC', J(await page.evaluate(() => videoGames.find(g => g.title === 'Fresh').dlc)) === '[{"name":"Day One Pack","owned":true}]');
 
-  await card('Fresh').locator('button', { hasText: 'Edit' }).click(); await page.waitForSelector('#gameModal.open');
+  await viaDetail(card('Fresh'), 'Edit'); await page.waitForSelector('#gameModal.open');
   await page.locator('#g-dlc-entries .platform-entry-remove').click();
   await page.click('button[onclick="saveGameItem()"]'); await page.waitForTimeout(400);
   check('removing the last row drops the key entirely rather than storing []',
@@ -155,7 +158,7 @@ const chips = page => page.locator('#g-dlc-entries .fmt-chip').allTextContents()
   check('and import restores it', J(await page.evaluate(() => videoGames.find(g => g.title === 'Mass Effect 2').dlc.length)) === '5');
 
   // ── 8. Phone layout ─────────────────────────────────────────────────
-  await card('Mass Effect 2').locator('button', { hasText: 'Edit' }).click(); await page.waitForSelector('#gameModal.open'); await page.waitForTimeout(150);
+  await viaDetail(card('Mass Effect 2'), 'Edit'); await page.waitForSelector('#gameModal.open'); await page.waitForTimeout(150);
   await page.evaluate(() => document.getElementById('g-dlc').scrollIntoView({ block: 'start' }));
   await page.waitForTimeout(150);
   const geo = await page.evaluate(() => {

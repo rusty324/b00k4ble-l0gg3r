@@ -41,4 +41,22 @@ function reporter() {
   return { results, check, finish, crash };
 }
 
-module.exports = { launch, BASE, REPO, BROWSER, isWebKit: BROWSER === 'webkit', tmp, shot, reporter };
+// Cards are short: tapping one opens its detail sheet, where Edit and Delete
+// live. `card` is a locator for a .book-card (or .book-row); `action` is the
+// sheet button to press — 'Edit' or 'Delete' — or omitted to just open it.
+async function viaDetail(card, action) {
+  const page = card.page();
+  await card.locator('.book-title, .book-row-title').first().click();
+  await page.waitForSelector('#detailModal.open');
+  if (action) await page.locator('#detailModal .detail-actions button', { hasText: action }).click();
+}
+
+// The text of one labelled fact in the open detail sheet ("Narrated by",
+// "Formats", …), or null when the sheet has no such fact.
+const detailFact = (page, label) => page.evaluate(label => {
+  const dt = [...document.querySelectorAll('#detailModal .detail-facts dt')].find(d => d.textContent === label);
+  return dt ? dt.nextElementSibling.innerText.trim() : null;
+}, label);
+const closeDetailSheet = page => page.evaluate(() => closeDetail());
+
+module.exports = { launch, BASE, REPO, BROWSER, isWebKit: BROWSER === 'webkit', tmp, shot, reporter, viaDetail, detailFact, closeDetailSheet };

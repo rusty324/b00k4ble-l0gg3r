@@ -44,15 +44,6 @@ function gameDlcBadge(g) {
   return `<span class="badge badge-dlc" title="${esc(names)}">${label}</span>`;
 }
 
-// On the card only: the names themselves, owned ones plain and wishlisted
-// ones muted, so what is missing reads at a glance.
-function gameDlcLine(g) {
-  const dlc = g.dlc || [];
-  if (!dlc.length) return '';
-  return `<div class="book-dlc"><span class="book-dlc-label">DLC</span> ${dlc.map(d =>
-    `<span class="${d.owned ? 'dlc-owned' : 'dlc-want'}">${esc(d.name)}</span>`).join(' · ')}</div>`;
-}
-
 // listOnly: replace just the results container, leaving the toolbar (and
 // the focused search input inside it) intact — used by the search path.
 function renderGames(listOnly = false) {
@@ -168,7 +159,7 @@ function renderGames(listOnly = false) {
     </div>`;
   } else if (viewMode === 'list') {
     const rows = items.map(g => {
-      return `<div class="book-row">
+      return `<div class="book-row" data-detail="games:${g.id}">
         ${g.coverUrl
           ? `<img class="book-row-thumb" src="${esc(g.coverUrl)}" alt="" loading="lazy">`
           : `<div class="book-row-initial" style="font-size:18px;background:none;color:var(--text)">🎮</div>`}
@@ -193,13 +184,11 @@ function renderGames(listOnly = false) {
     contentHtml = `<div class="books-list">${rows}</div>`;
   } else {
     const cards = items.map(g => {
-      const genreTags = (g.genre || []).map(x =>
-        `<span class="badge badge-tag">${esc(x)}</span>`).join('');
       const gr = Math.max(0, Math.min(5, g.rating || 0));
       const stars = gr > 0
         ? `<span class="stars">${'★'.repeat(gr)}<span class="empty">${'★'.repeat(5-gr)}</span></span>`
         : '';
-      return `<div class="book-card">
+      return `<div class="book-card" data-detail="games:${g.id}" tabindex="0" role="button" aria-label="${esc(g.title)} — details">
         ${g.coverUrl
           ? `<img class="book-card-cover" src="${esc(g.coverUrl)}" alt="" loading="lazy">`
           : `<div class="media-card-placeholder">🎮</div>`}
@@ -210,28 +199,6 @@ function renderGames(listOnly = false) {
           ${gamePlatformBadges(g)}
           ${gameDlcBadge(g)}
           ${stars}
-        </div>
-        ${gameDlcLine(g)}
-        ${genreTags ? `<div class="book-tags">${genreTags}</div>` : ''}
-        ${g.notes ? `<div class="book-notes">${esc(g.notes)}</div>` : ''}
-        <div class="book-actions">
-          ${renderLinkButtons(g.links)}
-          <button class="btn btn-sm" onclick="openGameModal(${g.id})">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-            Edit
-          </button>
-          <button class="btn btn-sm btn-danger" onclick="deleteGameItem(${g.id})">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-              <path d="M10 11v6"/><path d="M14 11v6"/>
-              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-            </svg>
-            Delete
-          </button>
         </div>
       </div>`;
     }).join('');

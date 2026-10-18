@@ -728,6 +728,11 @@
 
 <!-- Tap a cover to see it full size. Closes on a tap anywhere, since on a
      phone hunting for a small × is worse than tapping the picture again. -->
+<!-- A library card's details — filled by openDetail() (js/app/detail-view.js) -->
+<div class="modal-backdrop" id="detailModal" onclick="handleDetailBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
+  <div class="modal detail-modal" id="detailBody"></div>
+</div>
+
 <div class="modal-backdrop lightbox" id="lightbox" role="dialog" aria-modal="true"
      aria-label="Cover image" onclick="closeCover()">
   <button class="lightbox-close" type="button" aria-label="Close">&times;</button>
@@ -764,6 +769,7 @@
 <script src="js/app/ui-chrome.js"></script>
 <script src="js/app/row-editor.js"></script>
 <script src="js/app/modals.js"></script>
+<script src="js/app/detail-view.js"></script>
 <script src="js/app/app-init.js"></script>
 <!-- Module, so deferred: app-init.js has already initialised by the time
      this runs, which is what lets the app stay standalone and local-first. -->

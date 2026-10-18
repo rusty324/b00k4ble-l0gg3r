@@ -267,3 +267,30 @@ input[type="radio"], input[type="checkbox"] { display: none; }
 .scroll-top-btn.visible { display: flex; opacity: 1; }
 .scroll-top-btn:hover { background: var(--amber-800); transform: translateY(-2px); }
 
+/* ─── DETAIL SHEET (a library card, tapped) ──────────────────────────
+   Everything a short card leaves out. A bottom sheet on a phone (see
+   responsive.css), a dialog elsewhere. */
+.detail-modal { max-width: 560px; }
+.detail-head { display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 1rem; }
+.detail-cover { width: 96px; flex: 0 0 96px; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 8px;
+                background: var(--surface); cursor: zoom-in; -webkit-touch-callout: none; user-select: none; }
+.detail-cover-none { display: flex; align-items: center; justify-content: center; font-size: 34px; cursor: default;
+                     font-family: 'Playfair Display', serif; color: var(--text-muted); border: 1px solid var(--border); }
+.detail-headtext { flex: 1; min-width: 0; }
+.detail-title { font-family: 'Playfair Display', serif; font-size: 1.35rem; font-weight: 500; line-height: 1.25;
+                margin: 0 0 0.25rem; color: var(--amber-900); overflow-wrap: anywhere; }
+.detail-sub { font-size: 14px; color: var(--text-muted); margin-bottom: 0.5rem; overflow-wrap: anywhere; }
+.detail-badges { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.detail-facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.45rem 1rem; margin: 0 0 1rem;
+                font-size: 14px; line-height: 1.45; }
+.detail-facts dt { color: var(--text-light); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; padding-top: 0.15rem; }
+.detail-facts dd { margin: 0; color: var(--text); overflow-wrap: anywhere; }
+.detail-section { margin-bottom: 1rem; }
+.detail-label { font-size: 12px; color: var(--text-light); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 0.35rem; }
+.detail-notes { font-size: 14px; color: var(--text); white-space: pre-wrap; line-height: 1.5; overflow-wrap: anywhere; }
+.detail-links { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.detail-actions { display: flex; gap: 0.5rem; align-items: center; margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.detail-spacer { flex: 1; }
+/* A card is now a button: say so to pointer and keyboard users. */
+.book-card[data-detail], .book-row[data-detail] { cursor: pointer; }
+.book-card[data-detail]:focus-visible, .book-row[data-detail]:focus-visible { outline: 2px solid var(--amber-200); outline-offset: 2px; }

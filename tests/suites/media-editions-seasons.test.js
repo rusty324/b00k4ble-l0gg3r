@@ -1,5 +1,5 @@
 // Editions per format, TV seasons, the search ✕, and the phone zoom-out fix.
-const { launch, BASE, REPO, tmp, shot } = require('../lib');
+const { launch, BASE, REPO, tmp, shot, viaDetail, detailFact, closeDetailSheet } = require('../lib');
 const results = []; const check = (n, ok, d='') => results.push(`${ok?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);
 const J = JSON.stringify;
 const LINKS = ['https://tv.apple.com/us/movie/airplane/umc.cmc.1', 'https://moviesanywhere.com/movie/airplane', 'https://www.vudu.com/content/movies/details/Airplane/123'];
@@ -45,9 +45,14 @@ const MEDIA = [
     check(`${tab}: same for its cards`, w.doc <= 390 && w.vw === 390, J(w));
   }
   await page.click('.tab[data-tab="media"]'); await page.waitForTimeout(300);
-  const act = await page.evaluate(() => { const c = document.querySelector('#altContent .book-card');
-    const a = c.querySelector('.book-actions').getBoundingClientRect(), r = c.getBoundingClientRect(); return { actionsRight: Math.round(a.right), cardRight: Math.round(r.right) }; });
-  check('the action buttons wrap inside the card', act.actionsRight <= act.cardRight, J(act));
+  // The store links that once widened the card now live in its detail sheet;
+  // they must wrap inside it just the same.
+  await viaDetail(page.locator('#altContent .book-card', { hasText: 'Airplane!' }));
+  const act = await page.evaluate(() => { const s = document.querySelector('#detailModal .detail-modal').getBoundingClientRect();
+    const l = document.querySelector('#detailModal .detail-links').getBoundingClientRect();
+    return { linksRight: Math.round(l.right), sheetRight: Math.round(s.right), doc: document.documentElement.scrollWidth }; });
+  check('the store links wrap inside the detail sheet, and the page stays phone-width', act.linksRight <= act.sheetRight && act.doc <= 390, J(act));
+  await closeDetailSheet(page);
 
   // ── 2. Normalizer ───────────────────────────────────────────────────
   const n = await page.evaluate(() => {
@@ -75,7 +80,7 @@ const MEDIA = [
   check('normalizing twice changes nothing', n.idem);
 
   // ── 3. Editions in the form ─────────────────────────────────────────
-  await page.locator('#altContent .book-card', { hasText: 'Airplane!' }).locator('button', { hasText: 'Edit' }).click();
+  await viaDetail(page.locator('#altContent .book-card', { hasText: 'Airplane!' }), 'Edit');
   await page.waitForSelector('#mediaModal.open');
   const rows = () => page.locator('#m-editions .edition-row input').evaluateAll(els => els.map(e => e.dataset.fmt));
   check('editing a DVD title shows one edition box, for DVD', J(await rows()) === '["dvd"]', J(await rows()));
@@ -93,7 +98,9 @@ const MEDIA = [
   const air = await page.evaluate(() => mediaLibrary.find(m => m.id === 1700000000001));
   check('saved: the DVD edition, and nothing for the unticked Blu-ray', J(air.editions) === J({ dvd: '“Don’t Call Me Shirley!” Edition' }) && J(air.formats) === '["dvd"]', J(air.editions));
   const card = page.locator('#altContent .book-card', { hasText: 'Airplane!' });
-  check('the card spells the edition out', (await card.locator('.media-edition').textContent()).trim() === '💿 DVD · “Don’t Call Me Shirley!” Edition', await card.locator('.media-edition').textContent());
+  await viaDetail(card);
+  check('the detail sheet spells the edition out', (await detailFact(page, 'Formats')) === '💿 DVD — “Don’t Call Me Shirley!” Edition', await detailFact(page, 'Formats'));
+  await closeDetailSheet(page);
   check('and the format badge carries it on hover', await card.locator('.badge-media').first().getAttribute('title') === 'DVD — “Don’t Call Me Shirley!” Edition');
 
   // ── 4. Search reaches editions; the ✕ clears ────────────────────────
@@ -111,7 +118,7 @@ const MEDIA = [
   check('and, with the keyboard down, a tap on ✕ does not raise it again', await page.evaluate(() => document.activeElement.id !== 'mediaSearchInput'));
 
   // ── 5. Seasons: an existing show with a TMDb id ─────────────────────
-  await page.locator('#altContent .book-card', { hasText: 'Rick and Morty' }).locator('button', { hasText: 'Edit' }).click();
+  await viaDetail(page.locator('#altContent .book-card', { hasText: 'Rick and Morty' }), 'Edit');
   await page.waitForSelector('#mediaModal.open'); await page.waitForTimeout(400);
   const chips = () => page.locator('#m-season-chips .fmt-chip').allTextContents().then(a => a.map(t => t.trim()));
   check('a TV show shows the Seasons group', await page.evaluate(() => document.getElementById('m-seasons-group').style.display === ''));
@@ -125,7 +132,7 @@ const MEDIA = [
   check('the card reads "Season 1 of 8"', (await page.locator('#altContent .book-card', { hasText: 'Rick and Morty' }).locator('.badge-seasons').textContent()) === 'Season 1 of 8');
 
   // All, and back
-  await page.locator('#altContent .book-card', { hasText: 'Rick and Morty' }).locator('button', { hasText: 'Edit' }).click();
+  await viaDetail(page.locator('#altContent .book-card', { hasText: 'Rick and Morty' }), 'Edit');
   await page.waitForSelector('#mediaModal.open'); await page.waitForTimeout(300);
   await page.locator('#m-season-chips .season-all').click();
   check('"All" ticks every season', (await page.locator('#m-season-chips .season-chip.active').count()) === 8);
@@ -151,7 +158,7 @@ const MEDIA = [
   check('its card reads "Season 3" (no total known)', (await page.locator('#altContent .book-card', { hasText: 'Some Local Show' }).locator('.badge-seasons').textContent()) === 'Season 3');
 
   // switching a show to Movie drops its seasons
-  await page.locator('#altContent .book-card', { hasText: 'Some Local Show' }).locator('button', { hasText: 'Edit' }).click();
+  await viaDetail(page.locator('#altContent .book-card', { hasText: 'Some Local Show' }), 'Edit');
   await page.waitForSelector('#mediaModal.open'); await page.click('label[for="m-type-movie"]'); await page.waitForTimeout(100);
   check('switching to Movie hides Seasons', await page.evaluate(() => document.getElementById('m-seasons-group').style.display === 'none'));
   await page.click('button[onclick="saveMediaItem()"]'); await page.waitForTimeout(400);

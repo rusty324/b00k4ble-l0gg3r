@@ -1,4 +1,4 @@
-const { launch, BASE, REPO, tmp, shot } = require('../lib');
+const { launch, BASE, REPO, tmp, shot, viaDetail } = require('../lib');
 const results = []; const check = (n, ok, d='') => results.push(`${ok?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);
 (async () => {
   const errors = [];
@@ -37,10 +37,12 @@ const results = []; const check = (n, ok, d='') => results.push(`${ok?'PASS':'FA
     await page.click('button[onclick="saveBook()"]'); await page.waitForTimeout(400);
     check(`${name}: adding a book through the modal stamps books`, (await stampOf('books')) > 0);
 
+    // Unconditional: this used to skip itself silently if the Delete button
+    // was not where it expected, which hid the check rather than failing it.
     page.once('dialog', d => d.accept());
-    const del = page.locator('#booksGrid .book-card', { hasText: 'Persuasion' }).locator('button', { hasText: 'Delete' });
-    if (await del.count()) { const t0 = await stampOf('books'); await page.waitForTimeout(20); await del.click(); await page.waitForTimeout(400);
-      check(`${name}: deleting a book moves the date too (a delete leaves no record to stamp)`, (await stampOf("books")) > t0 && !(await page.evaluate(() => books.some(b => b.title === 'Persuasion')))); }
+    const t0 = await stampOf('books'); await page.waitForTimeout(20);
+    await viaDetail(page.locator('#booksGrid .book-card', { hasText: 'Persuasion' }), 'Delete'); await page.waitForTimeout(400);
+    check(`${name}: deleting a book moves the date too (a delete leaves no record to stamp)`, (await stampOf("books")) > t0 && !(await page.evaluate(() => books.some(b => b.title === 'Persuasion'))));
     await ctx.close();
   }
   check('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));

@@ -190,7 +190,6 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
 .book-author { font-size: 13px; color: var(--text-muted); }
 .book-series { font-size: 12px; color: var(--text-light); font-style: italic; }
 /* Under the author on an audiobook's card; quieter than the author it follows. */
-.book-narrator { font-size: 12px; color: var(--text-light); overflow-wrap: anywhere; }
 .book-row-narrator { color: var(--text-light); }
 .book-meta { display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap; margin-top: 0.1rem; }
 .book-tags { display: flex; gap: 0.3rem; flex-wrap: wrap; }
@@ -203,7 +202,7 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
 /* Belt and braces for the same failure: a card can never be wider than its
    column, and no single unbroken word (a pasted URL) can force it wider. */
 .book-card { min-width: 0; }
-.book-title, .book-notes, .media-edition { overflow-wrap: anywhere; }
+.book-title, .book-notes { overflow-wrap: anywhere; }
 
 /* ─── BADGES ─────────────────────────────────────────────────────── */
 .badge { font-size: 11px; font-weight: 500; padding: 0.15rem 0.55rem; border-radius: 999px; letter-spacing: 0.02em; }
@@ -219,14 +218,11 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
 .badge-digital  { background: var(--blue-50);  color: var(--blue-600);  }
 /* DLC count, and the card's line of names — owned plain, wishlisted muted. */
 .badge-dlc { background: var(--teal-50); color: var(--teal-600); }
-.book-dlc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
-.book-dlc-label { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; color: var(--text-light); }
 .dlc-want { opacity: 0.6; font-style: italic; }
 /* A game's platform, with that platform's own format icons after it. */
 .badge-platform { background: var(--gray-50);  color: var(--gray-600);  }
 /* Which seasons of a show are owned, and the edition of each held format. */
 .badge-seasons  { background: var(--teal-50);  color: var(--teal-600);  }
-.media-edition  { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
 
 /* Wishlist "Got it": the one action on the row that moves something forward. */
 .btn.btn-got { color: var(--teal-600); border-color: var(--teal-50); }

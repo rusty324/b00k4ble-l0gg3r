@@ -1,6 +1,6 @@
 // A game owned on several platforms, each with its own formats (PS Plus only
 // on PlayStation). Guards the platform row editor in the game form.
-const { launch, BASE, reporter } = require('../lib');
+const { launch, BASE, reporter, viaDetail } = require('../lib');
 const { check, finish, crash } = reporter();
 const J = JSON.stringify;
 
@@ -30,7 +30,7 @@ const GAMES = [
   const active = async plat => (await page.locator('#g-platform-entries .platform-entry', { hasText: plat })
     .locator('.fmt-chip.active').allTextContents()).map(t => t.trim());
   const openEdit = async title => {
-    await page.locator('#gameListWrap .book-card', { hasText: title }).locator('button', { hasText: 'Edit' }).click();
+    await viaDetail(page.locator('#gameListWrap .book-card', { hasText: title }), 'Edit');
     await page.waitForSelector('#gameModal.open'); await page.waitForTimeout(150);
   };
 

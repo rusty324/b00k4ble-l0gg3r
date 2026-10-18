@@ -1,5 +1,5 @@
 // The month a book was finished: year and month only, Read books only.
-const { launch, BASE, reporter } = require('../lib');
+const { launch, BASE, reporter, viaDetail } = require('../lib');
 const { check, finish, crash } = reporter();
 const J = JSON.stringify;
 const Y = new Date().getFullYear();
@@ -66,12 +66,12 @@ const BOOKS = [
   await page.click('button[onclick="saveBook()"]'); await page.waitForTimeout(400);
   check('the chosen month is saved', await page.evaluate(() => books.find(b => b.title === 'Piranesi').finished) === '2024-08');
 
-  await page.locator('#booksGrid .book-card', { hasText: 'Middlemarch' }).locator('button', { hasText: 'Edit' }).click();
+  await viaDetail(page.locator('#booksGrid .book-card', { hasText: 'Middlemarch' }), 'Edit');
   await page.waitForSelector('#modal.open');
   check('editing a Read book with no month shows the field empty — nothing invented', await shown() && (await page.inputValue('#f-finished')) === '');
   await page.evaluate(() => closeModal());
 
-  await page.locator('#booksGrid .book-card', { hasText: 'Hyperion' }).locator('button', { hasText: 'Edit' }).click();
+  await viaDetail(page.locator('#booksGrid .book-card', { hasText: 'Hyperion' }), 'Edit');
   await page.waitForSelector('#modal.open');
   check('editing a dated book shows its month', (await page.inputValue('#f-finished')) === `${Y}-05`);
   await page.click('label[for="st-reading"]');

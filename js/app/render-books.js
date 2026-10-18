@@ -233,7 +233,7 @@ function render() {
       const fmtBadges = b.formats.map(f =>
         `<span class="badge ${fmtCls[f] || ''}" title="${esc(f)}">${fmtIcon[f] || esc(f)}</span>`
       ).join('');
-      return `<div class="book-row">
+      return `<div class="book-row" data-detail="books:${b.id}">
         ${thumbHtml}
         <div class="book-row-content">
           <div class="book-row-title">${esc(b.title)}</div>
@@ -253,8 +253,6 @@ function render() {
     html = page.map(b => {
       const fmtBadges = b.formats.map(f =>
         `<span class="badge ${fmtCls[f] || ''}">${fmtLabels[f] || esc(f)}</span>`).join('');
-      const tagBadges = (b.genre || []).map(t =>
-        `<span class="badge badge-tag">${esc(t)}</span>`).join('');
       const r = Math.max(0, Math.min(5, b.rating || 0));
       const stars = r > 0
         ? '★'.repeat(r) + `<span class="empty">${'★'.repeat(5 - r)}</span>`
@@ -267,37 +265,15 @@ function render() {
         ? `<img class="book-card-cover" src="${esc(cachedCover)}" alt="" loading="lazy">`
         : `<div class="book-card-initial" data-book-id="${b.id}">${firstLetter}</div>`;
 
-      return `<div class="book-card">
+      return `<div class="book-card" data-detail="books:${b.id}" tabindex="0" role="button" aria-label="${esc(b.title)} — details">
         ${coverHtml}
         <div class="book-title">${esc(b.title)}</div>
         ${b.author ? `<div class="book-author">${esc(b.author)}</div>` : ''}
-        ${b.narrator ? `<div class="book-narrator">🎙 Narrated by ${esc(b.narrator)}</div>` : ''}
         ${b.series ? `<div class="book-series">📖 ${esc(b.series)}</div>` : ''}
         <div class="book-meta">
           ${fmtBadges}
           <span class="badge ${stCls[b.status] || 'badge-want'}">${esc(statusText(b))}</span>
           ${stars ? `<span class="stars">${stars}</span>` : ''}
-        </div>
-        ${tagBadges ? `<div class="book-tags">${tagBadges}</div>` : ''}
-        ${b.notes ? `<div class="book-notes">${esc(b.notes)}</div>` : ''}
-        <div class="book-actions">
-          ${renderLinkButtons(b.links)}
-          <button class="btn btn-sm" onclick="openEditModal(${b.id})">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-            Edit
-          </button>
-          <button class="btn btn-sm btn-danger" onclick="deleteBook(${b.id})">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-              <path d="M10 11v6"/><path d="M14 11v6"/>
-              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-            </svg>
-            Delete
-          </button>
         </div>
       </div>`;
     });

@@ -1,5 +1,5 @@
 // The narrator field on audiobooks.
-const { launch, BASE, REPO, tmp, shot } = require('../lib');
+const { launch, BASE, REPO, tmp, shot, viaDetail, detailFact, closeDetailSheet } = require('../lib');
 const fs = require('fs'), path = require('path'), { spawnSync } = require('child_process');
 const results = []; const check = (n, ok, d='') => results.push(`${ok?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);
 const J = JSON.stringify;
@@ -50,9 +50,12 @@ const BOOKS = [
   check('normalizing twice changes nothing', n.idem);
 
   // ── 2. Card, list, search ───────────────────────────────────────────
-  const narrLine = t => page.locator('#booksGrid .book-card', { hasText: t }).locator('.book-narrator');
-  check('an audiobook card says who reads it', (await narrLine('Leviathan Wakes').textContent()) === '🎙 Narrated by Jefferson Mays');
-  check('a print book shows no narrator line', (await narrLine('Dune').count()) === 0);
+  await viaDetail(page.locator('#booksGrid .book-card', { hasText: 'Leviathan Wakes' }));
+  check("an audiobook's detail sheet says who reads it", (await detailFact(page, 'Narrated by')) === 'Jefferson Mays', await detailFact(page, 'Narrated by'));
+  await closeDetailSheet(page);
+  await viaDetail(page.locator('#booksGrid .book-card', { hasText: 'Dune' }));
+  check('a print book has no narrator fact', (await detailFact(page, 'Narrated by')) === null);
+  await closeDetailSheet(page);
   await page.fill('#searchInput', 'stephen fry'); await page.waitForTimeout(400);
   const found = await page.evaluate(() => [...document.querySelectorAll('#booksGrid .book-title')].map(e => e.textContent));
   check('searching a narrator finds the book', J(found) === '["Good Omens"]', J(found));
@@ -78,7 +81,7 @@ const BOOKS = [
   await page.click('button[onclick="saveBook()"]'); await page.waitForTimeout(400);
   check('saved with the narrator', await page.evaluate(() => books.find(b => b.title === 'Project Hail Mary').narrator) === 'Ray Porter');
 
-  await page.locator('#booksGrid .book-card', { hasText: 'Project Hail Mary' }).locator('button', { hasText: 'Edit' }).click();
+  await viaDetail(page.locator('#booksGrid .book-card', { hasText: 'Project Hail Mary' }), 'Edit');
   await page.waitForSelector('#modal.open');
   check('editing an audiobook shows its narrator', await shown() && (await page.inputValue('#f-narrator')) === 'Ray Porter');
   // It was saved as Physical + Audiobook (Physical is ticked by default), so
@@ -89,7 +92,7 @@ const BOOKS = [
   check('switching it to print-only drops the narrator on save',
     await page.evaluate(() => !('narrator' in books.find(b => b.title === 'Project Hail Mary'))));
 
-  await page.locator('#booksGrid .book-card', { hasText: 'Dune' }).locator('button', { hasText: 'Edit' }).click();
+  await viaDetail(page.locator('#booksGrid .book-card', { hasText: 'Dune' }), 'Edit');
   await page.waitForSelector('#modal.open');
   check('editing a print book shows no Narrator field, and nothing left over', !(await shown()) && (await page.inputValue('#f-narrator')) === '');
   await page.evaluate(() => closeModal());
