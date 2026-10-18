@@ -20,12 +20,12 @@ function renderMedia(listOnly = false) {
     items = items.filter(m => (m.genre || []).some(x => wanted.has(String(x).toLowerCase())));
   }
   if (mediaSearch.trim()) {
-    const q = mediaSearch.toLowerCase().trim();
+    const q = searchFold(mediaSearch).trim();
     items = items.filter(m =>
-      (m.title || '').toLowerCase().includes(q) ||
+      searchFold(m.title).includes(q) ||
       (m.year ? String(m.year) : '').includes(q) ||
-      (m.genre || []).some(g => g.toLowerCase().includes(q)) ||
-      Object.values(m.editions || {}).some(e => e.toLowerCase().includes(q))
+      (m.genre || []).some(g => searchFold(g).includes(q)) ||
+      Object.values(m.editions || {}).some(e => searchFold(e).includes(q))
     );
   }
 

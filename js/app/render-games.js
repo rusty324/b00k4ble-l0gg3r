@@ -67,13 +67,13 @@ function renderGames(listOnly = false) {
     items = items.filter(g => (g.genre || []).some(x => wanted.has(String(x).toLowerCase())));
   }
   if (gameSearch.trim()) {
-    const q = gameSearch.toLowerCase().trim();
+    const q = searchFold(gameSearch).trim();
     items = items.filter(g =>
-      (g.title || '').toLowerCase().includes(q) ||
+      searchFold(g.title).includes(q) ||
       gamePlatformText(g).toLowerCase().includes(q) ||
-      (g.dlc || []).some(d => d.name.toLowerCase().includes(q)) ||
+      (g.dlc || []).some(d => searchFold(d.name).includes(q)) ||
       (g.year ? String(g.year) : '').includes(q) ||
-      (g.genre || []).some(x => x.toLowerCase().includes(q))
+      (g.genre || []).some(x => searchFold(x).includes(q))
     );
   }
 

@@ -155,12 +155,24 @@ function updateMediaStars(val) {
 
 
 // ─── BOOK SAVE / DELETE ────────────────────────────────────────────────
+// A series name typed exactly as another book spells it is kept as typed. A
+// new variant of an existing series — "Old Man’s War" where the library says
+// "Old Man's War" — takes the library's spelling, so the series does not
+// split in two (as + Genre reuses an existing genre's spelling). The book
+// being edited is left out, so changing the spelling of a series's only
+// book still sticks.
+function canonicalSeriesName(name, excludeId) {
+  if (!name) return name;
+  if (books.some(b => b.id !== excludeId && splitSeries(b.series).name === name)) return name;
+  return seriesSpellings(excludeId).get(seriesKey(name)) || name;
+}
+
 function saveBook() {
   const title = document.getElementById('f-title').value.trim();
   if (!title) { document.getElementById('f-title').focus(); return; }
 
   const author     = document.getElementById('f-author').value.trim();
-  const seriesName = document.getElementById('f-series').value.trim();
+  const seriesName = canonicalSeriesName(document.getElementById('f-series').value.trim(), editingId);
   const seriesIdx  = document.getElementById('f-seriesIndex').value.trim();
   const series     = seriesName && seriesIdx ? `${seriesName} #${seriesIdx}` : seriesName;
   const coverUrl   = document.getElementById('f-coverUrl').value.trim();

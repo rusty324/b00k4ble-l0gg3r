@@ -14,17 +14,17 @@
 // filter over cards: it is a button above each tab's results, shown only when
 // there is something to list, opening a sheet of the gaps.
 
-const SERIES_NUMBERED = /^(.+?)[\s#]+(\d+(?:\.\d+)?)$/;
-
+// Grouped by seriesKey, so "Old Man's War" and "Old Man’s War" are one.
 function seriesGaps() {
   const bySeries = new Map();
+  const spelling = seriesSpellings();
   for (const b of books) {
-    const m = String(b.series || '').match(SERIES_NUMBERED);
-    if (!m) continue;
-    const n = Number(m[2]);
+    const { name, number } = splitSeries(b.series);
+    if (!number) continue;
+    const n = Number(number);
     if (!Number.isInteger(n) || n < 1 || n > 500) continue;
-    const key = m[1].trim().toLowerCase();
-    if (!bySeries.has(key)) bySeries.set(key, { name: m[1].trim(), have: new Set(), books: [] });
+    const key = seriesKey(name);
+    if (!bySeries.has(key)) bySeries.set(key, { name: spelling.get(key) || name, have: new Set(), books: [] });
     const s = bySeries.get(key);
     s.have.add(n); s.books.push(b);
   }

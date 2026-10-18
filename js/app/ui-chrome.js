@@ -88,9 +88,9 @@ document.querySelectorAll('.modal-backdrop').forEach(el => {
 // Stored as one "Name #N" string, edited as two inputs. Shared so the Audible
 // lookup splits it exactly the way opening an existing book does.
 function setSeriesFields(series) {
-  const m = (series || '').match(/^(.+?)[\s#]+(\d+(?:\.\d+)?)$/);
-  document.getElementById('f-series').value      = m ? m[1].trim() : (series || '');
-  document.getElementById('f-seriesIndex').value = m ? m[2] : '';
+  const { name, number } = splitSeries(series);
+  document.getElementById('f-series').value      = name;
+  document.getElementById('f-seriesIndex').value = number;
 }
 
 // setFormats() replaces the whole selection; this adds one, keeping whatever
@@ -186,13 +186,8 @@ function populateDataLists() {
   document.getElementById('dl-authors').innerHTML =
     authors.map(a => `<option value="${esc(a)}">`).join('');
 
-  const seriesNames = [...new Set(
-    books.map(b => {
-      if (!b.series) return null;
-      const m = b.series.match(/^(.+?)[\s#]+\d+(?:\.\d+)?$/);
-      return m ? m[1].trim() : b.series;
-    }).filter(Boolean)
-  )].sort();
+  // One suggestion per series, however its apostrophes were typed.
+  const seriesNames = [...seriesSpellings().values()].sort();
 
   document.getElementById('dl-series').innerHTML =
     seriesNames.map(s => `<option value="${esc(s)}">`).join('');

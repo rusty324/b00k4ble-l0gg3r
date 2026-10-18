@@ -289,6 +289,64 @@ function setLinksField(prefix, links) {
 // article has to be followed by whitespace.
 const LEADING_ARTICLE = /^(?:the|a|an)\s+/i;
 
+// ─── TYPOGRAPHIC PUNCTUATION ──────────────────────────────────────────
+// The same text arrives with plain or "smart" punctuation depending on where
+// it was typed: iOS turns a typed ' into ’ (Smart Punctuation, on by
+// default), and Open Library, Audible and TMDb each use either. So "Old Man's
+// War" and "Old Man’s War" are one series. Folded only for comparing and
+// searching — what is stored and shown keeps the spelling it was given.
+const PUNCT_FOLD = [
+  [/[\u2018\u2019\u201A\u201B\u2032\u02BC\u0060\u00B4]/g, "'"],   // ‘ ’ ‚ ‛ ′ ʼ ` ´
+  [/[\u201C\u201D\u201E\u201F\u2033]/g, '"'],                    // “ ” „ ‟ ″
+  [/[\u2010-\u2015\u2212]/g, '-'],                                 // ‐ ‑ ‒ – — ― −
+];
+function foldPunct(s) {
+  let out = String(s == null ? '' : s);
+  for (const [re, plain] of PUNCT_FOLD) out = out.replace(re, plain);
+  return out;
+}
+// What search compares: folded, lowercased. Applied to both the query and
+// the text searched, so either spelling finds either.
+const searchFold = s => foldPunct(s).toLowerCase();
+
+// ─── SERIES ───────────────────────────────────────────────────────────
+// A book's series is one "Name #N" string ("#" optional; N may be 4.5),
+// edited as two inputs. Every reader splits it here.
+const SERIES_NUMBERED = /^(.+?)[\s#]+(\d+(?:\.\d+)?)$/;
+function splitSeries(series) {
+  const s = String(series || '').trim();
+  const m = s.match(SERIES_NUMBERED);
+  return m ? { name: m[1].trim(), number: m[2] } : { name: s, number: '' };
+}
+// Two series names that mean the same series: case, spacing and typographic
+// punctuation aside.
+const seriesKey = name => searchFold(name).replace(/\s+/g, ' ').trim();
+
+// One spelling per series — whichever the most books use (the first seen on
+// a tie) — keyed by seriesKey. What the series suggestions offer, what "What
+// am I missing?" calls it, and what a new variant typed in the form becomes.
+// excludeId leaves one book out — the one being edited, whose own old
+// spelling must not outvote what is being typed over it.
+function seriesSpellings(excludeId = null) {
+  const counts = new Map();   // key -> Map(spelling -> books)
+  for (const b of books) {
+    if (b.id === excludeId) continue;
+    const { name } = splitSeries(b.series);
+    if (!name) continue;
+    const k = seriesKey(name);
+    if (!counts.has(k)) counts.set(k, new Map());
+    const c = counts.get(k);
+    c.set(name, (c.get(name) || 0) + 1);
+  }
+  const out = new Map();
+  for (const [k, c] of counts) {
+    let best = null, bestN = 0;
+    for (const [name, n] of c) if (n > bestN) { best = name; bestN = n; }
+    out.set(k, best);
+  }
+  return out;
+}
+
 // ─── DUPLICATE DETECTION ──────────────────────────────────────────────
 // Loose on spelling, strict on meaning. Case, accents, punctuation, "&" vs
 // "and" and a leading article are all ignored — "The Lord of the Rings" and
@@ -459,7 +517,7 @@ function normalizeBook(b) {
     : String(b.narrator || '').trim();
   // Kept only while the book is Read, like a narrator only while it is an audiobook.
   const finished = status === 'read' ? normalizeFinished(b.finished) : '';
-  const _searchStr = [title, author, narrator, series, finished, b.isbn || '', b.asin || '', ...genre].join(' ').toLowerCase();
+  const _searchStr = searchFold([title, author, narrator, series, finished, b.isbn || '', b.asin || '', ...genre].join(' '));
 
   // Clamp rating to 0–5; out-of-range values (e.g. from imported JSON) cause
   // '★'.repeat(5 - rating) to throw a RangeError with a negative count.
