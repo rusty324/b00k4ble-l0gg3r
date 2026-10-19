@@ -136,8 +136,11 @@ const edit = page => page.evaluate(() => { books[0].notes = 'x' + Math.random();
     await ctx.close(); }
 
   // ── 6. The 422 split: sha conflicts still merge ─────────────────────
+  // A device that has synced before (it knows an older sha), so this is a
+  // conflict to merge, not a first sync to ask about (sync-resolver suite).
   { const gh = fakeGitHub({ 'data/books.json': { sha: 'theirs', text: JSON.stringify([{ ...BOOK, id: 1750000000005, title: 'Other' }]) } });
-    const { ctx, page } = await open(browser, { gh, seed: { books: [BOOK], ls: { 'booklogger.data.data/books.json': [BOOK], 'booklogger.queue': ['data/books.json'] } } });
+    const { ctx, page } = await open(browser, { gh, seed: { books: [BOOK], ls: { 'booklogger.data.data/books.json': [BOOK],
+      'booklogger.sha.data/books.json': 'older', 'booklogger.queue': ['data/books.json'] } } });
     await page.waitForTimeout(2500);
     const titles = JSON.parse(gh.remote['data/books.json'].text).map(b => b.title).sort();
     check('a genuine sha conflict still merges both sides by id', titles.join() === 'Emma,Other' && (await status(page)).status === 'ok', titles.join());

@@ -13,6 +13,12 @@
 // or tab) conflicts, merged per record id with local dirty records winning.
 // Note: a record deleted locally can resurrect from such a merge; accepted
 // for a single-user tool.
+//
+// The first write of a path to a repo is different: this browser has never
+// seen that file, so "local wins" would mean a library that happened to be
+// here overriding the repo's. With `holdFirstMerge`, that write is held
+// instead when the app says the two sides differ, and nothing is sent until
+// the app decides how to combine them and calls resolve().
 
 import { createCache } from './cache.js';
 import {
@@ -21,6 +27,17 @@ import {
 import { encryptJson, decryptJson, isEnvelope } from './crypto.js';
 
 export { ConflictError, NotFoundError, AuthError, NotConfiguredError };
+
+// A first write held for the app to decide on (see holdFirstMerge). Not a
+// failure: the status stays 'pending' with this as its error, so the UI can
+// say what is waiting.
+export class ResolutionNeededError extends Error {
+  constructor(collection) {
+    super(`${collection}: this device and the data repo differ; choose how to combine them`);
+    this.name = 'ResolutionNeededError';
+    this.collection = collection;
+  }
+}
 
 /**
  * @param {object} opts
@@ -36,6 +53,10 @@ export { ConflictError, NotFoundError, AuthError, NotConfiguredError };
  * @param {()=>Promise<boolean>} [opts.onRefresh] called at the end of refresh();
  *                   return true if it changed anything.
  * @param {number}   [opts.retryMs]   dirty-queue retry interval (0 disables).
+ * @param {(collection:string, local:object[], remote:object[])=>boolean} [opts.holdFirstMerge]
+ *                   asked before the first write of a collection to a repo
+ *                   that already has that file: return true to hold it for
+ *                   resolve() rather than merging automatically.
  */
 export function createStore(opts) {
   const {
@@ -48,6 +69,7 @@ export function createStore(opts) {
     extraPaths = () => [],
     onRefresh = async () => false,
     retryMs = 30000,
+    holdFirstMerge = null,
   } = opts;
 
   const REPO_KEY = `${appId}.datarepo`;
@@ -102,6 +124,7 @@ export function createStore(opts) {
   // The local cache is always plaintext: the device is trusted, same as the PAT.
 
   const lockedPaths = new Set(); // envelopes we couldn't decrypt (no/wrong password)
+  const held = new Map();        // path -> { collection, remote, sha, error } awaiting resolve()
   const password = () => localStorage.getItem(PW_KEY) || '';
 
   function setPassword(pw) {
@@ -208,8 +231,17 @@ export function createStore(opts) {
       setStatus(canSync() ? 'pending' : 'local');
       return;
     }
+    if (held.has(path)) { setStatus('pending', held.get(path).error); return; }
     setStatus('pending');
     try {
+      // Never written to this repo from here (no sha): look before writing.
+      if (holdFirstMerge && collection && cache.getSha(path) == null) {
+        const first = await holdIfDifferent(path, collection);
+        if (first === 'held') return;
+        // Nothing to decide: merge now, which also learns the sha, so later
+        // writes are checked against it rather than looking first again.
+        if (first === 'merge') await mergeRemote(path, collection);
+      }
       for (let attempt = 0; attempt < 3; attempt++) {
         const content = await serializeFile(path, cache.getData(path));
         try {
@@ -235,6 +267,48 @@ export function createStore(opts) {
       if (e instanceof AuthError || e instanceof NotFoundError || e instanceof SyntaxError) setStatus('error', e);
       else setStatus('pending', e); // network or transient: stays queued
     }
+  }
+
+  // -> 'held', 'merge' (nothing to decide), or 'usual': a file that is
+  // absent, locked, or not a list is left to the usual path (create it,
+  // report it, or write over it).
+  async function holdIfDifferent(path, collection) {
+    let f;
+    try {
+      f = await client.getFile(path);
+    } catch (e) {
+      if (e instanceof NotFoundError) return 'usual';
+      throw e;
+    }
+    const res = await deserializeFile(path, JSON.parse(f.content));
+    if (res.locked || !Array.isArray(res.data)) return 'usual';
+    if (!holdFirstMerge(collection, cache.getData(path) ?? [], res.data)) return 'merge';
+    const error = new ResolutionNeededError(collection);
+    held.set(path, { collection, remote: res.data, sha: f.sha, error });
+    setStatus('pending', error);
+    emit({ type: 'needs-resolution', collection, path });
+    return 'held';
+  }
+
+  // Held first writes, for the app to show: [{ collection, path, remote }].
+  const pendingResolutions = () =>
+    [...held].map(([path, h]) => ({ collection: h.collection, path, remote: h.remote }));
+
+  // The app's decision for a held path: `records` become this device's copy,
+  // checked against the sha the repo had when it was held. If they are the
+  // repo's own records nothing is written; otherwise they are pushed (and a
+  // repo that moved on meanwhile merges as any other conflict would).
+  async function resolve(path, records) {
+    const h = held.get(path);
+    if (!h) return;
+    held.delete(path);
+    cache.setData(path, records);
+    cache.setSha(path, h.sha);
+    if (JSON.stringify(records) === JSON.stringify(h.remote)) cache.clearDirty(path);
+    else cache.markDirty(path);
+    emit({ type: 'changed', collection: h.collection });
+    if (cache.isDirty(path)) await push(path, h.collection);
+    else if (!held.size) setStatus(cache.getQueue().length ? 'pending' : 'ok');
   }
 
   async function mergeRemote(path, collection) {
@@ -413,6 +487,7 @@ export function createStore(opts) {
     setDataRepo(null);
     setPassword('');
     lockedPaths.clear();
+    held.clear();
     cache.clearAll();
     setStatus('local');
   }
@@ -448,6 +523,7 @@ export function createStore(opts) {
     onChange, emit, syncStatus, refreshStatus, canSync,
     // sync
     refresh, flushQueue, rewriteEncryptedFiles, pushAllData, init, disconnect,
+    pendingResolutions, resolve,
     // escape hatches for app-owned paths
     client, cache, readFile, writeFile, refreshDir, push,
     serializeFile, deserializeFile, isEncryptedPath,

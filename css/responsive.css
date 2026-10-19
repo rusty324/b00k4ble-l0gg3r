@@ -24,6 +24,7 @@
   .detail-modal { max-width: none; width: 100%; border-radius: 16px 16px 0 0; max-height: 88vh; }
   .detail-cover { width: 84px; flex-basis: 84px; }
   .season-chip { min-width: 44px; }
+  .resolve-pick-opts label { min-height: 44px; }
   /* Bulk edit's bar and genre sheet: full width, the actions sharing a line. */
   #bulkModal { align-items: flex-end; padding: 0; }
   .bulk-bar-info, .bulk-bar-actions { width: 100%; }

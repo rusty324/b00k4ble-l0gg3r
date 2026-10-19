@@ -37,6 +37,7 @@ export function badgeState(store) {
   const { status } = store.syncStatus();
   if (store.encryption().locked) return { text: '🔒 locked', cls: 'error' };
   if (status === 'local') return { text: 'local only', cls: '' };
+  if (status === 'pending' && store.pendingResolutions?.().length) return { text: 'needs a decision', cls: 'pending' };
   if (status === 'pending') return { text: 'pending sync', cls: 'pending' };
   if (status === 'error') return { text: 'sync error', cls: 'error' };
   return { text: 'synced', cls: 'ok' };

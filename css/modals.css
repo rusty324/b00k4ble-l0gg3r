@@ -313,6 +313,31 @@ input[type="radio"], input[type="checkbox"] { display: none; }
 .missing-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
 .missing-ignored { font-size: 13px; color: var(--text-muted); }
 
+/* ─── FIRST-SYNC RESOLVER ──────────────────────────────────────────── */
+.resolve-section { border-top: 1px solid var(--border); margin-top: 1rem; }
+.resolve-counts { list-style: none; padding: 0; margin: 0.5rem 0; font-size: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 0.15rem 1rem; }
+.resolve-list { margin: 0.35rem 0; font-size: 13px; }
+.resolve-list summary { cursor: pointer; color: var(--amber-600); }
+.resolve-list ul { margin: 0.4rem 0 0; padding-left: 1.2rem; max-height: 12rem; overflow: auto; }
+.resolve-options { display: flex; flex-direction: column; gap: 0.4rem; margin: 0.75rem 0; }
+.resolve-option { display: flex; gap: 0.6rem; align-items: flex-start; padding: 0.6rem 0.75rem; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; cursor: pointer; }
+.resolve-option:has(input:checked) { border-color: var(--amber-200); background: var(--amber-50); }
+/* These are choices, not form-field captions: undo the caption style labels get. */
+.resolve-option, .resolve-pick-opts label { text-transform: none; letter-spacing: normal; color: var(--text); font-weight: 400; margin: 0; }
+.resolve-option b { color: var(--amber-900); }
+.resolve-differ p { font-size: 14px; margin: 0.25rem 0 0.4rem; }
+.resolve-pick { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.25rem 0.75rem; padding: 0.5rem 0; border-top: 1px solid var(--border); }
+.resolve-pick-text { flex: 1 1 12rem; min-width: 0; overflow-wrap: anywhere; }
+.resolve-pick-opts { display: flex; gap: 0.4rem; font-size: 13px; }
+/* The app hides every radio (input[type=radio] above) and draws its own; the
+   option cards and these two pills show the choice by their highlight. */
+.resolve-pick-opts label { font-size: 13px; padding: 0.35rem 0.75rem; border: 1px solid var(--border-mid); border-radius: 999px; cursor: pointer; min-height: 32px; display: inline-flex; align-items: center; }
+.resolve-pick-opts label:has(input:checked) { background: var(--amber-50); border-color: var(--amber-200); color: var(--amber-900); font-weight: 600; }
+.resolve-option::before { content: ''; flex-shrink: 0; width: 16px; height: 16px; margin-top: 0.15rem; border-radius: 50%; border: 2px solid var(--border-mid); box-sizing: border-box; }
+.resolve-option:has(input:checked)::before { border: 5px solid var(--amber-200); }
+/* Per-entry choices only apply to a merge; hidden while either side is chosen whole. */
+.resolve-section:has(input[value="merge"]:not(:checked)) .resolve-differ { display: none; }
+
 /* ─── FIND DUPLICATES ──────────────────────────────────────────────── */
 .dupes-intro { font-size: 14px; color: var(--text-muted); margin: 0.5rem 0 0; }
 .dupes-kind { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 500; color: var(--amber-900); margin: 1.25rem 0 0; }

@@ -99,6 +99,9 @@ const BOOK = { id: 1700000000001, title: 'Dune', author: 'Frank Herbert', status
   await page.evaluate(() => { localStorage.setItem('booklogger.datarepo', JSON.stringify({ owner: 'me', repo: 'data', branch: 'main' }));
     localStorage.setItem('booklogger.pat', 'ghp_test'); });
   await page.reload(); await page.waitForTimeout(1500);
+  check('reconnecting to a repo with another library asks first, sending nothing yet',
+    await page.locator('#resolveModal.open').count() === 1 && !asked.some(a => a.startsWith('PUT') && asked.indexOf(a) >= before));
+  await page.click('#resolveApply'); await page.waitForTimeout(1500);
   const local = await page.evaluate(() => books.map(b => b.title).sort());
   const up = JSON.parse(remote['data/books.json'].text).filter(r => !r.deleted).map(b => b.title).sort();
   check('reconnecting keeps both sides, here and in the repo', J(local) === J(['Dune', 'From Another Device']) && J(up) === J(local), J({ local, up }));

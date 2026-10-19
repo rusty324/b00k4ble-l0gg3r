@@ -58,6 +58,9 @@ export const store = createStore({
   // Encrypted only once the user sets a password; the data repo being
   // private is the first line of defence, this is the second.
   encrypted: COLLECTIONS,
+  // The first sync with a repo that already has a library asks rather than
+  // merging with this device winning (js/app/sync-resolver.js).
+  holdFirstMerge: (collection, local, remote) => !!window.syncNeedsDecision?.(collection, local, remote),
 });
 
 // Retarget the store at a different folder, carrying the cached records
@@ -174,6 +177,7 @@ function applyToApp(only) {
 
 store.onChange((e) => {
   if (e.type === 'sync-status') { paintBadge(); return; }
+  if (e.type === 'needs-resolution') { window.queueSyncResolver?.(); return; }
   if (applying) return;          // our own save() echoing back
   applyToApp(e.collection);
 });
@@ -216,6 +220,12 @@ function explainSyncError(err) {
   const branch = t ? t.branch : 'main';
   const msg = String(err && err.message || err || '');
 
+  if (err && err.name === 'ResolutionNeededError') return {
+    short: 'This device and the data repo hold different libraries — choose how to combine them.',
+    why: `This is the first sync with ${repo}, and it already holds a library that differs from this device's. `
+       + 'Nothing has been uploaded, so neither side has been changed.',
+    fix: 'Choose whether to merge them or keep one side.',
+  };
   if (err && err.name === 'NotFoundError') return {
     short: `GitHub can't find ${repo} on “${branch}”, or the token can't see it.`,
     why: `GitHub can't find ${repo} on branch “${branch}” — or your token has no access to it. `
@@ -271,7 +281,9 @@ function paintProblem() {
     h('p', {}, e.why),
     h('p', { class: 'gh-problem-fix' }, e.fix),
     h('p', { class: 'muted' }, `${queued} file${queued === 1 ? '' : 's'} waiting to upload.`),
-    h('button', { class: 'btn btn-sm', id: 'ghRetry', onclick: retrySync }, 'Retry now'));
+    error.name === 'ResolutionNeededError'
+      ? h('button', { class: 'btn btn-sm btn-primary', id: 'ghResolve', onclick: () => window.openSyncResolver?.() }, 'Choose…')
+      : h('button', { class: 'btn btn-sm', id: 'ghRetry', onclick: retrySync }, 'Retry now'));
 }
 
 async function retrySync() {
