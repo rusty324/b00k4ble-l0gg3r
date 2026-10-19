@@ -731,6 +731,11 @@
   <div class="modal detail-modal" id="missingBody"></div>
 </div>
 
+<!-- First sync with a repo that already has a library — filled by openSyncResolver() (js/app/sync-resolver.js) -->
+<div class="modal-backdrop" id="resolveModal" onclick="handleResolveBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="resolveTitle">
+  <div class="modal detail-modal" id="resolveBody"></div>
+</div>
+
 <!-- ⋯ → Find duplicates — filled by openDuplicates() (js/app/duplicates-view.js) -->
 <div class="modal-backdrop" id="dupesModal" onclick="handleDupesBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="dupesTitle">
   <div class="modal detail-modal" id="dupesBody"></div>
@@ -803,6 +808,7 @@
 <script src="js/app/detail-view.js"></script>
 <script src="js/app/missing-view.js"></script>
 <script src="js/app/duplicates-view.js"></script>
+<script src="js/app/sync-resolver.js"></script>
 <script src="js/app/bulk-edit.js"></script>
 <script src="js/app/app-init.js"></script>
 <!-- Module, so deferred: app-init.js has already initialised by the time

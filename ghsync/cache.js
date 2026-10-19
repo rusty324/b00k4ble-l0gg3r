@@ -58,6 +58,17 @@ export function createCache(namespace) {
       localStorage.setItem(QUEUE, JSON.stringify(getQueue().filter((p) => p !== path)));
     },
 
+    // Every key this cache owns — cached files, shas and the queue — and
+    // nothing else in localStorage.
+    clearAll() {
+      const own = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith(DATA) || k.startsWith(SHA) || k === QUEUE)) own.push(k);
+      }
+      own.forEach((k) => localStorage.removeItem(k));
+    },
+
     isDirty(path) {
       return getQueue().includes(path);
     },

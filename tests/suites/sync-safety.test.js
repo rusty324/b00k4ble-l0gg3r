@@ -50,6 +50,12 @@ async function device(browser, seed) {
     for (const [k, v] of Object.entries(s.ls || {})) localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v));
   }, seed);
   await page.goto(BASE + '/index.html'); await page.waitForTimeout(2000);
+  // A first sync with a repo that differs asks first (sync-resolver suite);
+  // these scenarios take its default, "Merge both", with the repo's version
+  // wherever the same entry differs.
+  if (await page.locator('#resolveModal.open').count()) {
+    await page.click('#resolveApply'); await page.waitForTimeout(1500);
+  }
   return { ctx, page, errors, asked };
 }
 const titles = page => page.evaluate(() => books.map(b => b.title).sort().join(','));

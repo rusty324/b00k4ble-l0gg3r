@@ -83,7 +83,8 @@ over writing from scratch.
 
 `createStore(opts)` options: `appId` and `files` are required; `encrypted`,
 `encryptPath(path)`, `migrate` (`{collection: fn}`, applied on read),
-`defaultRepo`, `extraPaths()`, `onRefresh()`, `retryMs` are optional. Full
+`defaultRepo`, `extraPaths()`, `onRefresh()`, `retryMs`,
+`holdFirstMerge(collection, local, remote)` are optional. Full
 descriptions are in the JSDoc at the top of `store.js`.
 
 Returned:
@@ -95,9 +96,21 @@ Returned:
 - Status — `onChange(fn)` → unsubscribe; `syncStatus()` →
   `{status, error, connected}` where status is `'local' | 'ok' | 'pending' |
   'error'`; `refreshStatus()`, `canSync()`, `emit(event)`.
-  Events: `{type:'changed', collection}` and `{type:'sync-status', status, error}`.
+  Events: `{type:'changed', collection}`, `{type:'sync-status', status, error}`
+  and `{type:'needs-resolution', collection, path}`.
 - Sync — `refresh()`, `flushQueue()`, `rewriteEncryptedFiles(collections?)`,
-  `pushAllData()`, `init()`.
+  `pushAllData()`, `init()`, `disconnect()` (forgets token, repo, password and
+  the whole cache; `get()` then returns `[]` meaning "nothing cached" — never
+  apply that to the app as data).
+- First sync — with `holdFirstMerge`, the first write of a collection to a
+  repo that already has that file (no sha known here) is preceded by a read;
+  if `holdFirstMerge` returns true the write is **held**: nothing is sent,
+  status is `'pending'` with a `ResolutionNeededError`, and
+  `needs-resolution` is emitted. `pendingResolutions()` →
+  `[{collection, path, remote}]`; `resolve(path, records)` makes `records`
+  this device's copy against the held sha and pushes them (or writes nothing
+  if they are the remote's own). When it returns false, the write merges at
+  once and learns the sha. This app's resolver is `js/app/sync-resolver.js`.
 - Escape hatches for app-owned paths — `readFile(path)`, `writeFile(path, data)`,
   `refreshDir(dir, nameMatch)` → `{paths, changed}`, `push(path, collection)`,
   `client`, `cache`, `serializeFile`, `deserializeFile`, `isEncryptedPath`, `files`.
@@ -183,6 +196,8 @@ the PUT body.
   and retries later; never overwrite a locked file, that destroys data.
 - **Status stuck on `pending`** — the queue is non-empty. Usually offline, an
   expired token (`AuthError` → `'error'`), or a repo that no longer exists.
+- **Status stuck on `pending` with `ResolutionNeededError`** — a first sync is
+  held for a decision. Nothing retries it; only `resolve()` releases it.
 - **A deleted record reappearing** — the merge is per id with local winning, so
   a delete on one device can be resurrected by another device's stale copy.
   Accepted trade-off for a single-user tool; use a tombstone field if it
