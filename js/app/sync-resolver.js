@@ -187,6 +187,9 @@ async function applySyncResolution() {
     document.querySelectorAll(`#resolveBody input[type="radio"][name^="rp-${c}-"]:checked`)
       .forEach(i => { pick[Number(i.name.slice(`rp-${c}-`.length))] = i.value; });
     const records = resolvedRecords(c, store.get(c), p.remote, { mode, pick });
+    // A live record in the result was chosen over this device's deletion of
+    // it, if there was one: forget the deletion, or it hides the record again.
+    forgetTombs(c, records.filter(r => !r.deleted).map(r => r.id));
     await store.resolve(p.path, records);
   }
   closeSyncResolver();
