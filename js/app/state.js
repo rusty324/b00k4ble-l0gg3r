@@ -181,6 +181,18 @@ function pruneTombs(t) {
 const tombsFor = collection => readTombs()[collection] || {};
 
 // What a push carries for deletions.
+// Forget this device's deletions of these ids — when the user has chosen to
+// keep them after all (the first-sync resolver). Otherwise the tombstones
+// go on hiding the very records that were chosen.
+function forgetTombs(collection, ids) {
+  const t = readTombs();
+  const map = t[collection];
+  if (!map) return;
+  let changed = false;
+  for (const id of ids) if (id in map) { delete map[id]; changed = true; }
+  if (changed) writeTombs(t);
+}
+
 function tombRecords(collection) {
   return Object.entries(tombsFor(collection)).map(([id, at]) => ({ id: Number(id), deleted: true, deletedAt: at }));
 }

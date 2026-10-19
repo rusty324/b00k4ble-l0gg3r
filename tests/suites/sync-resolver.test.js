@@ -48,6 +48,7 @@ async function device(browser, gh, local) {
     localStorage.setItem('activeTab', 'books');
     localStorage.setItem('booklogger.datarepo', JSON.stringify({ owner: 'me', repo: 'data', branch: 'main' }));
     localStorage.setItem('booklogger.pat', 'ghp_test');
+    for (const [k, v] of Object.entries(s.ls || {})) localStorage.setItem(k, JSON.stringify(v));
   }, local);
   await page.goto(BASE + '/index.html'); await page.waitForTimeout(1800);
   return { ctx, page, errors };
@@ -147,6 +148,36 @@ const sheetOpen = page => page.locator('#resolveModal.open').count().then(n => n
   d = await device(browser, gh, { books: [A_HERE, B] });
   errors.push(...d.errors);
   check('an empty repo is not asked about: this device\'s library is uploaded', !(await sheetOpen(d.page)) && live(gh.read('data/books.json')) === 'Alpha,Bravo');
+  await d.ctx.close();
+
+  // ── 5. Everything deleted here, then "use the repo's" ───────────────
+  // The deletions left tombstones on this device. Choosing the repo's
+  // entries must override them — not let them hide every entry again.
+  const tombs = { books: { [A_REPO.id]: Date.now() - 1000, [C.id]: Date.now() - 1000 } };
+  gh = fakeGitHub({ 'data/books.json': [A_REPO, C] });
+  d = await device(browser, gh, { books: [], ls: { tombstones: tombs } });
+  errors.push(...d.errors);
+  check('a device that deleted everything is asked (its deletions differ from the repo)', await sheetOpen(d.page));
+  await d.page.click('#resolveBody label:has(input[name="rs-books"][value="repo"])');
+  await d.page.click('#resolveApply'); await d.page.waitForTimeout(1500);
+  check('"use the repo\'s" brings every entry back', await d.page.evaluate(() => books.map(b => b.title).sort().join()) === 'Alpha,Charlie',
+    await d.page.evaluate(() => books.map(b => b.title).join()));
+  check('…on screen too', await d.page.locator('#booksGrid .book-card').count() === 2);
+  check('…drops the local deletions it overrode', await d.page.evaluate(() => !Object.keys((JSON.parse(localStorage.getItem('tombstones')) || {}).books || {}).length));
+  check('…and leaves the repo untouched', live(gh.read('data/books.json')) === 'Alpha,Charlie' && !gh.puts.includes('data/books.json'), J(gh.puts));
+  await d.page.reload(); await d.page.waitForTimeout(1500);
+  check('…and they are still there after a reload', await d.page.evaluate(() => books.length) === 2);
+  await d.page.evaluate(() => { books[0].notes = 'after'; save(); }); await d.page.waitForTimeout(1000);
+  check('a later edit syncs the entries, not deletions', live(gh.read('data/books.json')) === 'Alpha,Charlie', J(gh.read('data/books.json')));
+  await d.ctx.close();
+
+  // Merge, keeping the repo's version of an entry deleted here, restores it the same way.
+  gh = fakeGitHub({ 'data/books.json': [A_REPO, C] });
+  d = await device(browser, gh, { books: [C], ls: { tombstones: { books: { [A_REPO.id]: Date.now() - 1000 } } } });
+  errors.push(...d.errors);
+  await d.page.click('#resolveApply'); await d.page.waitForTimeout(1500);
+  check('merge, with the repo\'s version of an entry deleted here: it comes back', await d.page.evaluate(() => books.map(b => b.title).sort().join()) === 'Alpha,Charlie' &&
+    live(gh.read('data/books.json')) === 'Alpha,Charlie');
   await d.ctx.close();
 
   check('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
