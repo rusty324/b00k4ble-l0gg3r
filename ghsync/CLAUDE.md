@@ -97,7 +97,9 @@ Returned:
   'error'`; `refreshStatus()`, `canSync()`, `emit(event)`.
   Events: `{type:'changed', collection}` and `{type:'sync-status', status, error}`.
 - Sync — `refresh()`, `flushQueue()`, `rewriteEncryptedFiles(collections?)`,
-  `pushAllData()`, `init()`.
+  `pushAllData()`, `init()`, `disconnect()` (forgets token, repo, password and
+  the whole cache; `get()` then returns `[]` meaning "nothing cached" — never
+  apply that to the app as data).
 - Escape hatches for app-owned paths — `readFile(path)`, `writeFile(path, data)`,
   `refreshDir(dir, nameMatch)` → `{paths, changed}`, `push(path, collection)`,
   `client`, `cache`, `serializeFile`, `deserializeFile`, `isEncryptedPath`, `files`.

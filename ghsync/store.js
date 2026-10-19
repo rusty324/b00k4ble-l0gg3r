@@ -400,6 +400,23 @@ export function createStore(opts) {
     await rewriteEncryptedFiles(Object.keys(files));
   }
 
+  // ---------- disconnecting ----------
+
+  // Forget this device's connection: token, data repo, password, and every
+  // cached file, sha and queued write, so nothing can reach GitHub again
+  // until it is set up afresh. The app's own storage is not ghsync's and is
+  // left alone. After this get() returns [] for every collection — that
+  // means "nothing cached", not "empty library", and the app must not apply
+  // it as data.
+  function disconnect() {
+    tokens.set('');
+    setDataRepo(null);
+    setPassword('');
+    lockedPaths.clear();
+    cache.clearAll();
+    setStatus('local');
+  }
+
   // ---------- lifecycle ----------
 
   function init() {
@@ -430,7 +447,7 @@ export function createStore(opts) {
     // status and events
     onChange, emit, syncStatus, refreshStatus, canSync,
     // sync
-    refresh, flushQueue, rewriteEncryptedFiles, pushAllData, init,
+    refresh, flushQueue, rewriteEncryptedFiles, pushAllData, init, disconnect,
     // escape hatches for app-owned paths
     client, cache, readFile, writeFile, refreshDir, push,
     serializeFile, deserializeFile, isEncryptedPath,

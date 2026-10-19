@@ -159,6 +159,11 @@ function applyToApp(only) {
     let changed = false;
     const list = COLLECTIONS.includes(only) ? [only] : COLLECTIONS;
     for (const collection of list) {
+      // Nothing cached is "unknown", not "empty": store.get() answers [] for
+      // both, and applying that would wipe the collection. It happens after a
+      // disconnect, or in another tab when this one moves the data folder —
+      // the cache keys it removes reach that tab as storage events.
+      if (store.cache.getData(store.files[collection]) == null) continue;
       if (window.applySyncedData(collection, store.get(collection))) changed = true;
     }
     if (changed) window.renderPage?.();
@@ -304,7 +309,7 @@ function renderSyncPanel() {
     if (el) el.open = true;
   })));
 
-  for (const spec of sections) {
+  for (const spec of [...sections, disconnectSection()]) {
     if (spec.id === 'datarepo') addFolderField(spec);
     panel.appendChild(h('details', { class: 'settings-section', dataset: { section: spec.id } },
       h('summary', {},
@@ -313,6 +318,51 @@ function renderSyncPanel() {
       h('div', { class: 'settings-body' }, spec.body)));
   }
   paintBadge();
+}
+
+// ─── disconnecting this device ────────────────────────────────────────
+// "Clear token" alone leaves the data repo, folder and password set, so the
+// panel still reads as connected. This clears all of it, and ghsync's cache
+// with it, back to a device that was never connected. The library itself is
+// the app's own storage and stays; so does the copy in the data repo.
+function disconnectSection() {
+  const connected = store.hasToken() || store.hasDataRepo() || localStorage.getItem(FOLDER_KEY) != null;
+  const btn = h('button', {
+    class: 'btn btn-danger',
+    disabled: !connected,
+    onclick: () => {
+      if (!confirm('Clear all sync settings on this device?\n\nThe GitHub token, data repository, folder and '
+        + 'encryption password are removed, and this device stops syncing. Your library stays on this '
+        + 'device, and the data repository keeps its copy.')) return;
+      disconnectDevice();
+      toast('Sync settings cleared — this device is local-only');
+      renderSyncPanel();
+    },
+  }, 'Clear all sync settings');
+  return {
+    id: 'disconnect',
+    name: 'Disconnect this device',
+    state: connected ? '' : 'not connected',
+    body: h('div', {},
+      h('p', { class: 'muted' },
+        'Removes the token, data repository, folder and encryption password from this browser, '
+        + 'and stops all syncing. Your library is kept. Reconnect any time by entering them again.'),
+      h('p', { class: 'muted' },
+        'On an iPhone or iPad, Safari and a Home Screen icon keep separate settings: '
+        + 'clear them in each one you use.'),
+      h('div', { class: 'field-row' }, btn)),
+  };
+}
+
+function disconnectDevice() {
+  store.disconnect();
+  // The folder is this app's setting, not ghsync's; back to the default.
+  localStorage.removeItem(FOLDER_KEY);
+  currentFolder = storedFolder();
+  for (const collection of COLLECTIONS) store.files[collection] = pathFor(currentFolder, collection);
+  // Re-seed the (now empty) cache from the library, as on a first start, so a
+  // later reconnect merges with the repo instead of being replaced by it (#34).
+  seedFromApp();
 }
 
 // The folder belongs beside owner / repo / branch, but ghsync builds that
