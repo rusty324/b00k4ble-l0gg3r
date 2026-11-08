@@ -19,13 +19,15 @@ const results = []; const check = (n, ok, d='') => results.push(`${ok?'PASS':'FA
     await page.screenshot({ path: shot(`upd-${name}-books.png`) });
 
     // Real modal paths
+    // Today as the note prints it ("Nov 8, 2026"), not a month written into the test.
+    const today = await page.evaluate(() => new Date().toLocaleDateString(undefined, { dateStyle: 'medium' }));
     const stampOf = k => page.evaluate(k => (JSON.parse(localStorage.getItem('lastUpdated')) || {})[k] || 0, k);
     await page.click('.tab[data-tab="games"]'); await page.waitForTimeout(300);
     await page.click('#addBtn'); await page.waitForSelector('#gameModal.open');
     await page.fill('#g-title', 'Hades'); await page.click('label[for="g-plat-steam"]');
     await page.click('button[onclick="saveGameItem()"]'); await page.waitForTimeout(400);
     check(`${name}: adding a game through the modal stamps games and shows it`,
-      (await stampOf('games')) > 0 && /^Last updated Oct \d+, 2026/.test(await page.textContent('#updatedNote')), await page.textContent('#updatedNote'));
+      (await stampOf('games')) > 0 && (await page.textContent('#updatedNote')).startsWith(`Last updated ${today}`), await page.textContent('#updatedNote'));
     await page.screenshot({ path: shot(`upd-${name}-games.png`) });
 
     await page.click('.tab[data-tab="books"]'); await page.waitForTimeout(300);
