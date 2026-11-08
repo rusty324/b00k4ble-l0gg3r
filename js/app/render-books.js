@@ -99,6 +99,7 @@ function render() {
   // First, so an early return below (an empty library, say) cannot skip it.
   const missingSlot = document.getElementById('booksMissing');
   if (missingSlot) missingSlot.innerHTML = listTools('books');
+  paintNextReadsIfOpen();
   // The genre filter only depends on the books array, not on search/
   // filter/page state — skip the full-library pass unless it changed.
   if (_statsRenderedAt !== _booksMutation) {

@@ -259,6 +259,9 @@ function olPick(i) {
   if (r.isbn)     document.getElementById('f-isbn').value = r.isbn;
   if (r.asin)     document.getElementById('f-asin').value = r.asin;
   if (r.series)   setSeriesFields(r.series);
+  // Open Library's year is the work's first publication; Audible's is when
+  // the audiobook came out, which is not what "age of the book" means.
+  if (r.source === 'ol' && r.year) document.getElementById('f-published').value = r.year;
 
   if (r.source === 'audible') {
     // An Audible result is an audiobook by definition, and its ASIN is

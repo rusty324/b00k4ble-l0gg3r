@@ -47,6 +47,7 @@ function detailBook(b) {
       })()),
       fact('Formats', (b.formats || []).map(f => esc(BOOK_FORMAT_LABEL[f] || f)).join('<br>')),
       fact('Finished', b.status === 'read' && b.finished ? esc(finishedLabel(b.finished)) : ''),
+      fact('First published', esc(b.published || '')),
       fact('ISBN', esc(b.isbn || '')),
       fact('ASIN', esc(b.asin || '')),
       fact('Added', addedFact(b.id)),

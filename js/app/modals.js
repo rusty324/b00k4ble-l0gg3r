@@ -8,7 +8,7 @@ function openAddModal() {
   currentRating = 0;
   document.getElementById('modalTitle').textContent = 'Add a book';
 
-  ['f-title', 'f-author', 'f-narrator', 'f-series', 'f-seriesIndex', 'f-notes', 'f-coverUrl', 'f-isbn', 'f-asin', 'f-ol', 'f-finished']
+  ['f-title', 'f-author', 'f-narrator', 'f-series', 'f-seriesIndex', 'f-notes', 'f-coverUrl', 'f-isbn', 'f-asin', 'f-ol', 'f-finished', 'f-published']
     .forEach(id => document.getElementById(id).value = '');
   setGenreValues('f-genre', []);
   setLinksField('f', []);
@@ -44,6 +44,7 @@ function openEditModal(id) {
   document.getElementById('f-coverUrl').value = b.coverUrl || '';
   document.getElementById('f-isbn').value = b.isbn || '';
   document.getElementById('f-asin').value = b.asin || '';
+  document.getElementById('f-published').value = b.published || '';
   setLinksField('f', b.links);
   document.getElementById('f-ol').value = '';
   closeOlAC();
@@ -200,17 +201,18 @@ function saveBook() {
   const narrator = formats.includes('audio') ? document.getElementById('f-narrator').value.trim() : '';
   // Only a Read book has one; normalizeBook enforces the same.
   const finished = status === 'read' ? document.getElementById('f-finished').value.trim() : '';
+  const published = document.getElementById('f-published').value.trim();
 
   if (editingId !== null) {
     const i = books.findIndex(b => b.id === editingId);
     if (i !== -1) {
       // Ignored gaps belong to a series: a book moved to another one leaves them behind.
       const sameSeries = seriesKey(splitSeries(series).name) === seriesKey(splitSeries(books[i].series).name);
-      books[i] = normalizeBook({ ...books[i], title, author, narrator, finished, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
+      books[i] = normalizeBook({ ...books[i], title, author, narrator, finished, published, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
         isbn: isbn || pendingScanCode || books[i].isbn || '', asin, ...(sameSeries ? {} : { ignoredGaps: [] }) });
     }
   } else {
-    books.push(normalizeBook({ id: newId(), title, author, narrator, finished, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
+    books.push(normalizeBook({ id: newId(), title, author, narrator, finished, published, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
       ...(isbn || pendingScanCode ? { isbn: isbn || pendingScanCode } : {}),
       ...(asin ? { asin } : {}) }));
   }
