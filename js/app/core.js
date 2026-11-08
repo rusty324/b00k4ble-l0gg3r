@@ -147,7 +147,7 @@ function applyLinks(obj, raw) {
 // whether or not it was touched, so without this a book edited once picks up
 // isbn:"", asin:"", coverUrl:"" and notes:"" for good — carried in every
 // export and every push after that. An empty field is absence, not a value.
-const OPTIONAL_TEXT = ['isbn', 'asin', 'coverUrl', 'posterUrl', 'notes', 'year', 'narrator', 'finished', 'published'];
+const OPTIONAL_TEXT = ['isbn', 'asin', 'coverUrl', 'posterUrl', 'notes', 'year', 'narrator', 'finished'];
 
 function dropEmpty(obj) {
   for (const k of OPTIONAL_TEXT) {
@@ -514,17 +514,6 @@ function normalizeFinished(raw) {
   return `${m[1]}-${String(month).padStart(2, '0')}`;
 }
 
-// The year a book was first published — the work, not this edition — as
-// "1965". The first plausible year in whatever was given ("1965", "1965-08-01",
-// "August 1965"), or nothing: an unparseable or future year is dropped rather
-// than sorted wrong.
-function normalizePublished(raw) {
-  const m = String(raw ?? '').match(/(?:^|\D)(\d{3,4})(?!\d)/);
-  if (!m) return '';
-  const y = +m[1];
-  return y >= 100 && y <= new Date().getFullYear() + 1 ? String(y) : '';
-}
-
 // "Jun 2025", in the reader's own month names.
 function finishedLabel(f) {
   if (!f) return '';
@@ -567,15 +556,14 @@ function normalizeBook(b) {
     : String(b.narrator || '').trim();
   // Kept only while the book is Read, like a narrator only while it is an audiobook.
   const finished = status === 'read' ? normalizeFinished(b.finished) : '';
-  const published = normalizePublished(b.published);
-  const _searchStr = searchFold([title, author, narrator, series, finished, published, b.isbn || '', b.asin || '', ...genre].join(' '));
+  const _searchStr = searchFold([title, author, narrator, series, finished, b.isbn || '', b.asin || '', ...genre].join(' '));
 
   // Clamp rating to 0–5; out-of-range values (e.g. from imported JSON) cause
   // '★'.repeat(5 - rating) to throw a RangeError with a negative count.
   const rating = Number.isFinite(+b.rating) ? Math.max(0, Math.min(5, Math.round(+b.rating))) : 0;
 
   const book = dropEmpty(applyLinks({
-    ...b, id: normalizeId(b.id), title, series, author, narrator, finished, published, status, formats, genre, rating, _searchStr,
+    ...b, id: normalizeId(b.id), title, series, author, narrator, finished, status, formats, genre, rating, _searchStr,
     ...(b.isbn != null ? { isbn: String(b.isbn) } : {}),
     ...(b.asin != null ? { asin: String(b.asin).toUpperCase() } : {}),
   }, b.links));

@@ -329,8 +329,6 @@ input[type="radio"], input[type="checkbox"] { display: none; }
 .next-reason { font-size: 13px; color: var(--amber-600); }
 .next-formats { flex-shrink: 0; font-size: 13px; }
 .next-more { margin-top: 0.75rem; }
-.next-years { font-size: 13px; color: var(--text-muted); margin-top: 0.75rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
-.next-years-err { color: var(--coral-600); }
 
 /* ─── FIRST-SYNC RESOLVER ──────────────────────────────────────────── */
 .resolve-section { border-top: 1px solid var(--border); margin-top: 1rem; }

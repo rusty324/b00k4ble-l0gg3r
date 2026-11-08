@@ -1,5 +1,4 @@
-// "What to read next": unread books only, in six orders, with a reason each;
-// the publication-year field and looking years up on Open Library.
+// "What to read next": unread books only, in four orders, with a reason each.
 const { launch, BASE, reporter, shot } = require('../lib');
 const { check, finish, crash } = reporter();
 const J = JSON.stringify;
@@ -10,30 +9,20 @@ const BOOKS = [
   bk(T(2023, 1), 'Leviathan Wakes', 'James S. A. Corey', { status: 'read', finished: '2026-09', rating: 5, series: 'The Expanse #1', genre: ['Sci-Fi', 'Space Opera'] }),
   bk(T(2023, 2), 'Dune', 'Frank Herbert', { status: 'read', finished: '2026-06', rating: 4, genre: ['Sci-Fi'] }),
   bk(T(2023, 3), 'The Hobbit', 'J. R. R. Tolkien', { status: 'read', finished: '2024-01', rating: 2, genre: ['Fantasy'] }),
-  bk(T(2024, 5), "Caliban's War", 'James S. A. Corey', { series: 'The Expanse #2', genre: ['Sci-Fi', 'Space Opera'], published: '2012' }),
+  bk(T(2024, 5), "Caliban's War", 'James S. A. Corey', { series: 'The Expanse #2', genre: ['Sci-Fi', 'Space Opera'] }),
   bk(T(2024, 6), "Abaddon's Gate", 'James S. A. Corey', { series: 'The Expanse #3', genre: ['Sci-Fi', 'Space Opera'] }),
-  bk(T(2025, 1), 'Dune Messiah', 'Frank Herbert', { genre: ['Sci-Fi'], published: '1969', formats: ['audio'] }),
+  bk(T(2025, 1), 'Dune Messiah', 'Frank Herbert', { genre: ['Sci-Fi'], formats: ['audio'] }),
   bk(T(2022, 7), 'Hyperion', 'Dan Simmons', { genre: ['Sci-Fi', 'Space Opera'], isbn: '9780553283686' }),
-  bk(T(2025, 8), 'The Silmarillion', 'J. R. R. Tolkien', { genre: ['Fantasy'], published: '1977' }),
+  bk(T(2025, 8), 'The Silmarillion', 'J. R. R. Tolkien', { genre: ['Fantasy'] }),
   bk(T(2021, 4), 'A Cookbook', 'Someone'),
   bk(T(2025, 9), 'Foundation', 'Isaac Asimov', { status: 'reading', genre: ['Sci-Fi'] }),
 ];
-const OL = { '9780553283686': 1989, "Abaddon's Gate": 2013 };   // what the fake Open Library knows
 
 (async () => {
   const browser = await launch();
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   await ctx.route('**/fonts.g**', r => r.abort()); await ctx.route('**/data/*.json', r => r.abort());
-  await ctx.route('**/api.github.com/**', r => r.abort()); await ctx.route('**/covers.openlibrary.org/**', r => r.abort());
-  const olAsked = [];
-  await ctx.route('**/openlibrary.org/**', r => {
-    const u = new URL(r.request().url());
-    if (!u.pathname.endsWith('/search.json')) return r.abort();
-    const p = Object.fromEntries(u.searchParams); olAsked.push(p);
-    const y = OL[p.isbn] || OL[p.title];
-    const docs = y ? [{ title: p.title || 'Hyperion', author_name: [p.author || 'Dan Simmons'], first_publish_year: y }] : [];
-    return r.fulfill({ status: 200, contentType: 'application/json', body: J({ docs }) });
-  });
+  await ctx.route('**/api.github.com/**', r => r.abort()); await ctx.route('**/openlibrary.org/**', r => r.abort());
   const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(e.message));
   await page.addInitScript(b => {
     if (sessionStorage.getItem('s')) return; sessionStorage.setItem('s', '1');
@@ -70,27 +59,9 @@ const OL = { '9780553283686': 1989, "Abaddon's Gate": 2013 };   // what the fake
   check('"Waiting longest": oldest added first', J((await titles()).slice(0, 3)) === J(['A Cookbook', 'Hyperion', "Caliban's War"]), J(await titles()));
   await sort('Recently added');
   check('"Recently added": newest first', (await titles())[0] === 'The Silmarillion', J(await titles()));
-  await sort('Oldest published');
-  const op = await rows();
-  check('"Oldest published": by year, saying how long ago', J(op.slice(0, 3).map(r => r[0])) === J(['Dune Messiah', 'The Silmarillion', "Caliban's War"]) &&
-    /^First published 1969 · \d+ years ago$/.test(op[0][1]), J(op.slice(0, 3)));
-  check('…books with no year last', op.slice(3).every(r => r[1] === 'No publication year yet'), J(op.slice(3)));
-  check('…and an offer to look the years up', /3 unread books have no publication year/.test(await page.locator('#nextYears').textContent()));
-  await sort('Newest published');
-  check('"Newest published": the reverse', (await titles())[0] === "Caliban's War");
+  check('there is no ordering by publication year', !(await page.locator('#nextBody .pill', { hasText: 'published' }).count()));
 
-  // ── 3. Looking years up ─────────────────────────────────────────────
-  await page.click('#nextYears button:text-is("Look them up")');
-  await page.waitForTimeout(5500);
-  const found = await page.evaluate(() => Object.fromEntries(books.filter(b => b.published).map(b => [b.title, b.published])));
-  check('Open Library years are filled in (by ISBN, or by title and author)', found.Hyperion === '1989' && found["Abaddon's Gate"] === '2013', J(found));
-  check('…asking by ISBN where there is one', olAsked.some(p => p.isbn === '9780553283686'));
-  check('…and saved', await page.evaluate(() => JSON.parse(localStorage.getItem('myLibrary')).find(b => b.title === 'Hyperion').published === '1989'));
-  check('the list re-sorts with them', (await titles())[0] === "Abaddon's Gate", J(await titles()));
-  const missed = await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('publishedLookupMisses')) || {}).length);
-  check('books Open Library cannot place are remembered and not offered again', missed === 1 && await page.locator('#nextYears').count() === 0, String(missed));
-
-  // ── 4. Format, remembering, Show more ───────────────────────────────
+  // ── 3. Format, and remembering it ───────────────────────────────────
   await sort('For you');
   await page.click('#nextBody .pill:text-is("🎧 Audio")'); await page.waitForTimeout(150);
   check('the format filter narrows to audiobooks', J(await titles()) === J(['Dune Messiah']));
@@ -99,7 +70,7 @@ const OL = { '9780553283686': 1989, "Abaddon's Gate": 2013 };   // what the fake
   check('the order and format are remembered', await page.locator('#nextBody .pill.active').allTextContents().then(a => J(a)) === J(['For you', '🎧 Audio']));
   await page.click('#nextBody .pill:text-is("All")'); await page.waitForTimeout(150);
 
-  // ── 5. Opening a book, and it leaving the list ──────────────────────
+  // ── 4. Opening a book, and it leaving the list ──────────────────────
   await page.locator('#nextBody .next-item', { hasText: 'Hyperion' }).click(); await page.waitForTimeout(200);
   check('tapping a book opens its details over the list', await page.locator('#detailModal.open').count() === 1 && await open() &&
     (await page.locator('#detailTitle').textContent()) === 'Hyperion');
@@ -110,24 +81,12 @@ const OL = { '9780553283686': 1989, "Abaddon's Gate": 2013 };   // what the fake
   check('Edit from there shows the form on top', await page.evaluate(() => {
     const top = document.elementFromPoint(195, 300); return !!top && !!top.closest('#modal');
   }));
-  check('…with the publication year in it', (await page.inputValue('#f-published')) === '1989');
   await page.evaluate(() => { setRadio('status', 'reading'); saveBook(); }); await page.waitForTimeout(300);
   check('a book started from there leaves the list', !(await titles()).includes('Hyperion') && await open());
   await page.keyboard.press('Escape');
   check('Escape then closes the list', !(await open()));
 
-  // ── 6. The field itself ─────────────────────────────────────────────
-  const norm = await page.evaluate(() => ['1965', '1965-08-01', 'August 1965', ' 1849 ', 'n/a', '2999', 1977, ''].map(normalizePublished));
-  check('the year is read from common shapes; nonsense and future years dropped', J(norm) === J(['1965', '1965', '1965', '1849', '', '', '1977', '']), J(norm));
-  await page.evaluate(() => openEditModal(books.find(b => b.title === 'A Cookbook').id));
-  await page.fill('#f-published', '2001'); await page.evaluate(() => saveBook()); await page.waitForTimeout(200);
-  check('typing a year in the form saves it, and the details show it', await page.evaluate(() => {
-    const b = books.find(x => x.title === 'A Cookbook'); openDetail('books', b.id);
-    const dt = [...document.querySelectorAll('#detailModal dt')].find(d => d.textContent === 'First published');
-    const v = dt && dt.nextElementSibling.textContent; closeDetail(); return b.published === '2001' && v === '2001';
-  }));
-
-  // ── 7. No reads yet; nothing unread ─────────────────────────────────
+  // ── 5. No reads yet; nothing unread ─────────────────────────────────
   await page.evaluate(() => { books.forEach(b => { if (b.status === 'read') b.status = 'want'; }); save(); render(); openNextReads(); setNextSort('foryou'); });
   check('with nothing read yet, it says so and lists longest-waiting first', /Mark books as Read/.test(await page.locator('#nextBody .dupes-intro').textContent()) &&
     (await titles())[0] === 'A Cookbook', J(await titles()));

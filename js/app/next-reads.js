@@ -8,16 +8,13 @@
 //                      says why it is there.
 //   Next in series     only books that continue a series already started.
 //   Waiting longest    oldest added first.   Recently added   newest first.
-//   Oldest / Newest published   by `published`, the year the book first came
-//                      out. Books with no year go last, and the sheet offers
-//                      to look the years up on Open Library.
 //
 // A format filter narrows any of them to physical, e-book or audiobook. The
 // chosen order and format are remembered on this device only.
 
 const NEXT_SORTS = [
   ['foryou', 'For you'], ['series', 'Next in series'], ['waiting', 'Waiting longest'],
-  ['recent', 'Recently added'], ['oldpub', 'Oldest published'], ['newpub', 'Newest published'],
+  ['recent', 'Recently added'],
 ];
 const NEXT_FORMATS = [['all', 'All'], ['physical', '📚 Physical'], ['ebook', '📱 E-book'], ['audio', '🎧 Audio']];
 const NEXT_PAGE = 25;
@@ -40,7 +37,6 @@ const addedMonth = id => {
   const t = idAsTime(id);
   return t === null ? '' : new Date(t).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
 };
-const yearsAgo = y => { const n = new Date().getFullYear() - Number(y); return n <= 0 ? 'this year' : n === 1 ? 'a year ago' : `${n} years ago`; };
 
 // ─── what was read most recently ──────────────────────────────────────
 // Up to 12 Read books, most recent first: by finished month where there is
@@ -125,11 +121,6 @@ function nextReads(sort = _next.sort, format = _next.format) {
     const dir = sort === 'waiting' ? 1 : -1;
     return [...pool].sort((a, c) => dir * (a.id - c.id)).map(b => ({ b, reason: added(b) }));
   }
-  if (sort === 'oldpub' || sort === 'newpub') {
-    const dir = sort === 'oldpub' ? 1 : -1;
-    return [...pool].sort((a, c) => (!a.published) - (!c.published) || dir * (Number(a.published) - Number(c.published)) || a.id - c.id)
-      .map(b => ({ b, reason: b.published ? `First published ${b.published} · ${yearsAgo(b.published)}` : 'No publication year yet' }));
-  }
 
   // For you.
   const recent = recentReads();
@@ -207,7 +198,6 @@ function paintNextReads() {
       ? '. Mark books as Read to get suggestions based on them; until then, longest-waiting first.' : '.'}</p>
     <div class="filter-row"><span class="filter-label">Order</span><div class="pill-group">${pills(NEXT_SORTS, _next.sort, 'setNextSort')}</div></div>
     <div class="filter-row"><span class="filter-label">Format</span><div class="pill-group">${pills(NEXT_FORMATS, _next.format, 'setNextFormat')}</div></div>
-    ${yearNote()}
     <div class="next-list">${list.length ? list.slice(0, _next.shown).map(nextRow).join('') : `<p class="muted">${esc(empty)}</p>`}</div>
     ${list.length > _next.shown ? `<button type="button" class="btn btn-sm next-more" onclick="showMoreNext()">Show ${Math.min(NEXT_PAGE, list.length - _next.shown)} more</button>` : ''}
     <div class="detail-actions"><span class="detail-spacer"></span>
@@ -238,97 +228,6 @@ function rememberNext() {
 function setNextSort(v) { _next.sort = v; _next.shown = NEXT_PAGE; rememberNext(); paintNextReads(); }
 function setNextFormat(v) { _next.format = v; _next.shown = NEXT_PAGE; rememberNext(); paintNextReads(); }
 function showMoreNext() { _next.shown += NEXT_PAGE; paintNextReads(); }
-
-// ─── looking up publication years ─────────────────────────────────────
-// Unread books with no year, for the two "published" orders. One Open
-// Library request at a time, about a second apart — it throttles anonymous
-// callers — saving as it goes, and cancellable. A book Open Library cannot
-// place is remembered, so it is not asked about again.
-const YEAR_MISSES = 'publishedLookupMisses';
-const _years = { running: false, done: 0, total: 0, found: 0, stop: false, error: '' };
-
-function yearMisses() {
-  try { return JSON.parse(localStorage.getItem(YEAR_MISSES)) || {}; } catch { return {}; }
-}
-const yearless = () => { const miss = yearMisses(); return unreadBooks().filter(b => !b.published && !miss[b.id]); };
-
-// Shown above the two "published" orders: progress while looking up, else
-// how many have no year and the button to look them up.
-function yearNoteText() {
-  if (_years.running) {
-    return `Looking up publication years… ${_years.done} of ${_years.total} (${_years.found} found)
-      <button type="button" class="btn btn-sm" onclick="cancelYearLookup()">Stop</button>`;
-  }
-  const n = yearless().length;
-  const msg = _years.error ? `<span class="next-years-err">${esc(_years.error)}</span> ` : '';
-  if (!n) return msg;
-  return `${msg}${n} unread book${n === 1 ? ' has' : 's have'} no publication year.
-    <button type="button" class="btn btn-sm" onclick="lookupPublishedYears()">Look them up</button>`;
-}
-
-function yearNote() {
-  if (_next.sort !== 'oldpub' && _next.sort !== 'newpub') return '';
-  const text = yearNoteText();
-  return text ? `<div class="next-years" id="nextYears">${text}</div>` : '';
-}
-
-async function lookupPublishedYear(b) {
-  const ask = async params => {
-    const q = new URLSearchParams({ ...params, fields: 'title,author_name,first_publish_year', limit: '5' });
-    const res = await fetchWithTimeout(`${OPENLIBRARY_SEARCH_URL}?${q}`);
-    if (!res.ok) throw new Error(`Open Library answered HTTP ${res.status}`);
-    return (await res.json()).docs || [];
-  };
-  const isbn = dupIsbn(b);
-  if (isbn) {
-    const doc = (await ask({ isbn }))[0];
-    if (doc && doc.first_publish_year) return normalizePublished(doc.first_publish_year);
-  }
-  const tk = dupTitleKey(b.title);
-  const docs = await ask(b.author ? { title: b.title, author: b.author } : { title: b.title });
-  const doc = docs.find(d => dupTitleKey(d.title) === tk && namesAgree(b.author, (d.author_name || [])[0]) && d.first_publish_year);
-  return doc ? normalizePublished(doc.first_publish_year) : '';
-}
-
-const pause = ms => new Promise(r => setTimeout(r, ms));
-
-async function lookupPublishedYears() {
-  if (_years.running) return;
-  const queue = yearless();
-  Object.assign(_years, { running: true, done: 0, total: queue.length, found: 0, stop: false, error: '' });
-  paintNextReadsIfOpen();
-  const miss = yearMisses();
-  let unsaved = 0;
-  for (const b of queue) {
-    if (_years.stop) break;
-    try {
-      const y = await lookupPublishedYear(b);
-      const i = books.findIndex(x => x.id === b.id);
-      if (y && i !== -1 && !books[i].published) {
-        books[i] = normalizeBook({ ...books[i], published: y });
-        _years.found++; unsaved++;
-      } else if (!y) {
-        miss[b.id] = Date.now();
-      }
-    } catch (e) {
-      _years.error = `Stopped: ${e.message || 'Open Library did not answer'}.`;
-      break;
-    }
-    _years.done++;
-    if (unsaved >= 10) { save(); unsaved = 0; }
-    const note = document.getElementById('nextYears');
-    if (note) note.innerHTML = yearNoteText();
-    if (_years.done < queue.length && !_years.stop) await pause(1000);
-  }
-  try { localStorage.setItem(YEAR_MISSES, JSON.stringify(miss)); } catch { /* asked again next time; fine */ }
-  if (unsaved) save();
-  _years.running = false;
-  if (!_years.error) flashBanner(`Found ${_years.found} publication year${_years.found === 1 ? '' : 's'}.`);
-  render();
-  paintNextReadsIfOpen();
-}
-
-function cancelYearLookup() { _years.stop = true; }
 
 // Escape closes the sheet — unless a book's details (or a cover) are open on
 // top of it, whose own Escape comes first. On window, in the capture phase,
