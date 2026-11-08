@@ -32,8 +32,9 @@ function selectButton(kind) {
     ? `<button type="button" class="btn btn-sm select-btn" onclick="startBulk('${kind}')">Select</button>` : '';
 }
 
-// Everything above a tab's results: what is missing, and Select.
-const listTools = kind => missingButton(kind) + selectButton(kind);
+// Everything above a tab's results: what to read next (books), what is
+// missing, and Select.
+const listTools = kind => (kind === 'books' ? nextReadsButton() : '') + missingButton(kind) + selectButton(kind);
 
 function startBulk(kind) {
   _bulk = { kind, ids: new Set() };

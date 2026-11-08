@@ -741,6 +741,12 @@
   <div class="modal detail-modal" id="dupesBody"></div>
 </div>
 
+<!-- What to read next — filled by paintNextReads() (js/app/next-reads.js). Sits
+     under the detail sheet and the book form, which open from it. -->
+<div class="modal-backdrop" id="nextModal" onclick="handleNextBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="nextTitle">
+  <div class="modal detail-modal" id="nextBody"></div>
+</div>
+
 <!-- A library card's details — filled by openDetail() (js/app/detail-view.js) -->
 <div class="modal-backdrop" id="detailModal" onclick="handleDetailBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
   <div class="modal detail-modal" id="detailBody"></div>
@@ -807,6 +813,7 @@
 <script src="js/app/modals.js"></script>
 <script src="js/app/detail-view.js"></script>
 <script src="js/app/missing-view.js"></script>
+<script src="js/app/next-reads.js"></script>
 <script src="js/app/duplicates-view.js"></script>
 <script src="js/app/sync-resolver.js"></script>
 <script src="js/app/bulk-edit.js"></script>
