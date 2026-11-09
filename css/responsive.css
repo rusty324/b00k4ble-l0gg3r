@@ -48,17 +48,19 @@
   .btn-primary { flex: 1; justify-content: center; min-width: 0; }
   /* Let the "Add book" label truncate so the icon buttons keep 44px targets */
   #addBtnLabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .filter-row { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; scrollbar-width: none; }
-  .filter-row::-webkit-scrollbar { display: none; }
-  /* A row holding a menu must not scroll: overflow-x makes a clipping box, and
-     the absolutely-positioned panel would be cut off at the row's edge. There
-     is only a label and one button in here, so there is nothing to scroll. */
-  .filter-row-menu { overflow: visible; flex-wrap: wrap; }
+  /* The label keeps its column and the options wrap beside it. These rows used
+     to scroll sideways with the scrollbar hidden, which left the options past
+     the edge (Not Interested, On Hold/Dropped) with nothing to say they were
+     there. */
+  .filter-row { flex-wrap: nowrap; align-items: flex-start; }
+  .filter-row > .filter-label { padding-top: 15px; }   /* centred on a 44px pill */
+  .filter-row-menu { flex-wrap: wrap; align-items: center; }
+  .filter-row-menu > .filter-label { padding-top: 0; }
   /* Full-width tap targets for the options, like every other control here. */
   .dropdown-opt { padding: 0.6rem 0.55rem; font-size: 14px; min-height: 44px; box-sizing: border-box; }
   .dropdown-opt input[type="checkbox"] { width: 18px; height: 18px; }
   .dropdown-menu { max-height: 50vh; }
-  .pill-group { flex-wrap: nowrap; }
+  .pill-group { flex-wrap: wrap; flex: 1; min-width: 0; }
   /* minmax(0, …), not a bare 1fr: 1fr's minimum is its widest content, so one
      card that could not wrap stretched the column past the screen. */
   .books-grid { grid-template-columns: minmax(0, 1fr); }
