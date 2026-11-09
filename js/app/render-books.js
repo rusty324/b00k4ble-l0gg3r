@@ -166,11 +166,9 @@ function render() {
 
   const fmtLabels = { physical: '📚 Physical', ebook: '📱 E-book', audio: '🎧 Audiobook' };
   const fmtCls    = { physical: 'badge-physical', ebook: 'badge-ebook', audio: 'badge-audio' };
-  const stCls     = { read: 'badge-read', reading: 'badge-reading', want: 'badge-want' };
-  const stLabel   = { read: 'Read', reading: 'Reading', want: 'Want to read' };
   // "Read · Jun 2025" when the month is known.
   const statusText = b => (b.status === 'read' && b.finished)
-    ? `Read · ${finishedLabel(b.finished)}` : (stLabel[b.status] || b.status);
+    ? `Read · ${finishedLabel(b.finished)}` : statusLabel('books', b.status);
 
   let html;
   if (viewMode === 'list') {
@@ -191,7 +189,7 @@ function render() {
           <div class="book-row-title">${esc(b.title)}</div>
           <div class="book-row-meta">
             <div class="book-row-author">${esc(b.author || '')}${b.narrator ? ` <span class="book-row-narrator">· 🎙 ${esc(b.narrator)}</span>` : ''}</div>
-            <div class="book-row-badges">${fmtBadges}<span class="badge ${stCls[b.status] || 'badge-want'}">${esc(statusText(b))}</span></div>
+            <div class="book-row-badges">${fmtBadges}<span class="badge ${statusClass('books', b.status)}">${esc(statusText(b))}</span></div>
             <div class="book-row-actions">
               ${renderLinkButtons(b.links, true)}
               <button class="btn btn-sm" onclick="openEditModal(${b.id})" title="Edit">✏</button>
@@ -224,7 +222,7 @@ function render() {
         ${b.series ? `<div class="book-series">📖 ${esc(b.series)}</div>` : ''}
         <div class="book-meta">
           ${fmtBadges}
-          <span class="badge ${stCls[b.status] || 'badge-want'}">${esc(statusText(b))}</span>
+          <span class="badge ${statusClass('books', b.status)}">${esc(statusText(b))}</span>
           ${stars ? `<span class="stars">${stars}</span>` : ''}
         </div>
       </div>`;

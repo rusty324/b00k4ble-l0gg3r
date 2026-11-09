@@ -289,6 +289,25 @@ function setLinksField(prefix, links) {
 // article has to be followed by whitespace.
 const LEADING_ARTICLE = /^(?:the|a|an)\s+/i;
 
+// ─── STATUSES ─────────────────────────────────────────────────────────
+// Every status each library offers, in the order the form, the filter and
+// bulk edit show them: [value, label, badge class]. The one list all of them
+// read, so a status is added here and nowhere else (the book form's radios
+// and the Books tab's filter pills are static in index.html and list the
+// same values).
+const STATUSES = {
+  books: [['want', 'Want to read', 'badge-want'], ['reading', 'Reading', 'badge-reading'], ['read', 'Read', 'badge-read'],
+          ['not-interested', 'Not Interested', 'badge-nope']],
+  media: [['want', 'Want to Watch', 'badge-want'], ['watched', 'Watched', 'badge-watched'],
+          ['not-interested', 'Not Interested', 'badge-nope']],
+  games: [['want', 'Want to Play', 'badge-want'], ['playing', 'Playing', 'badge-reading'], ['completed', 'Completed', 'badge-watched'],
+          ['on-hold', 'On Hold/Dropped', 'badge-hold'], ['not-interested', 'Not Interested', 'badge-nope']],
+};
+const statusEntry = (kind, s) => (STATUSES[kind] || []).find(([v]) => v === s);
+const statusLabel = (kind, s) => (statusEntry(kind, s) || [, s])[1];
+const statusClass = (kind, s) => (statusEntry(kind, s) || [, , 'badge-want'])[2];
+const statusPairs = kind => (STATUSES[kind] || []).map(([v, l]) => [v, l]);
+
 // ─── TYPOGRAPHIC PUNCTUATION ──────────────────────────────────────────
 // The same text arrives with plain or "smart" punctuation depending on where
 // it was typed: iOS Smart Punctuation (on by default) turns ' into ’, " into

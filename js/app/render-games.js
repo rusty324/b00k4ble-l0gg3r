@@ -89,15 +89,12 @@ function renderGames(listOnly = false) {
   });
   _shownIds.games = items.map(g => g.id);   // what bulk edit's "Select all" means
 
-  const stCls    = { want: 'badge-want', playing: 'badge-reading', completed: 'badge-watched' };
-  const stLabel  = { want: 'Want to Play', playing: 'Playing', completed: 'Completed' };
 
   // Filter toolbar
   const platformPills = [['all', 'All'], ...GAME_PLATFORMS.map(p => [p, platformLabel(p)])].map(([v,l]) =>
     `<button class="pill${gameFilters.platform===v?' active':''}" onclick="setGameFilter('platform','${v}')">${esc(l)}</button>`
   ).join('');
-  const statusPills = [['all','All'],['want','Want to Play'],['playing','Playing'],
-                       ['completed','Completed']].map(([v,l]) =>
+  const statusPills = [['all','All'], ...statusPairs('games')].map(([v,l]) =>
     `<button class="pill${gameFilters.status===v?' active':''}" onclick="setGameFilter('status','${v}')">${l}</button>`
   ).join('');
   // Same values and icons as the form's per-platform format buttons.
@@ -170,7 +167,7 @@ function renderGames(listOnly = false) {
           <div class="book-row-meta">
             <div class="book-row-author">${g.year ? esc(String(g.year)) : ''}</div>
             <div class="book-row-badges">
-              <span class="badge ${stCls[g.status] || 'badge-want'}">${stLabel[g.status] || esc(g.status)}</span>
+              <span class="badge ${statusClass('games', g.status)}">${esc(statusLabel('games', g.status))}</span>
               ${gamePlatformBadges(g)}
               ${gameDlcBadge(g)}
             </div>
@@ -197,7 +194,7 @@ function renderGames(listOnly = false) {
         <div class="book-title">${esc(g.title)}</div>
         ${g.year ? `<div class="book-author">${esc(String(g.year))}</div>` : ''}
         <div class="book-meta">
-          <span class="badge ${stCls[g.status] || 'badge-want'}">${stLabel[g.status] || esc(g.status)}</span>
+          <span class="badge ${statusClass('games', g.status)}">${esc(statusLabel('games', g.status))}</span>
           ${gamePlatformBadges(g)}
           ${gameDlcBadge(g)}
           ${stars}
