@@ -8,11 +8,7 @@
 // once, so a sync push is one write, not one per item; deletions go through
 // the same save point as any other, so they leave tombstones and sync right.
 
-const BULK_STATUS = {
-  books: [['want', 'Want to read'], ['reading', 'Reading'], ['read', 'Read']],
-  media: [['want', 'Want to Watch'], ['watched', 'Watched']],
-  games: [['want', 'Want to Play'], ['playing', 'Playing'], ['completed', 'Completed']],
-};
+const BULK_STATUS = { books: statusPairs('books'), media: statusPairs('media'), games: statusPairs('games') };
 const BULK_NOUN = { books: ['book', 'books'], media: ['title', 'titles'], games: ['game', 'games'] };
 const BULK_SAVE = { books: () => save(), media: () => saveMedia(), games: () => saveGames() };
 const BULK_NORMALIZE = { books: normalizeBook, media: normalizeMediaItem, games: normalizeVideoGame };

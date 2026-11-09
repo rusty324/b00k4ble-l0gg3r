@@ -42,8 +42,6 @@ function renderMedia(listOnly = false) {
   _shownIds.media = items.map(m => m.id);   // what bulk edit's "Select all" means
 
   const typeIcon  = { movie: '🎬', tv: '📺' };
-  const stCls     = { want: 'badge-want', watched: 'badge-watched' };
-  const stLabel   = { want: 'Want to Watch', watched: 'Watched' };
   const fmtIcons  = MEDIA_FORMAT_ICON;      // shared with the form (core.js)
   // "DVD — "Don't Call Me Shirley!" Edition" on hover, plain "DVD" otherwise.
   const fmtTitle  = (m, f) => (MEDIA_FORMAT_LABEL[f] || f) + (m.editions && m.editions[f] ? ` — ${m.editions[f]}` : '');
@@ -54,7 +52,7 @@ function renderMedia(listOnly = false) {
   const typePills = [['all','All'],['movie','🎬 Movies'],['tv','📺 TV Shows']].map(([v,l]) =>
     `<button class="pill${mediaFilters.type===v?' active':''}" onclick="setMediaFilter('type','${v}')">${l}</button>`
   ).join('');
-  const statusPills = [['all','All'],['want','Want to Watch'],['watched','Watched']].map(([v,l]) =>
+  const statusPills = [['all','All'], ...statusPairs('media')].map(([v,l]) =>
     `<button class="pill${mediaFilters.status===v?' active':''}" onclick="setMediaFilter('status','${v}')">${l}</button>`
   ).join('');
   // Same values and icons as the form's format checkboxes.
@@ -126,7 +124,7 @@ function renderMedia(listOnly = false) {
           <div class="book-row-meta">
             <div class="book-row-author">${m.year ? esc(String(m.year)) : ''}</div>
             <div class="book-row-badges">
-              <span class="badge ${stCls[m.status] || 'badge-want'}">${stLabel[m.status] || esc(m.status)}</span>
+              <span class="badge ${statusClass('media', m.status)}">${esc(statusLabel('media', m.status))}</span>
               ${formats ? `<span class="badge badge-media" title="${esc(fmtTip)}">${formats}</span>` : ''}
               ${seasonsBadge(m)}
             </div>
@@ -156,7 +154,7 @@ function renderMedia(listOnly = false) {
         <div class="book-title">${esc(m.title)}</div>
         ${m.year ? `<div class="book-author">${esc(String(m.year))}</div>` : ''}
         <div class="book-meta">
-          <span class="badge ${stCls[m.status] || 'badge-want'}">${stLabel[m.status] || esc(m.status)}</span>
+          <span class="badge ${statusClass('media', m.status)}">${esc(statusLabel('media', m.status))}</span>
           ${fmtBadges}
           ${seasonsBadge(m)}
           ${stars}

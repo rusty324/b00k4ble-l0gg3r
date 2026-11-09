@@ -33,11 +33,11 @@ function addedFact(id) {
 }
 
 function detailBook(b) {
-  const status = { read: 'Read', reading: 'Reading', want: 'Want to read' }[b.status] || b.status;
+  const status = statusLabel('books', b.status);
   return {
     cover: b.coverUrl || (_coverCache[b.id] && !['none', 'pending'].includes(_coverCache[b.id]) ? _coverCache[b.id] : ''),
     title: b.title, sub: b.author,
-    badges: `<span class="badge badge-${b.status === 'read' ? 'read' : b.status === 'reading' ? 'reading' : 'want'}">${esc(status)}</span>${detailStars(b.rating)}`,
+    badges: `<span class="badge ${statusClass('books', b.status)}">${esc(status)}</span>${detailStars(b.rating)}`,
     facts: [
       fact('Narrated by', esc(b.narrator || '')),
       fact('Series', esc(b.series || '')),
@@ -56,7 +56,7 @@ function detailBook(b) {
 }
 
 function detailMedia(m) {
-  const status = { want: 'Want to Watch', watched: 'Watched' }[m.status] || m.status;
+  const status = statusLabel('media', m.status);
   const formats = (m.formats || []).map(f => {
     const ed = m.editions && m.editions[f];
     return `${MEDIA_FORMAT_ICON[f] || ''} ${esc(MEDIA_FORMAT_LABEL[f] || f)}${ed ? ` — ${esc(ed)}` : ''}`;
@@ -64,7 +64,7 @@ function detailMedia(m) {
   return {
     cover: m.posterUrl, title: m.title,
     sub: [m.type === 'tv' ? 'TV show' : 'Movie', m.year].filter(Boolean).join(' · '),
-    badges: `<span class="badge ${m.status === 'watched' ? 'badge-watched' : 'badge-want'}">${esc(status)}</span>${detailStars(m.rating)}`,
+    badges: `<span class="badge ${statusClass('media', m.status)}">${esc(status)}</span>${detailStars(m.rating)}`,
     facts: [
       fact('Formats', formats),
       fact('Seasons', m.type === 'tv' ? esc(seasonsText(m.seasons, m.seasonCount)) : ''),
@@ -77,7 +77,7 @@ function detailMedia(m) {
 }
 
 function detailGame(g) {
-  const status = { want: 'Want to Play', playing: 'Playing', completed: 'Completed' }[g.status] || g.status;
+  const status = statusLabel('games', g.status);
   const platforms = (g.platforms || []).map(p => {
     const f = (p.formats || []).map(x => `${GAME_FORMAT_ICON[x] || ''} ${esc(GAME_FORMAT_LABEL[x] || x)}`).join(', ');
     return `${esc(platformLabel(p.platform))}${f ? ` — ${f}` : ''}`;
@@ -86,7 +86,7 @@ function detailGame(g) {
     `<span class="${d.owned ? 'dlc-owned' : 'dlc-want'}">${esc(d.name)}${d.owned ? '' : ' (wishlist)'}</span>`).join('<br>');
   return {
     cover: g.coverUrl, title: g.title, sub: g.year ? String(g.year) : '',
-    badges: `<span class="badge ${g.status === 'completed' ? 'badge-watched' : g.status === 'playing' ? 'badge-reading' : 'badge-want'}">${esc(status)}</span>${detailStars(g.rating)}`,
+    badges: `<span class="badge ${statusClass('games', g.status)}">${esc(status)}</span>${detailStars(g.rating)}`,
     facts: [
       fact('Platforms', platforms),
       fact('DLC', dlc),

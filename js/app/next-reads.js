@@ -66,15 +66,15 @@ function seriesIndex() {
   return idx;
 }
 
-// Whether an earlier book of `b`'s series is owned and still unread — then
-// that one comes first, and `b` is not one to start now.
+// Whether an earlier book of `b`'s series is owned and still waiting to be
+// read — then that one comes first, and `b` is not one to start now.
 function laterInSeries(b, idx) {
   const { name, number } = splitSeries(b.series);
   const nums = seriesNumbers(number);
   const s = name && nums.length ? idx.get(seriesKey(name)) : null;
   if (!s) return false;
   const first = Math.min(...nums);
-  return s.owned.some(o => o.b !== b && o.b.status !== 'read' && Math.min(...o.nums) < first);
+  return s.owned.some(o => o.b !== b && o.b.status === 'want' && Math.min(...o.nums) < first);
 }
 
 // Whether `b` continues a series already started: something in it has been
@@ -87,7 +87,8 @@ function nextInSeries(b, idx, spellings) {
   const s = idx.get(seriesKey(name));
   if (!s || !s.read.length) return null;
   const first = Math.min(...nums);
-  if (s.owned.some(o => o.b !== b && o.b.status !== 'read' && Math.min(...o.nums) < first)) return null;
+  // An earlier book still to read comes first; one marked Not Interested is skipped.
+  if (s.owned.some(o => o.b !== b && ['want', 'reading'].includes(o.b.status) && Math.min(...o.nums) < first)) return null;
   const before = s.read.filter(r => Math.max(...r.nums) < first);
   if (!before.length) return null;
   const last = before.reduce((a, r) => (Math.max(...r.nums) > Math.max(...a.nums) ? r : a));
