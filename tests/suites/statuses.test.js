@@ -96,7 +96,18 @@ const GAMES = [
   check('…and sets them', await page.evaluate(() => videoGames.find(g => g.id === 1700000000201).status) === 'not-interested');
   await page.click('#bulkBar .btn-primary');
 
-  // ── 5. They survive a reload ────────────────────────────────────────
+  // ── 5. On a phone, every filter option is on screen ─────────────────
+  // The rows used to scroll sideways with no scrollbar, hiding the options
+  // past the edge — exactly where the new statuses landed.
+  for (const tab of ['books', 'media', 'games']) {
+    await page.click(`.tab[data-tab="${tab}"]`); await page.waitForTimeout(300);
+    const off = await page.evaluate(() => [...document.querySelectorAll('.filter-row .pill')]
+      .filter(p => p.offsetParent).filter(p => { const r = p.getBoundingClientRect(); return r.right > innerWidth || r.left < 0; })
+      .map(p => p.textContent));
+    check(`${tab}: no filter option is off the edge of a phone screen`, off.length === 0, JSON.stringify(off));
+  }
+
+  // ── 6. They survive a reload ────────────────────────────────────────
   await page.reload(); await page.waitForTimeout(800);
   check('all of it is kept after a reload', J(await page.evaluate(() => [books[1].status, mediaLibrary[0].status, videoGames.map(g => g.status)])) ===
     J(['not-interested', 'not-interested', ['not-interested', 'on-hold']]));
