@@ -43,6 +43,13 @@
      #888780 (3.6:1) and #B4B2A9 (2.1:1). */
   --text-muted: #5F5E5A;
   --text-light: #6A6862;
+  /* Series view (js/app/series-view.js). Owned and missing differ in
+     lightness, not just hue; outlines of controls meet 3:1. */
+  --ctl-border: #8C7C6A;
+  --owned: #0F6E56;
+  --missing: #E6DDCF;
+  --gap-text: #854F0B;
+  --row-tint: #FBF3E4;
   --shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
@@ -81,6 +88,11 @@
   /* 6.4:1 and 5.0:1 on --surface; --text-light was #555450 (2.2:1). */
   --text-muted: #A3A199;
   --text-light: #8F8D86;
+  --ctl-border: #7A786F;
+  --owned: #5DCAA5;
+  --missing: #3A372F;
+  --gap-text: #FAC775;
+  --row-tint: #2A2418;
   --shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 

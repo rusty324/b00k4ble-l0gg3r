@@ -32,8 +32,9 @@ function selectButton(kind) {
 // missing, and Select.
 const listTools = kind => (kind === 'books' ? nextReadsButton() : '') + missingButton(kind) + selectButton(kind);
 
-function startBulk(kind) {
-  _bulk = { kind, ids: new Set() };
+// ids: start with these already selected (the Series view's "Select these").
+function startBulk(kind, ids = []) {
+  _bulk = { kind, ids: new Set(ids) };
   const sel = document.getElementById('bulkStatus');
   sel.innerHTML = `<option value="">Set status…</option>` +
     BULK_STATUS[kind].map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
@@ -192,7 +193,8 @@ document.addEventListener('click', e => {
   const el = e.target.closest && e.target.closest('[data-detail]');
   if (!el) return;
   // Controls inside a list row (its own ✏ and 🗑, links) still work.
-  if (e.target.closest('button, a, input, select, textarea, label')) return;
+  const ctl = e.target.closest('button, a, input, select, textarea, label');
+  if (ctl && ctl !== el) return;
   const [kind, id] = el.dataset.detail.split(':');
   if (kind !== _bulk.kind) return;
   e.preventDefault();

@@ -167,7 +167,10 @@ function handleDetailBackdrop(e) {
 document.addEventListener('click', e => {
   if (e.defaultPrevented) return;
   const el = e.target.closest && e.target.closest('[data-detail]');
-  if (!el || e.target.closest('button, a, input, select, textarea, label')) return;
+  if (!el) return;
+  // A control that IS the item (a Series view volume chip) still opens it.
+  const ctl = e.target.closest('button, a, input, select, textarea, label');
+  if (ctl && ctl !== el) return;
   const [kind, id] = el.dataset.detail.split(':');
   openDetail(kind, Number(id));
 });

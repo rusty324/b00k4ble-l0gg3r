@@ -236,3 +236,131 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
 /* Wishlist "Got it": the one action on the row that moves something forward. */
 .btn.btn-got { color: var(--teal-600); border-color: var(--teal-50); }
 .btn.btn-got:hover { background: var(--teal-50); }
+
+/* ─── VIEW TOGGLE (header: card / list / series) ───────────────────── */
+.view-toggle { display: inline-flex; border: 1px solid var(--ctl-border); border-radius: 8px; overflow: hidden; }
+.view-toggle[hidden] { display: none; }
+.view-btn {
+  width: 44px; height: 40px; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface); color: var(--text-muted); border: 0; cursor: pointer;
+}
+.view-btn + .view-btn { border-left: 1px solid var(--border-mid); }
+.view-btn:hover { color: var(--text); background: var(--gray-50); }
+.view-btn[aria-pressed="true"] { background: var(--amber-900); color: var(--amber-50); }
+.view-btn[hidden] { display: none; }
+.view-btn:focus-visible { outline: 2px solid var(--amber-200); outline-offset: -2px; }
+
+/* ─── SERIES VIEW (js/app/series-view.js) ──────────────────────────── */
+.series-summary { font-size: 13px; color: var(--text-muted); margin: 0 0 0.5rem; }
+.series-summary strong { color: var(--text); font-weight: 600; }
+.series-list { display: flex; flex-direction: column; border-top: 1px solid var(--border); }
+.series-block { border-bottom: 1px solid var(--border); }
+.series-block.open { background: var(--row-tint); }
+.series-row {
+  display: grid; grid-template-columns: 64px minmax(160px, 1.1fr) minmax(200px, 2fr) 130px 44px;
+  gap: 20px; align-items: center; padding: 16px 20px; cursor: pointer;
+}
+.series-row.is-book { border-bottom: 1px solid var(--border); }
+@media (hover: hover) { .series-row:hover { background: var(--row-tint); } }
+.series-row.is-book:focus-visible { outline: 2px solid var(--amber-200); outline-offset: -2px; }
+.series-row.selected { box-shadow: inset 4px 0 0 var(--amber-200); }
+.series-cover {
+  width: 56px; height: 84px; margin: 0 8px 8px 0; border-radius: 3px; object-fit: cover; display: block;
+  box-shadow: 4px 4px 0 -1px var(--border-mid), 8px 8px 0 -2px var(--border);
+}
+.series-row.is-book .series-cover { box-shadow: none; }
+.series-tile {
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Playfair Display', serif; font-size: 20px; color: #FAEEDA; letter-spacing: 0.02em;
+}
+.series-main { min-width: 0; }
+.series-name { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 500; color: var(--text); line-height: 1.25; }
+.series-authors { font-size: 14px; color: var(--text-muted); margin-top: 2px; }
+.series-label { font-size: 13px; color: var(--text-muted); }
+.series-label strong { color: var(--text); font-weight: 600; }
+.series-strip { height: 10px; border-radius: 5px; margin: 6px 0; background: var(--owned); }
+.series-gaps { font-size: 13px; color: var(--gap-text); min-height: 1em; }
+.series-foot { display: none; }
+.series-meta { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.series-read { font-size: 13px; color: var(--text-muted); width: 100%; }
+.series-chev {
+  width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--ctl-border); border-radius: 8px; background: var(--surface); color: var(--text); cursor: pointer;
+}
+.series-chev svg { transition: transform 0.15s; }
+.series-chev[aria-expanded="true"] svg { transform: rotate(180deg); }
+.series-chev-space { width: 44px; }
+.series-vols { padding: 4px 20px 20px 104px; }
+.series-vols-head { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+  font-size: 13px; color: var(--text-muted); margin-bottom: 10px; }
+.series-vols-head .btn, .series-sheet-select { min-height: 44px; }
+.vol-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.vol-chip {
+  min-height: 44px; padding: 0 12px; border-radius: 8px; font: inherit; font-size: 13px; text-align: left;
+  border: 1px solid var(--ctl-border); background: var(--surface); color: var(--text); cursor: pointer;
+}
+.vol-chip strong { margin-right: 6px; }
+.vol-chip.vol-other { border-style: dashed; }
+.vol-chip:hover { background: var(--gray-50); }
+.vol-chip.selected { outline: 2px solid var(--amber-200); }
+
+/* The phone sheet */
+.series-sheet { padding-top: 0.75rem; }
+.series-sheet::before { content: ''; display: block; width: 40px; height: 4px; border-radius: 2px; background: var(--border-mid); margin: 0 auto 12px; }
+.series-sheet-head { display: flex; gap: 14px; align-items: flex-start; }
+.series-sheet-cover { width: 64px; height: 96px; border-radius: 3px; object-fit: cover; flex: none; display: flex; }
+.series-sheet-head .series-tile { font-size: 22px; }
+.series-sheet-headtext { flex: 1; min-width: 0; }
+.series-sheet-headtext .detail-title { font-family: 'Playfair Display', serif; font-size: 24px; margin: 0; }
+.series-sheet-close {
+  width: 44px; height: 44px; flex: none; display: inline-flex; align-items: center; justify-content: center;
+  border: 0; background: transparent; color: var(--text); border-radius: 8px; cursor: pointer;
+}
+.series-strip-lg { height: 12px; border-radius: 6px; margin: 16px 0 4px; }
+.series-strip-ends { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--text-muted); }
+.series-strip-ends .series-gaps { text-align: center; font-size: 12px; }
+.series-sheet-select { width: 100%; margin: 14px 0 8px; }
+.series-sheet-list { display: flex; flex-direction: column; }
+.vol-row {
+  display: flex; gap: 12px; align-items: center; min-height: 56px; padding: 6px 4px; width: 100%;
+  border: 0; border-bottom: 1px solid var(--border); background: transparent; color: var(--text);
+  font: inherit; text-align: left; cursor: pointer;
+}
+.vol-row-tile { width: 34px; height: 50px; border-radius: 2px; flex: none; display: flex; align-items: center; justify-content: center; }
+.vol-row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.vol-row-title { font-size: 15px; }
+.vol-row-n { font-weight: 600; }
+.vol-row-sub { font-size: 13px; color: var(--text-muted); }
+.vol-gap { background: var(--row-tint); cursor: default; }
+.vol-gap .vol-row-tile { border: 1.5px dashed var(--gap-text); color: var(--gap-text); font-weight: 600; }
+.vol-gap .vol-row-sub { color: var(--gap-text); }
+.vol-gap .btn { min-height: 44px; flex: none; }
+.vol-ignored .vol-row-tile, .vol-ignored .vol-row-sub { color: var(--text-muted); border-color: var(--border-mid); }
+
+/* Tablet: drop the meta column. */
+@media (max-width: 900px) {
+  .series-row { grid-template-columns: 56px minmax(120px, 1fr) minmax(160px, 1.6fr) 44px; gap: 14px; }
+  .series-row .series-meta { display: none; }
+  .series-vols { padding-left: 20px; }
+}
+/* Phone: a card — cover, name, strip, "N books" and the gaps note. */
+@media (max-width: 480px) {
+  .series-list { gap: 10px; border-top: 0; }
+  .series-block, .series-row.is-book { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+  .series-row {
+    grid-template-columns: 56px 1fr; grid-template-areas: "cover main" "prog prog";
+    gap: 10px 12px; padding: 12px 14px;
+  }
+  .series-row .series-cover { grid-area: cover; width: 48px; height: 72px;
+    box-shadow: 3px 3px 0 -1px var(--border-mid), 6px 6px 0 -2px var(--border); }
+  .series-row .series-main { grid-area: main; }
+  .series-row .series-progress { grid-area: prog; }
+  .series-row .series-progress:empty { display: none; }
+  .series-row .series-strip { height: 8px; margin: 0 0 6px; }
+  .series-row .series-label, .series-row .series-progress > .series-gaps { display: none; }
+  .series-foot { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--text-muted); }
+  .series-foot .series-gaps { min-height: 0; }
+  .series-row .series-meta, .series-row .series-chev, .series-chev-space { display: none; }
+  .series-name { font-size: 17px; }
+  .series-authors { font-size: 13px; }
+}

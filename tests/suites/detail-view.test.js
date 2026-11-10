@@ -102,7 +102,7 @@ const GAMES = [{ id: 1700000000004, title: 'Horizon Zero Dawn', status: 'complet
 
   // ── 7. List view: rows open it too; their own buttons do not ────────
   await page.click('.tab[data-tab="books"]'); await page.waitForTimeout(300);
-  await page.click('#viewToggleBtn'); await page.waitForTimeout(300);
+  await page.click('#viewToggle [data-view="list"]'); await page.waitForTimeout(300);
   const row = page.locator('#booksGrid .book-row', { hasText: 'Leviathan Wakes' });
   await row.locator('.book-row-title').click(); await page.waitForTimeout(200);
   check('tapping a list row opens the sheet', await open());
@@ -110,7 +110,7 @@ const GAMES = [{ id: 1700000000004, title: 'Horizon Zero Dawn', status: 'complet
   await row.locator('button[title="Edit"]').click(); await page.waitForTimeout(200);
   check("a row's own ✏ goes straight to edit, without the sheet", !(await open()) && await page.evaluate(() => document.getElementById('modal').classList.contains('open')));
   await page.evaluate(() => closeModal());
-  await page.click('#viewToggleBtn'); await page.waitForTimeout(300);
+  await page.click('#viewToggle [data-view="card"]'); await page.waitForTimeout(300);
 
   // ── 8. Keyboard ─────────────────────────────────────────────────────
   await page.evaluate(() => document.querySelector('#booksGrid .book-card').focus());

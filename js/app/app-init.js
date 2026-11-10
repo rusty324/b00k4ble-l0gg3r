@@ -117,5 +117,4 @@ window.addEventListener('scroll', () => {
 
 // ─── INIT ─────────────────────────────────────────────────────────────
 applyTheme(localStorage.getItem('theme') || 'dark');
-document.getElementById('viewToggleBtn').textContent = viewMode === 'card' ? '⊞' : '☰';
 switchTab(activeTab);
