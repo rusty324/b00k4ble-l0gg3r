@@ -339,7 +339,7 @@ label:has(> input[type="checkbox"]:focus):not(:hover) { outline: 2px solid var(-
 
 /* ─── WHAT TO READ NEXT ────────────────────────────────────────────── */
 /* Below every other sheet: a book's details and its edit form open from it. */
-#nextModal { z-index: 190; }
+#nextModal, #seriesModal { z-index: 190; }
 #nextModal .filter-row { margin-top: 0.6rem; }
 .next-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.9rem; }
 .next-item { display: flex; align-items: center; gap: 0.75rem; width: 100%; text-align: left; padding: 0.6rem 0.7rem; border-radius: 10px;

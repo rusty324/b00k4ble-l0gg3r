@@ -45,11 +45,14 @@ function getCoverObserver() {
       const id = parseInt(entry.target.dataset.bookId, 10);
       const book = books.find(b => b.id === id);
       if (!book) return;
-      const isList = entry.target.classList.contains('book-row-initial');
+      const cls = entry.target.classList;
+      // A Series view tile keeps its own size class (series-cover / series-sheet-cover).
+      const keep = cls.contains('series-tile') ? [...cls].filter(c => c !== 'series-tile').join(' ') + ' series-cover-img' : null;
+      const isList = cls.contains('book-row-initial');
       fetchCover(book).then(url => {
         if (!url || url === 'none' || url === 'pending') return;
         const img = document.createElement('img');
-        img.className = isList ? 'book-row-thumb' : 'book-card-cover';
+        img.className = keep || (isList ? 'book-row-thumb' : 'book-card-cover');
         img.src = url;
         img.alt = '';
         img.loading = 'lazy';
@@ -107,6 +110,9 @@ function render() {
     _statsRenderedAt = _booksMutation;
   }
 
+  syncSortOptions();
+  const summary = document.getElementById('booksSummary');
+  if (summary && viewMode !== 'series') summary.hidden = true;
   const query = searchFold(document.getElementById('searchInput').value).trim();
   const sort  = document.getElementById('sortSelect').value;
 
@@ -159,8 +165,11 @@ function render() {
       <p style="font-size:14px">${books.length === 0 ? 'Add a book, import a JSON file, or set up Sync &amp; backup under ⋯ to pull your library from your data repo.' : 'Try adjusting your search or filters.'}</p>
     </div>`;
     document.getElementById('pagination').innerHTML = '';
+    if (summary) summary.hidden = true;
     return;
   }
+
+  if (viewMode === 'series') { renderSeriesView(filtered, sort, grid); return; }
 
   const page = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 

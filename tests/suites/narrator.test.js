@@ -60,9 +60,9 @@ const BOOKS = [
   const found = await page.evaluate(() => [...document.querySelectorAll('#booksGrid .book-title')].map(e => e.textContent));
   check('searching a narrator finds the book', J(found) === '["Good Omens"]', J(found));
   await page.fill('#searchInput', ''); await page.waitForTimeout(400);
-  await page.click('#viewToggleBtn'); await page.waitForTimeout(300);
+  await page.click('#viewToggle [data-view="list"]'); await page.waitForTimeout(300);
   check('the list row shows it beside the author', (await page.locator('#booksGrid .book-row', { hasText: 'Leviathan Wakes' }).locator('.book-row-narrator').textContent()).includes('Jefferson Mays'));
-  await page.click('#viewToggleBtn'); await page.waitForTimeout(300);
+  await page.click('#viewToggle [data-view="card"]'); await page.waitForTimeout(300);
 
   // ── 3. The form ─────────────────────────────────────────────────────
   const shown = () => page.evaluate(() => document.getElementById('f-narrator-group').style.display !== 'none');

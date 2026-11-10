@@ -14,7 +14,7 @@ let currentPage = 1;
 let editingId = null;
 let currentRating = 0;
 let searchTimer = null;
-let viewMode = localStorage.getItem('viewMode') || 'card';
+let viewMode = ['card', 'list', 'series'].includes(localStorage.getItem('viewMode')) ? localStorage.getItem('viewMode') : 'card';
 
 // Performance caches
 let _filteredCache = null;

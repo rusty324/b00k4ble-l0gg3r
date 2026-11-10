@@ -18,10 +18,31 @@ function toggleTheme() {
   applyTheme(current === 'dark' ? 'light' : 'dark');
 }
 
-function toggleView() {
-  viewMode = viewMode === 'card' ? 'list' : 'card';
+// The view a tab actually shows: Series exists only on Books, and the other
+// tabs show cards for it — without overwriting the stored choice, so Books
+// is still in Series when you come back.
+const effectiveView = (tab = activeTab) =>
+  viewMode === 'series' && tab !== 'books' ? 'card' : viewMode;
+
+// The segmented card / list / series control: which buttons the tab has,
+// and which is pressed. Hidden where a tab has no views.
+function paintViewToggle() {
+  const group = document.getElementById('viewToggle');
+  if (!group) return;
+  group.style.display = ['books', 'media', 'games'].includes(activeTab) ? '' : 'none';
+  const cur = effectiveView();
+  group.querySelectorAll('.view-btn').forEach(b => {
+    b.hidden = b.dataset.view === 'series' && activeTab !== 'books';
+    b.setAttribute('aria-pressed', String(b.dataset.view === cur));
+  });
+}
+
+function setView(mode) {
+  if (mode === 'series' && activeTab !== 'books') return;
+  if (mode === effectiveView()) return;
+  viewMode = mode;
   localStorage.setItem('viewMode', viewMode);
-  document.getElementById('viewToggleBtn').textContent = viewMode === 'card' ? '⊞' : '☰';
+  paintViewToggle();
 
   // Capture the index of the topmost partially-visible item so we can restore
   // the reading position after the layout changes.
@@ -86,9 +107,7 @@ function switchTab(tab) {
     bar.scrollLeft = Math.max(0, left - (bar.clientWidth - activeBtn.offsetWidth) / 2);
   }
 
-  // View toggle visible on books, media, and games tabs
-  document.getElementById('viewToggleBtn').style.display =
-    (tab === 'books' || tab === 'media' || tab === 'games') ? '' : 'none';
+  paintViewToggle();
 
   const labels = {
     'books':    'Add book',
