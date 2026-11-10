@@ -442,12 +442,17 @@ def merge_sources(all_books):
             elif not existing.get('narrator') and book.get('narrator'):
                 existing['narrator'] = book['narrator']
 
-    # Assign stable IDs and strip internal fields
+    # Assign IDs and strip internal fields. The app reads an id as the time a
+    # book was added ("Newest added", the detail sheet's "Added"), and Calibre
+    # rows arrive newest first, so ids count down: the first (newest) book
+    # gets the highest. Only a first import sees these; merge_with_existing
+    # keeps the ids already in the app's file.
     result = []
     base_id = int(time.time() * 1000) - len(merged) * 1000
+    n = len(merged)
     for i, book in enumerate(merged.values()):
         result.append({
-            'id':      base_id + i,
+            'id':      base_id + (n - 1 - i),
             'title':   book['title'],
             'author':  book['author'],
             **({'narrator': book['narrator']} if book.get('narrator') else {}),

@@ -119,7 +119,7 @@ function render() {
       if (filters.format !== 'all' && !b.formats.includes(filters.format)) return false;
       if (filters.status !== 'all' && b.status !== filters.status) return false;
       if (bookGenreFilter && !(b.genre || []).some(g => bookGenreFilter.has(textKey(g)))) return false;
-      if (query && !b._searchStr.includes(query)) return false;
+      if (query && !matchesAll(b._searchStr, query)) return false;
       return true;
     });
 

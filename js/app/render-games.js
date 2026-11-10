@@ -67,14 +67,8 @@ function renderGames(listOnly = false) {
     items = items.filter(g => (g.genre || []).some(x => wanted.has(textKey(x))));
   }
   if (gameSearch.trim()) {
-    const q = searchFold(gameSearch).trim();
-    items = items.filter(g =>
-      searchFold(g.title).includes(q) ||
-      gamePlatformText(g).toLowerCase().includes(q) ||
-      (g.dlc || []).some(d => searchFold(d.name).includes(q)) ||
-      (g.year ? String(g.year) : '').includes(q) ||
-      (g.genre || []).some(x => searchFold(x).includes(q))
-    );
+    items = items.filter(g => matchesAll(
+      [g.title, gamePlatformText(g), ...(g.dlc || []).map(d => d.name), g.year, ...(g.genre || [])].join(' '), gameSearch));
   }
 
   // Sort
