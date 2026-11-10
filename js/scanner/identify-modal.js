@@ -181,6 +181,8 @@ function pickIdentifyResult(i) {
   setMediaRadio('m-type', r.type);
   // Same handoff tmdbPick uses, so posters and the save path work unchanged.
   pendingTmdb = { tmdbId: r.tmdbId, posterUrl: r.posterUrl || '' };
+  const posterField = document.getElementById('m-posterUrl');
+  if (posterField && !posterField.value.trim() && r.posterUrl) { posterField.value = r.posterUrl; window.paintCoverPreview?.('m-posterUrl'); }
   tmdbHint(`Identified from the cover: ${r.title}${r.year ? ' (' + r.year + ')' : ''}`);
   paintDup('media');
   mediaPicked();

@@ -11,6 +11,7 @@
 
 import { createStore } from './ghsync/store.js';
 import { syncSections, setupRows, badgeState, h } from './ghsync/settings-ui.js';
+import { encryptJson, decryptJson, isEnvelope } from './ghsync/crypto.js';
 
 const COLLECTIONS = ['books', 'media', 'wishlist', 'games'];
 const FILE_NAMES = {
@@ -473,7 +474,55 @@ window.handleSyncBackdrop = (e) => {
 // on — `ghStore.syncStatus()`, `ghStore.files`, `ghStore.cache.getQueue()`.
 window.ghStore = store;
 
+// ─── uploaded cover images ────────────────────────────────────────────
+// js/app/cover-files.js keeps uploaded covers in IndexedDB and asks this
+// bridge to move them to and from the data repo. They are files of their own
+// beside the four collections (covers/<kind>/<name>), one writer each (the
+// device that uploaded it), never rewritten: a new upload is a new name.
+// With a sync password set they are stored encrypted, as a JSON envelope
+// (.json) around { type, data: base64 } — the same crypto as the library.
+const coverPath = rel => (currentFolder ? `${currentFolder}/` : '') + rel;
+const b64 = bytes => { let s = ''; for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(s); };
+const unb64 = str => Uint8Array.from(atob(str), c => c.charCodeAt(0));
+const coverPassword = () => (store.encryption().enabled ? localStorage.getItem('booklogger.enc.pw') : null);
+
+window.ghCoverFiles = {
+  canSync: () => store.canSync(),
+  encrypted: () => store.encryption().enabled,
+  // -> resolves once the file is in the repo (or already was).
+  async put(rel, bytes, type) {
+    const path = coverPath(rel);
+    let payload = bytes;
+    if (rel.endsWith('.json')) {
+      const pw = coverPassword();
+      if (!pw) throw new Error('No sync password for an encrypted cover');
+      const env = await encryptJson({ type, data: b64(bytes) }, pw);
+      payload = new TextEncoder().encode(JSON.stringify(env));
+    }
+    try {
+      await store.client.putBytes(path, payload, null, `Cover ${rel}`);
+    } catch (err) {
+      // A retry after a lost response finds it there already: that is success.
+      try { await store.client.getBytes(path); return; } catch { throw err; }
+    }
+  },
+  // -> { bytes, type } ; throws when absent or unreadable.
+  async get(rel) {
+    const { bytes } = await store.client.getBytes(coverPath(rel));
+    if (!rel.endsWith('.json')) return { bytes, type: 'image/jpeg' };
+    const env = JSON.parse(new TextDecoder().decode(bytes));
+    if (!isEnvelope(env)) return { bytes: unb64(env.data), type: env.type };
+    const pw = coverPassword();
+    if (!pw) throw new Error('locked');
+    const { type, data } = await decryptJson(env, pw);
+    return { bytes: unb64(data), type };
+  },
+};
+
 // ─── start ────────────────────────────────────────────────────────────
 seedFromApp();
 store.init();          // background refresh, cross-tab, offline retry
+// Covers picked while offline or before sync was set up go up once it can.
+window.flushCoverUploads?.();
+store.onChange(e => { if (e.type === 'sync-status' && e.status === 'ok') window.flushCoverUploads?.(); });
 paintBadge();

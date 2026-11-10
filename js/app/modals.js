@@ -10,6 +10,7 @@ function openAddModal() {
 
   ['f-title', 'f-author', 'f-narrator', 'f-series', 'f-seriesIndex', 'f-notes', 'f-coverUrl', 'f-isbn', 'f-asin', 'f-ol', 'f-finished']
     .forEach(id => document.getElementById(id).value = '');
+  paintCoverPreview('f-coverUrl');
   setGenreValues('f-genre', []);
   setLinksField('f', []);
   closeOlAC();
@@ -42,6 +43,7 @@ function openEditModal(id) {
   setGenreValues('f-genre', b.genre);
   document.getElementById('f-notes').value  = b.notes || '';
   document.getElementById('f-coverUrl').value = b.coverUrl || '';
+  paintCoverPreview('f-coverUrl');
   document.getElementById('f-isbn').value = b.isbn || '';
   document.getElementById('f-asin').value = b.asin || '';
   setLinksField('f', b.links);
@@ -455,6 +457,7 @@ function openMediaModal(id) {
     document.getElementById('m-year').value  = m.year  || '';
     setGenreValues('m-genre', m.genre);
     document.getElementById('m-notes').value = m.notes || '';
+    document.getElementById('m-posterUrl').value = m.posterUrl || '';
     setLinksField('m', m.links);
     setMediaRadio('m-type',   m.type   || 'movie');
     setMediaRadio('m-status', m.status || 'want');
@@ -466,7 +469,7 @@ function openMediaModal(id) {
     mediaEditingId = null;
     mediaRating    = 0;
     document.getElementById('mediaModalTitle').textContent = 'Add title';
-    ['m-title', 'm-year', 'm-notes'].forEach(fid => document.getElementById(fid).value = '');
+    ['m-title', 'm-year', 'm-notes', 'm-posterUrl'].forEach(fid => document.getElementById(fid).value = '');
     setGenreValues('m-genre', []);
     setLinksField('m', []);
     setMediaFormats([]);
@@ -476,6 +479,7 @@ function openMediaModal(id) {
     setMediaExtras(null);
   }
   pendingTmdb = null;
+  paintCoverPreview('m-posterUrl');
   syncTmdbUI();
   document.getElementById('mediaModal').classList.add('open');
   resetDup('media');
@@ -515,16 +519,19 @@ function saveMediaItem() {
     .map(cb => cb.value);
   const editions = editionsForSave();
   const seasons  = type === 'tv' ? [..._mediaSeasons] : [];
+  // The field wins; a TMDb pick only fills a blank one.
+  const typedPoster = document.getElementById('m-posterUrl').value.trim();
+  const tmdb = pendingTmdb ? { ...pendingTmdb, posterUrl: typedPoster || pendingTmdb.posterUrl || '' } : { posterUrl: typedPoster };
 
   if (mediaEditingId !== null) {
     const i = mediaLibrary.findIndex(x => x.id === mediaEditingId);
     if (i !== -1) {
       mediaLibrary[i] = normalizeMediaItem({ ...mediaLibrary[i], ...renamedBlurb(mediaLibrary[i], title), title, type, year, genre, formats, status, notes, rating: mediaRating, links,
-        editions, seasons, seasonCount: _mediaSeasonCount, ...(pendingTmdb || {}) });
+        editions, seasons, seasonCount: _mediaSeasonCount, ...tmdb });
     }
   } else {
     mediaLibrary.push(normalizeMediaItem({ id: newId(), title, type, year, genre, formats, status, notes, rating: mediaRating, links,
-      editions, seasons, seasonCount: _mediaSeasonCount, ...(pendingTmdb || {}) }));
+      editions, seasons, seasonCount: _mediaSeasonCount, ...tmdb }));
   }
 
   saveMedia();
@@ -952,6 +959,7 @@ function openGameModal(id) {
     setGenreValues('g-genre', g.genre);
     document.getElementById('g-notes').value    = g.notes || '';
     document.getElementById('g-coverUrl').value = g.coverUrl || '';
+    paintCoverPreview('g-coverUrl');
     setLinksField('g', g.links);
     setGamePlatforms(g.platforms);
     setGameDlc(g.dlc);
@@ -962,6 +970,7 @@ function openGameModal(id) {
     gameRating    = 0;
     document.getElementById('gameModalTitle').textContent = 'Add game';
     ['g-title', 'g-year', 'g-notes', 'g-coverUrl'].forEach(fid => document.getElementById(fid).value = '');
+    paintCoverPreview('g-coverUrl');
     setGenreValues('g-genre', []);
     setLinksField('g', []);
     updateGameStars(0);

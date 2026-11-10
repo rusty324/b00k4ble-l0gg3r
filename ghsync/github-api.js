@@ -153,6 +153,30 @@ export function makeClient(repoCfgOrGetter, tokens) {
       return json.content.sha;
     },
 
+    // Binary files (images). -> { bytes: Uint8Array, sha } ; throws NotFoundError.
+    // The Contents API inlines content as base64 up to 1 MB, plenty for a
+    // resized cover.
+    async getBytes(path) {
+      const res = await fetch(`${base()}/${path}?ref=${cfg().branch}`, { headers: headers() });
+      await check(res, path);
+      const json = await res.json();
+      const bin = atob(String(json.content || '').replace(/\n/g, ''));
+      return { bytes: Uint8Array.from(bin, (c) => c.charCodeAt(0)), sha: json.sha };
+    },
+
+    // sha: null on create. -> new sha.
+    async putBytes(path, bytes, sha, message) {
+      const body = { message, content: btoa(bytesToBinary(bytes)), branch: cfg().branch };
+      if (sha) body.sha = sha;
+      const res = await fetch(`${base()}/${path}`, {
+        method: 'PUT',
+        headers: { ...headers(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      await check(res, path);
+      return (await res.json()).content.sha;
+    },
+
     // -> [{ name, path, sha }] ; [] if the directory doesn't exist yet
     async listDir(path) {
       const res = await fetch(`${base()}/${path}?ref=${cfg().branch}`, { headers: headers() });

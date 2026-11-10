@@ -97,6 +97,8 @@ function tmdbPick(i) {
   setMediaRadio('m-type', r.type);
   // Carried through saveMediaItem, which builds a fresh object on insert.
   pendingTmdb = { tmdbId: r.tmdbId, posterUrl: r.posterUrl || '' };
+  const posterField = document.getElementById('m-posterUrl');
+  if (posterField && !posterField.value.trim() && r.posterUrl) { posterField.value = r.posterUrl; window.paintCoverPreview?.('m-posterUrl'); }
   closeTmdbAC();
   document.getElementById('m-tmdb').value = '';
   tmdbHint(`Filled from TMDb: ${r.title}${r.year ? ' (' + r.year + ')' : ''}`);
