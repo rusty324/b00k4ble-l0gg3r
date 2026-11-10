@@ -140,7 +140,11 @@ input[type="radio"], input[type="checkbox"] {
   overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; opacity: 0;
 }
 label:has(> input[type="radio"]), label:has(> input[type="checkbox"]) { position: relative; }
-label:has(> input:focus-visible) { outline: 2px solid var(--amber-200); outline-offset: 2px; }
+/* :focus-visible on the hidden input is not reliable in WebKit; a focused
+   input whose label is not under the pointer was reached by keyboard. */
+label:has(> input:focus-visible),
+label:has(> input[type="radio"]:focus):not(:hover),
+label:has(> input[type="checkbox"]:focus):not(:hover) { outline: 2px solid var(--amber-200); outline-offset: 2px; }
 
 /* ─── PLATFORM ENTRIES (game modal) ──────────────────────────────────
    One row per platform the game is owned on, each carrying its own
