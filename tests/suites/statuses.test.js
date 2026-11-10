@@ -34,6 +34,12 @@ const GAMES = [
   // The status radios only (the forms also have type, format and platform ones).
   const radios = name => page.locator(`label.radio-btn:has(input[name="${name}"])`).allTextContents().then(a => a.map(t => t.trim()));
   const badgeOf = (scope, title) => page.locator(`${scope} .book-card`, { hasText: title }).locator('.badge').filter({ hasText: /Want|Read|Reading|Watched|Playing|Completed|Hold|Interested/ }).first();
+  // On a phone the filter pills give way to the Filters sheet: tap an option there (tap again to clear).
+  const sheetTap = async (kind, facet, value) => {
+    await page.click(`#filtersBtn-${kind}`); await page.waitForTimeout(150);
+    await page.click(`#filterBody .facet-opt[data-facet="${facet}"][data-value="${value}"]`); await page.waitForTimeout(150);
+    await page.keyboard.press('Escape'); await page.waitForTimeout(150);
+  };
 
   // ── 1. Books ────────────────────────────────────────────────────────
   check('the book filter offers Not Interested', (await page.locator('#statusPills .pill').allTextContents()).includes('Not Interested'));
@@ -45,9 +51,9 @@ const GAMES = [
   check('it saves', await page.evaluate(() => books.find(b => b.id === 1700000000002).status) === 'not-interested');
   const nb = badgeOf('#booksGrid', 'The Well of Ascension');
   check('its card says Not Interested, in a muted badge', (await nb.textContent()) === 'Not Interested' && /badge-nope/.test(await nb.getAttribute('class')));
-  await page.click('#statusPills .pill:text-is("Not Interested")'); await page.waitForTimeout(200);
+  await sheetTap('books', 'status', 'not-interested');
   check('the filter shows just it', J(await page.locator('#booksGrid .book-title').allTextContents()) === J(['The Well of Ascension']));
-  await page.click('#statusPills .pill:text-is("All")'); await page.waitForTimeout(200);
+  await sheetTap('books', 'status', 'not-interested');
   check('the detail sheet says so', await page.evaluate(() => { openDetail('books', 1700000000002);
     const t = document.querySelector('#detailModal .badge').textContent; closeDetail(); return t; }) === 'Not Interested');
 
@@ -83,9 +89,9 @@ const GAMES = [
   const hb = badgeOf('#altContent', 'Celeste');
   check('On Hold/Dropped saves, with its own badge', await page.evaluate(() => videoGames.find(g => g.id === 1700000000202).status) === 'on-hold' &&
     (await hb.textContent()) === 'On Hold/Dropped' && /badge-hold/.test(await hb.getAttribute('class')));
-  await page.click('#altContent .pill:text-is("On Hold/Dropped")'); await page.waitForTimeout(200);
+  await sheetTap('games', 'status', 'on-hold');
   check('the filter shows just it', J(await page.locator('#altContent .book-title').allTextContents()) === J(['Celeste']));
-  await page.click('#altContent .filter-row:has-text("Status") .pill:text-is("All")'); await page.waitForTimeout(200);
+  await sheetTap('games', 'status', 'on-hold');
 
   // ── 4. Bulk edit offers them too ────────────────────────────────────
   await page.locator('#altContent .select-btn').click();
@@ -98,13 +104,17 @@ const GAMES = [
 
   // ── 5. On a phone, every filter option is on screen ─────────────────
   // The rows used to scroll sideways with no scrollbar, hiding the options
-  // past the edge — exactly where the new statuses landed.
+  // past the edge — exactly where the new statuses landed. On a phone they
+  // now live in the Filters sheet, which wraps.
   for (const tab of ['books', 'media', 'games']) {
     await page.click(`.tab[data-tab="${tab}"]`); await page.waitForTimeout(300);
-    const off = await page.evaluate(() => [...document.querySelectorAll('.filter-row .pill')]
-      .filter(p => p.offsetParent).filter(p => { const r = p.getBoundingClientRect(); return r.right > innerWidth || r.left < 0; })
+    await page.click(`#filtersBtn-${tab}`); await page.waitForTimeout(150);
+    const all = await page.evaluate(() => [...document.querySelectorAll('#filterBody .facet-opt')].map(p => p.textContent.replace(/\s+/g, ' ').trim()));
+    const off = await page.evaluate(() => [...document.querySelectorAll('#filterBody .facet-opt')]
+      .filter(p => { const r = p.getBoundingClientRect(); return r.right > innerWidth || r.left < 0; })
       .map(p => p.textContent));
-    check(`${tab}: no filter option is off the edge of a phone screen`, off.length === 0, JSON.stringify(off));
+    check(`${tab}: no filter option is off the edge of a phone screen`, all.some(t => /Not Interested/.test(t)) && off.length === 0, JSON.stringify(off));
+    await page.keyboard.press('Escape'); await page.waitForTimeout(150);
   }
 
   // ── 6. They survive a reload ────────────────────────────────────────

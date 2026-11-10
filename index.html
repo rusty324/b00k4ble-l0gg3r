@@ -109,10 +109,11 @@
         <option value="finished-desc">Recently finished</option>
         <option value="series-asc">Series</option>
       </select>
+      <button type="button" class="btn filters-btn" id="filtersBtn-books" aria-haspopup="dialog" onclick="openFilterSheet('books')">Filters</button>
     </div>
 
-    <!-- Format filter pills -->
-    <div class="filter-row">
+    <!-- Format filter pills (on phones, the Filters sheet instead — js/app/filters-sheet.js) -->
+    <div class="filter-row facet-row">
       <span class="filter-label">Format</span>
       <div id="formatPills" class="pill-group">
         <button class="pill active" onclick="setFilter('format','all',this)">All</button>
@@ -123,7 +124,7 @@
     </div>
 
     <!-- Status filter pills -->
-    <div class="filter-row">
+    <div class="filter-row facet-row">
       <span class="filter-label">Status</span>
       <div id="statusPills" class="pill-group">
         <button class="pill active" onclick="setFilter('status','all',this)">All</button>
@@ -136,7 +137,7 @@
 
     <!-- Genre filter — the shared multi-select menu, built by JS and empty
          until some book has a genre -->
-    <div id="bookGenreFilter"></div>
+    <div id="bookGenreFilter" class="facet-row"></div>
 
     <!-- Book cards / list rows injected here -->
     <div class="missing-slot" id="booksMissing"></div>
@@ -808,6 +809,11 @@
   <div class="modal detail-modal series-sheet" id="seriesBody"></div>
 </div>
 
+<!-- Phone filters — filled by openFilterSheet() (js/app/filters-sheet.js) -->
+<div class="modal-backdrop" id="filterModal" onclick="handleFilterBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="filterSheetTitle">
+  <div class="modal detail-modal filter-sheet" id="filterBody"></div>
+</div>
+
 <!-- A library card's details — filled by openDetail() (js/app/detail-view.js) -->
 <div class="modal-backdrop" id="detailModal" onclick="handleDetailBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
   <div class="modal detail-modal" id="detailBody"></div>
@@ -882,6 +888,7 @@
 <script src="js/app/bulk-edit.js"></script>
 <script src="js/app/series-view.js"></script>
 <script src="js/app/cover-files.js"></script>
+<script src="js/app/filters-sheet.js"></script>
 <script src="js/app/app-init.js"></script>
 <!-- Module, so deferred: app-init.js has already initialised by the time
      this runs, which is what lets the app stay standalone and local-first. -->

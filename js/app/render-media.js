@@ -2,6 +2,9 @@
 // and search. Split out of app.js.
 
 // ─── MEDIA RENDERING (Movies & TV tab) ────────────────────────────────
+// What the search box matches against (shared with the filters sheet's counts).
+const mediaSearchText = m => [m.title, m.year, ...(m.genre || []), ...Object.values(m.editions || {})].join(' ');
+
 // listOnly: replace just the results container, leaving the toolbar (and
 // the focused search input inside it) intact — used by the search path.
 function renderMedia(listOnly = false) {
@@ -19,10 +22,7 @@ function renderMedia(listOnly = false) {
     const wanted = new Set(mediaFilters.genres.map(textKey));
     items = items.filter(m => (m.genre || []).some(x => wanted.has(textKey(x))));
   }
-  if (mediaSearch.trim()) {
-    items = items.filter(m => matchesAll(
-      [m.title, m.year, ...(m.genre || []), ...Object.values(m.editions || {})].join(' '), mediaSearch));
-  }
+  if (mediaSearch.trim()) items = items.filter(m => matchesAll(mediaSearchText(m), mediaSearch));
 
   // Sort
   items = [...items].sort((a, b) => {
@@ -69,22 +69,23 @@ function renderMedia(listOnly = false) {
       <input type="search" id="mediaSearchInput" placeholder="Search title, year, genre, or edition…" aria-label="Search movies and TV shows" value="${esc(mediaSearch)}" oninput="debouncedMediaRender(this.value)">
       <button type="button" class="search-clear" aria-label="Clear search" onclick="clearSearch(this)">&times;</button>
     </div>
-    <div class="filter-row">
+    <div class="filter-row facet-row">
       <span class="filter-label">Type</span>
       <div class="pill-group">${typePills}</div>
     </div>
-    <div class="filter-row">
+    <div class="filter-row facet-row">
       <span class="filter-label">Status</span>
       <div class="pill-group">${statusPills}</div>
     </div>
-    <div class="filter-row">
+    <div class="filter-row facet-row">
       <span class="filter-label">Format</span>
       <div class="pill-group">${formatPills}</div>
     </div>
-    ${genreFilterRow('media')}
+    <div class="facet-row">${genreFilterRow('media')}</div>
     <div class="filter-row">
       <span class="filter-label">Sort</span>
       ${sortSelect}
+      ${filtersButton('media')}
     </div>
     <div class="missing-slot">${listTools('media')}</div>
   </div>`;

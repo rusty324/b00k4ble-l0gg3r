@@ -44,6 +44,9 @@ function gameDlcBadge(g) {
   return `<span class="badge badge-dlc" title="${esc(names)}">${label}</span>`;
 }
 
+// What the search box matches against (shared with the filters sheet's counts).
+const gameSearchText = g => [g.title, gamePlatformText(g), ...(g.dlc || []).map(d => d.name), g.year, ...(g.genre || [])].join(' ');
+
 // listOnly: replace just the results container, leaving the toolbar (and
 // the focused search input inside it) intact — used by the search path.
 function renderGames(listOnly = false) {
@@ -66,10 +69,7 @@ function renderGames(listOnly = false) {
     const wanted = new Set(gameFilters.genres.map(textKey));
     items = items.filter(g => (g.genre || []).some(x => wanted.has(textKey(x))));
   }
-  if (gameSearch.trim()) {
-    items = items.filter(g => matchesAll(
-      [g.title, gamePlatformText(g), ...(g.dlc || []).map(d => d.name), g.year, ...(g.genre || [])].join(' '), gameSearch));
-  }
+  if (gameSearch.trim()) items = items.filter(g => matchesAll(gameSearchText(g), gameSearch));
 
   // Sort
   items = [...items].sort((a, b) => {
@@ -112,22 +112,23 @@ function renderGames(listOnly = false) {
       <input type="search" id="gameSearchInput" placeholder="Search title, platform, DLC, year, or genre…" aria-label="Search video games" value="${esc(gameSearch)}" oninput="debouncedGameRender(this.value)">
       <button type="button" class="search-clear" aria-label="Clear search" onclick="clearSearch(this)">&times;</button>
     </div>
-    <div class="filter-row">
+    <div class="filter-row facet-row">
       <span class="filter-label">Platform</span>
       <div class="pill-group">${platformPills}</div>
     </div>
-    <div class="filter-row">
+    <div class="filter-row facet-row">
       <span class="filter-label">Status</span>
       <div class="pill-group">${statusPills}</div>
     </div>
-    <div class="filter-row">
+    <div class="filter-row facet-row">
       <span class="filter-label">Format</span>
       <div class="pill-group">${formatPills}</div>
     </div>
-    ${genreRow}
+    <div class="facet-row">${genreRow}</div>
     <div class="filter-row">
       <span class="filter-label">Sort</span>
       ${sortSelect}
+      ${filtersButton('games')}
     </div>
     <div class="missing-slot">${listTools('games')}</div>
   </div>`;

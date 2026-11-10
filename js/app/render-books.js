@@ -111,12 +111,13 @@ function render() {
   }
 
   syncSortOptions();
+  paintFiltersButton('books');
   const summary = document.getElementById('booksSummary');
   if (summary && viewMode !== 'series') summary.hidden = true;
   const query = searchFold(document.getElementById('searchInput').value).trim();
   const sort  = document.getElementById('sortSelect').value;
 
-  const key = `${query}|${sort}|${filters.format}|${filters.status}|${filters.genres.join('\u0000')}|${_booksMutation}`;
+  const key = `${query}|${sort}|${filters.format}|${filters.status}|${filters.collection}|${filters.genres.join('\u0000')}|${_booksMutation}`;
   if (_filteredCacheKey !== key || _filteredCache === null) {
     // Several genres widen rather than narrow — see GENRE_FILTERS.
     const bookGenreFilter = filters.genres.length
@@ -126,6 +127,7 @@ function render() {
       if (filters.status !== 'all' && b.status !== filters.status) return false;
       if (bookGenreFilter && !(b.genre || []).some(g => bookGenreFilter.has(textKey(g)))) return false;
       if (query && !matchesAll(b._searchStr, query)) return false;
+      if (!passesCollection(b)) return false;
       return true;
     });
 
