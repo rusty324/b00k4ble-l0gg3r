@@ -313,6 +313,16 @@ input[type="radio"], input[type="checkbox"] { display: none; }
 .missing-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
 .missing-ignored { font-size: 13px; color: var(--text-muted); }
 
+/* ─── DESCRIPTION (detail sheet) ───────────────────────────────────── */
+.detail-blurb:empty { display: none; }
+.detail-blurb-text { font-size: 14px; line-height: 1.5; color: var(--text); white-space: pre-line; overflow-wrap: anywhere;
+                     display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.detail-blurb-text.open { display: block; -webkit-line-clamp: unset; }
+.detail-blurb-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.9rem; margin-top: 0.35rem; font-size: 12px; color: var(--text-light); }
+.detail-blurb-meta a { color: inherit; }
+.detail-blurb-wait { font-size: 13px; }
+.text-btn { background: none; border: none; padding: 0; font: inherit; font-size: 12px; color: var(--amber-600); cursor: pointer; text-decoration: underline; }
+
 /* ─── WHAT TO READ NEXT ────────────────────────────────────────────── */
 /* Below every other sheet: a book's details and its edit form open from it. */
 #nextModal { z-index: 190; }

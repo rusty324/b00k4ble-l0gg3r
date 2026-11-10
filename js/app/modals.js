@@ -206,7 +206,7 @@ function saveBook() {
     if (i !== -1) {
       // Ignored gaps belong to a series: a book moved to another one leaves them behind.
       const sameSeries = seriesKey(splitSeries(series).name) === seriesKey(splitSeries(books[i].series).name);
-      books[i] = normalizeBook({ ...books[i], title, author, narrator, finished, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
+      books[i] = normalizeBook({ ...books[i], ...renamedBlurb(books[i], title), title, author, narrator, finished, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
         isbn: isbn || pendingScanCode || books[i].isbn || '', asin, ...(sameSeries ? {} : { ignoredGaps: [] }) });
     }
   } else {
@@ -519,7 +519,7 @@ function saveMediaItem() {
   if (mediaEditingId !== null) {
     const i = mediaLibrary.findIndex(x => x.id === mediaEditingId);
     if (i !== -1) {
-      mediaLibrary[i] = normalizeMediaItem({ ...mediaLibrary[i], title, type, year, genre, formats, status, notes, rating: mediaRating, links,
+      mediaLibrary[i] = normalizeMediaItem({ ...mediaLibrary[i], ...renamedBlurb(mediaLibrary[i], title), title, type, year, genre, formats, status, notes, rating: mediaRating, links,
         editions, seasons, seasonCount: _mediaSeasonCount, ...(pendingTmdb || {}) });
     }
   } else {
@@ -1015,7 +1015,7 @@ function saveGameItem() {
     if (i !== -1) {
       // platform/formats are spread in from the stored record when it predates
       // the list; normalizeVideoGame drops them once `platforms` is present.
-      videoGames[i] = normalizeVideoGame({ ...videoGames[i], title, platforms, dlc, year, genre, status, notes, coverUrl, rating: gameRating, links });
+      videoGames[i] = normalizeVideoGame({ ...videoGames[i], ...renamedBlurb(videoGames[i], title), title, platforms, dlc, year, genre, status, notes, coverUrl, rating: gameRating, links });
     }
   } else {
     videoGames.push(normalizeVideoGame({ id: newId(), title, platforms, dlc, year, genre, status, notes, coverUrl, rating: gameRating, links }));

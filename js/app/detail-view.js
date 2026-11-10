@@ -119,6 +119,7 @@ function openDetail(kind, id) {
         <div class="detail-badges">${d.badges}</div>
       </div>
     </div>
+    <div class="detail-section detail-blurb" id="detailBlurb"></div>
     ${d.facts ? `<dl class="detail-facts">${d.facts}</dl>` : ''}
     ${(d.genre || []).length ? `<div class="detail-section"><div class="detail-label">Genre</div>
       <div class="book-tags">${d.genre.map(x => `<span class="badge badge-tag">${esc(x)}</span>`).join('')}</div></div>` : ''}
@@ -133,6 +134,7 @@ function openDetail(kind, id) {
     </div>`;
   _detail = { kind, id };
   document.getElementById('detailModal').classList.add('open');
+  paintBlurb(kind, rec);   // its description, looked up if there is none yet (blurbs.js)
 }
 
 function closeDetail() {
