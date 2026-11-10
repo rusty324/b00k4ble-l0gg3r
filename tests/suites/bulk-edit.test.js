@@ -143,7 +143,10 @@ const GAMES = [
   const ms = await page.evaluate(() => mediaLibrary.map(m => [m.title, m.status]));
   check('Movies & TV: Set status → Watched', J(ms) === J([['Airplane!', 'watched'], ['Rick and Morty', 'want'], ['Alien', 'watched']]), J(ms));
   check('…one save, selection kept', (await saves()) === 1 && (await count()) === '2 titles selected');
-  await page.click('#altContent .pill:text-is("📺 TV Shows")'); await page.waitForTimeout(200);
+  // On a phone the filter pills live in the Filters sheet.
+  await page.click('#filtersBtn-media'); await page.waitForTimeout(150);
+  await page.click('#filterBody .facet-opt[data-facet="type"][data-value="tv"]'); await page.waitForTimeout(150);
+  await page.keyboard.press('Escape'); await page.waitForTimeout(150);
   check('Select all follows the Movies & TV filters', (await page.locator('#bulkAll').innerText()) === 'Select all 1');
   await page.click('#bulkBar .btn-primary');
 

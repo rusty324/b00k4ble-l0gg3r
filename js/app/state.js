@@ -9,7 +9,7 @@
 let books = JSON.parse(localStorage.getItem('myLibrary') || '[]').map(normalizeBook);
 
 // Book filters / pagination
-let filters = { format: 'all', status: 'all', genres: [] };
+let filters = { format: 'all', status: 'all', genres: [], collection: 'all' };   // collection: the phone Filters sheet (filters-sheet.js)
 let currentPage = 1;
 let editingId = null;
 let currentRating = 0;
