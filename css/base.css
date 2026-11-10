@@ -39,8 +39,10 @@
   --border: rgba(66,36,2,0.12);
   --border-mid: rgba(66,36,2,0.2);
   --text: #2C2C2A;
-  --text-muted: #888780;
-  --text-light: #B4B2A9;
+  /* Both pass WCAG AA (4.5:1) on --surface: 6.5:1 and 5.6:1. They were
+     #888780 (3.6:1) and #B4B2A9 (2.1:1). */
+  --text-muted: #5F5E5A;
+  --text-light: #6A6862;
   --shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
@@ -76,8 +78,9 @@
   --border: rgba(255,220,150,0.1);
   --border-mid: rgba(255,220,150,0.2);
   --text: #f0efe8;
-  --text-muted: #888780;
-  --text-light: #555450;
+  /* 6.4:1 and 5.0:1 on --surface; --text-light was #555450 (2.2:1). */
+  --text-muted: #A3A199;
+  --text-light: #8F8D86;
   --shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 

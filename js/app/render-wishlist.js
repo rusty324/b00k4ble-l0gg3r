@@ -12,12 +12,7 @@ function renderWishlist(listOnly = false) {
   let items = bookWishlist;
   if (wishlistFilters.type !== 'all') items = items.filter(w => w.type === wishlistFilters.type);
   if (wishlistSearch.trim()) {
-    const q = searchFold(wishlistSearch).trim();
-    items = items.filter(w =>
-      searchFold(w.title).includes(q) ||
-      searchFold(w.creator).includes(q) ||
-      searchFold(w.notes).includes(q)
-    );
+    items = items.filter(w => matchesAll([w.title, w.creator, w.notes].join(' '), wishlistSearch));
   }
 
   // Sort

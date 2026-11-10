@@ -130,7 +130,21 @@ textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
 .radio-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .radio-btn { font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 0.4rem 0.9rem; border-radius: 999px; border: 1px solid var(--border); background: var(--bg); color: var(--text-muted); cursor: pointer; transition: all 0.15s; user-select: none; }
 .radio-btn.active { background: var(--amber-900); border-color: var(--amber-900); color: var(--amber-50); }
-input[type="radio"], input[type="checkbox"] { display: none; }
+/* The app draws its own chips for these, so the inputs are hidden — but only
+   visually: display:none took them out of the tab order, so status, format
+   and the rest could not be chosen from the keyboard. Kept 1px and clipped,
+   inside their label, they still take focus, Space and the arrow keys, and
+   the chip they sit in shows the focus ring. */
+input[type="radio"], input[type="checkbox"] {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; opacity: 0;
+}
+label:has(> input[type="radio"]), label:has(> input[type="checkbox"]) { position: relative; }
+/* :focus-visible on the hidden input is not reliable in WebKit; a focused
+   input whose label is not under the pointer was reached by keyboard. */
+label:has(> input:focus-visible),
+label:has(> input[type="radio"]:focus):not(:hover),
+label:has(> input[type="checkbox"]:focus):not(:hover) { outline: 2px solid var(--amber-200); outline-offset: 2px; }
 
 /* ─── PLATFORM ENTRIES (game modal) ──────────────────────────────────
    One row per platform the game is owned on, each carrying its own

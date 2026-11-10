@@ -20,13 +20,8 @@ function renderMedia(listOnly = false) {
     items = items.filter(m => (m.genre || []).some(x => wanted.has(textKey(x))));
   }
   if (mediaSearch.trim()) {
-    const q = searchFold(mediaSearch).trim();
-    items = items.filter(m =>
-      searchFold(m.title).includes(q) ||
-      (m.year ? String(m.year) : '').includes(q) ||
-      (m.genre || []).some(g => searchFold(g).includes(q)) ||
-      Object.values(m.editions || {}).some(e => searchFold(e).includes(q))
-    );
+    items = items.filter(m => matchesAll(
+      [m.title, m.year, ...(m.genre || []), ...Object.values(m.editions || {})].join(' '), mediaSearch));
   }
 
   // Sort

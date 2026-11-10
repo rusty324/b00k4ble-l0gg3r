@@ -327,9 +327,18 @@ function foldPunct(s) {
   for (const [re, plain] of PUNCT_FOLD) out = out.replace(re, plain);
   return out;
 }
-// What search compares: folded, lowercased. Applied to both the query and
-// the text searched, so either spelling finds either.
-const searchFold = s => foldPunct(s).toLowerCase();
+// What search compares: folded, lowercased, accents dropped ("García" →
+// "garcia"). Applied to both the query and the text searched, so either
+// spelling finds either.
+const searchFold = s => foldPunct(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+// Whether every word of the query appears somewhere in the text, in any
+// order, together or apart: "dresden butcher" finds Storm Front by its
+// series and author. An empty query matches everything.
+function matchesAll(haystack, query) {
+  const text = searchFold(haystack);
+  return searchFold(query).split(/\s+/).filter(Boolean).every(w => text.includes(w));
+}
 // Two names that mean the same thing — series, genre, author, DLC: case,
 // spacing and typographic punctuation aside.
 const textKey = s => searchFold(s).replace(/\s+/g, ' ').trim();
