@@ -20,7 +20,9 @@ const COVER_MAX_W = 300, COVER_MAX_H = 450;
 // dropped after this long rather than uploaded.
 const COVER_UNUSED_MS = 60 * 60 * 1000;
 
-// ─── IndexedDB: { path, blob, dirty, at } ─────────────────────────────
+// ─── IndexedDB: { path, bytes: ArrayBuffer, type, dirty, at } ─────────
+// Bytes, not a Blob: WebKit refuses Blobs in IndexedDB in an ephemeral
+// session (Safari private browsing).
 let _coverDb = null;
 function coverDb() {
   if (!_coverDb) {
@@ -47,6 +49,13 @@ const coverGet = path => coverTx('readonly', s => s.get(path));
 const coverPut = rec => coverTx('readwrite', s => s.put(rec));
 const coverDelete = path => coverTx('readwrite', s => s.delete(path));
 const coverAll = () => coverTx('readonly', s => s.getAll());
+const recBlob = r => new Blob([r.bytes], { type: r.type || 'image/jpeg' });
+
+// Whether any picked image may still be waiting to go up: lets every load
+// and every sync skip IndexedDB entirely on a device that never uploaded.
+const PENDING_KEY = 'booklogger.covers.pending';
+const pendingFlag = on => { try { on ? localStorage.setItem(PENDING_KEY, '1') : localStorage.removeItem(PENDING_KEY); } catch {} };
+const hasPending = () => { try { return localStorage.getItem(PENDING_KEY) === '1'; } catch { return true; } };
 
 // ─── picking and resizing ─────────────────────────────────────────────
 async function resizeCover(file) {
@@ -76,7 +85,8 @@ async function storeCoverFile(kind, file) {
   const token = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const encrypted = !!window.ghCoverFiles?.encrypted();
   const path = `covers/${kind}/${token}.${encrypted ? 'json' : 'jpg'}`;
-  await coverPut({ path, blob, dirty: true, at: Date.now() });
+  pendingFlag(true);
+  await coverPut({ path, bytes: await blob.arrayBuffer(), type: 'image/jpeg', dirty: true, at: Date.now() });
   _coverUrls.set(path, Promise.resolve(URL.createObjectURL(blob)));
   return REPO_COVER + path;
 }
@@ -96,22 +106,25 @@ function flushCoverUploads() {
   // One at a time; a request during a run gets one more run after it, since
   // the running one may have listed its files before the new one was saved.
   if (_coverFlushing) { _coverFlushAgain = true; return _coverFlushing; }
+  if (!hasPending()) return Promise.resolve();
   _coverFlushing = (async () => {
     const bridge = window.ghCoverFiles;
     const pending = (await coverAll()).filter(r => r.dirty);
-    if (!pending.length) return;
+    if (!pending.length) { pendingFlag(false); return; }
+    let left = 0;
     const used = referencedCoverPaths();
     for (const r of pending) {
       if (!used.has(r.path)) {
-        if (Date.now() - r.at > COVER_UNUSED_MS) await coverDelete(r.path);
+        if (Date.now() - r.at > COVER_UNUSED_MS) await coverDelete(r.path); else left++;
         continue;
       }
-      if (!bridge || !bridge.canSync()) continue;
+      if (!bridge || !bridge.canSync()) { left++; continue; }
       try {
-        await bridge.put(r.path, new Uint8Array(await r.blob.arrayBuffer()), r.blob.type || 'image/jpeg');
+        await bridge.put(r.path, new Uint8Array(r.bytes), r.type || 'image/jpeg');
         await coverPut({ ...r, dirty: false });
-      } catch { /* offline or refused: the next flush tries again */ }
+      } catch { left++; /* offline or refused: the next flush tries again */ }
     }
+    if (!left) pendingFlag(false);
   })().catch(() => {}).finally(() => {
     _coverFlushing = null;
     if (_coverFlushAgain) { _coverFlushAgain = false; flushCoverUploads(); }
@@ -136,12 +149,12 @@ function coverObjectUrl(path) {
   if (!_coverUrls.has(path)) {
     const p = (async () => {
       const local = await coverGet(path).catch(() => null);
-      if (local) return URL.createObjectURL(local.blob);
+      if (local) return URL.createObjectURL(recBlob(local));
       const bridge = await coverBridge();
       if (!bridge || !bridge.canSync()) throw new Error('not here, and no sync to fetch it');
       const { bytes, type } = await bridge.get(path);
       const blob = new Blob([bytes], { type: type || 'image/jpeg' });
-      await coverPut({ path, blob, dirty: false, at: Date.now() }).catch(() => {});
+      await coverPut({ path, bytes: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), type: blob.type, dirty: false, at: Date.now() }).catch(() => {});
       return URL.createObjectURL(blob);
     })();
     p.catch(() => _coverUrls.delete(path));
