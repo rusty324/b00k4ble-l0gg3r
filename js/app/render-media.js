@@ -143,21 +143,24 @@ function renderMedia(listOnly = false) {
       const stars = mr > 0
         ? `<span class="stars">${'★'.repeat(mr)}<span class="empty">${'★'.repeat(5-mr)}</span></span>`
         : '';
-      return `<div class="book-card" data-detail="media:${m.id}" tabindex="0" role="button" aria-label="${esc(m.title)} — details">
-        ${m.posterUrl
-          ? `<img class="book-card-cover" src="${esc(m.posterUrl)}" alt="" loading="lazy">`
-          : `<div class="media-card-placeholder">${icon}</div>`}
-        <div class="book-title">${esc(m.title)}</div>
-        ${m.year ? `<div class="book-author">${esc(String(m.year))}</div>` : ''}
-        <div class="book-meta">
-          <span class="badge ${statusClass('media', m.status)}">${esc(statusLabel('media', m.status))}</span>
-          ${fmtBadges}
-          ${seasonsBadge(m)}
-          ${stars}
+      // A short horizontal card: the whole poster at the left, not a
+      // full-width banner that crops a portrait poster to a strip.
+      const sub = [m.type === 'tv' ? 'TV show' : 'Movie', m.year].filter(Boolean).join(' · ');
+      return `<div class="book-card hcard" data-detail="media:${m.id}" tabindex="0" role="button" aria-label="${esc(m.title)} — details">
+        ${hcardPoster(m.posterUrl, m.title, 'hcard-media')}
+        <div class="hcard-body">
+          <div class="book-title">${esc(m.title)}</div>
+          <div class="hcard-sub">${esc(sub)}</div>
+          <div class="book-meta">
+            <span class="badge ${statusClass('media', m.status)}">${esc(statusLabel('media', m.status))}</span>
+            ${fmtBadges}
+            ${seasonsBadge(m)}
+            ${stars}
+          </div>
         </div>
       </div>`;
     }).join('');
-    contentHtml = `<div class="books-grid">${cards}</div>`;
+    contentHtml = `<div class="books-grid hcard-grid">${cards}</div>`;
   }
 
   const wrap = document.getElementById('mediaListWrap');
