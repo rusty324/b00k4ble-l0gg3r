@@ -44,6 +44,17 @@ function gameDlcBadge(g) {
   return `<span class="badge badge-dlc" title="${esc(names)}">${label}</span>`;
 }
 
+// The poster of a short horizontal card (Movies & TV, Games): the image,
+// which a tap opens full size (it keeps .book-card-cover for that), or a
+// coloured tile with the title's initials. size: hcard-media | hcard-game.
+const HCARD_TILES = ['#1F4E79', '#8B3A2B', '#3B3B58', '#2F4F3E', '#4A2C4A', '#2E6B8A', '#5C4A1E', '#3A2A2A', '#1D3B4F', '#6B2F2F'];
+function hcardPoster(url, title, size) {
+  if (url) return `<img class="book-card-cover hcard-cover ${size}" src="${esc(url)}" alt="" loading="lazy">`;
+  let h = 0; for (const c of String(title || '')) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const ini = String(title || '').replace(/^(the|a|an)\s+/i, '').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('') || '?';
+  return `<span class="hcard-cover hcard-tile ${size}" aria-hidden="true" style="background:${HCARD_TILES[h % HCARD_TILES.length]}">${esc(ini)}</span>`;
+}
+
 // What the search box matches against (shared with the filters sheet's counts).
 const gameSearchText = g => [g.title, gamePlatformText(g), ...(g.dlc || []).map(d => d.name), g.year, ...(g.genre || [])].join(' ');
 
@@ -182,21 +193,21 @@ function renderGames(listOnly = false) {
       const stars = gr > 0
         ? `<span class="stars">${'★'.repeat(gr)}<span class="empty">${'★'.repeat(5-gr)}</span></span>`
         : '';
-      return `<div class="book-card" data-detail="games:${g.id}" tabindex="0" role="button" aria-label="${esc(g.title)} — details">
-        ${g.coverUrl
-          ? `<img class="book-card-cover" src="${esc(g.coverUrl)}" alt="" loading="lazy">`
-          : `<div class="media-card-placeholder">🎮</div>`}
-        <div class="book-title">${esc(g.title)}</div>
-        ${g.year ? `<div class="book-author">${esc(String(g.year))}</div>` : ''}
-        <div class="book-meta">
-          <span class="badge ${statusClass('games', g.status)}">${esc(statusLabel('games', g.status))}</span>
-          ${gamePlatformBadges(g)}
-          ${gameDlcBadge(g)}
-          ${stars}
+      return `<div class="book-card hcard" data-detail="games:${g.id}" tabindex="0" role="button" aria-label="${esc(g.title)} — details">
+        ${hcardPoster(g.coverUrl, g.title, 'hcard-game')}
+        <div class="hcard-body">
+          <div class="book-title">${esc(g.title)}</div>
+          ${g.year ? `<div class="hcard-sub">${esc(String(g.year))}</div>` : ''}
+          <div class="book-meta">
+            <span class="badge ${statusClass('games', g.status)}">${esc(statusLabel('games', g.status))}</span>
+            ${gamePlatformBadges(g)}
+            ${gameDlcBadge(g)}
+            ${stars}
+          </div>
         </div>
       </div>`;
     }).join('');
-    contentHtml = `<div class="books-grid">${cards}</div>`;
+    contentHtml = `<div class="books-grid hcard-grid">${cards}</div>`;
   }
 
   const wrap = document.getElementById('gameListWrap');

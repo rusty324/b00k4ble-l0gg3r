@@ -406,3 +406,43 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
   .toolbar .sort-select, .filter-row .sort-select { flex: 1 1 0; width: auto; min-width: 0; min-height: 44px; }
   .filter-row:has(> .filters-btn) { flex-wrap: nowrap; }
 }
+
+/* ─── SHORT HORIZONTAL CARDS (Movies & TV, Games) ──────────────────── */
+.hcard-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.book-card.hcard { flex-direction: row; align-items: stretch; gap: 14px; padding: 14px; }
+.hcard-cover { flex: none; height: 96px; border-radius: 6px; object-fit: cover; margin: 0; }
+.hcard-media { width: 64px; }
+.hcard-game { width: 72px; }
+.hcard .book-card-cover.hcard-cover { width: auto; }
+.hcard .book-card-cover.hcard-media { width: 64px; }
+.hcard .book-card-cover.hcard-game { width: 72px; }
+.hcard-tile {
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Playfair Display', serif; font-size: 18px; color: #FAEEDA;
+}
+.hcard-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.hcard-body .book-title { margin: 0; }
+.hcard-sub { font-size: 13px; color: var(--text-muted); }
+.hcard-body .book-meta { margin-top: auto; }
+
+/* ─── WISHLIST ROW BUTTONS ─────────────────────────────────────────── */
+.btn.icon-btn { width: 44px; height: 44px; padding: 0; justify-content: center; border-color: var(--ctl-border); }
+.btn.wish-btn { min-height: 44px; }
+.wish-row .book-row-actions { opacity: 1; }
+/* Wider screens: title and creator on the left, the buttons beside them. */
+@media (min-width: 481px) {
+  .wish-row .book-row-content { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: center; }
+  .wish-row .book-row-meta { display: contents; }
+  .wish-row .book-row-title { grid-column: 1; grid-row: 1; }
+  .wish-row .book-row-author { grid-column: 1; grid-row: 2; }
+  .wish-row .book-row-actions { grid-column: 2; grid-row: 1 / span 2; margin: 0; }
+}
+
+@media (max-width: 480px) {
+  .hcard-grid { grid-template-columns: 1fr; gap: 10px; }
+  .hcard .book-card-cover.hcard-cover, .hcard-cover.hcard-tile { width: 58px; height: 84px; }
+  /* Got it, edit and delete drop to their own row under the title. */
+  .wish-row .book-row-meta { flex-wrap: wrap; }
+  .wish-row .book-row-actions { flex-basis: 100%; justify-content: flex-start; opacity: 1; }
+  .wish-row .book-row-author { display: block; }
+}

@@ -2,6 +2,9 @@
 // and search. Split out of app.js.
 
 // ─── WISHLIST RENDERING ───────────────────────────────────────────────
+// The rows' edit and delete buttons: icons with a spoken label (aria-label), 44px.
+const ICON_EDIT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+const ICON_DELETE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
 // listOnly: replace just the results container, leaving the toolbar (and
 // the focused search input inside it) intact — used by the search path.
 function renderWishlist(listOnly = false) {
@@ -75,7 +78,7 @@ function renderWishlist(listOnly = false) {
   } else {
     const rows = items.map(item => {
       const icon = typeIcon[item.type] || '📚';
-      return `<div class="book-row">
+      return `<div class="book-row wish-row">
         <div class="book-row-initial" style="font-size:18px;background:none;color:var(--text)">${icon}</div>
         <div class="book-row-content">
           <div class="book-row-title">${esc(item.title)}</div>
@@ -85,9 +88,9 @@ function renderWishlist(listOnly = false) {
               <!-- Not compact: the wishlist has no card view, so a second
                    link would otherwise be reachable only by editing. -->
               ${renderLinkButtons(item.links)}
-              <button class="btn btn-sm btn-got" onclick="gotWishlistItem(${item.id})" title="Got it — move into the library">✓ Got it</button>
-              <button class="btn btn-sm" onclick="openWishlistModal(${item.id})" title="Edit">✏</button>
-              <button class="btn btn-sm btn-danger" onclick="deleteWishlistItem(${item.id})" title="Delete">🗑</button>
+              <button type="button" class="btn btn-got wish-btn" onclick="gotWishlistItem(${item.id})" title="Got it — move into the library">✓ Got it</button>
+              <button type="button" class="btn icon-btn" onclick="openWishlistModal(${item.id})" aria-label="Edit ${esc(item.title)}" title="Edit">${ICON_EDIT}</button>
+              <button type="button" class="btn btn-danger icon-btn" onclick="deleteWishlistItem(${item.id})" aria-label="Delete ${esc(item.title)}" title="Delete">${ICON_DELETE}</button>
             </div>
           </div>
         </div>
