@@ -175,7 +175,7 @@ function render() {
 
   const page = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
-  const fmtLabels = { physical: '📚 Physical', ebook: '📱 E-book', audio: '🎧 Audiobook' };
+  const fmtLabels = { physical: 'Physical', ebook: 'E-book', audio: 'Audiobook' };   // icons: custom-icons.js
   const fmtCls    = { physical: 'badge-physical', ebook: 'badge-ebook', audio: 'badge-audio' };
   // "Read · Jun 2025" when the month is known.
   const statusText = b => (b.status === 'read' && b.finished)
@@ -183,7 +183,6 @@ function render() {
 
   let html;
   if (viewMode === 'list') {
-    const fmtIcon = { physical: '📚', ebook: '📱', audio: '🎧' };
     html = page.map(b => {
       const firstLetter = esc((b.title || '?')[0].toUpperCase());
       const cachedCover = b.coverUrl || _coverCache[b.id];
@@ -192,7 +191,7 @@ function render() {
         ? `<img class="book-row-thumb" src="${esc(cachedCover)}" alt="" loading="lazy">`
         : `<div class="book-row-initial" data-book-id="${b.id}">${firstLetter}</div>`;
       const fmtBadges = b.formats.map(f =>
-        `<span class="badge ${fmtCls[f] || ''}" title="${esc(f)}">${fmtIcon[f] || esc(f)}</span>`
+        `<span class="badge ${fmtCls[f] || ''}" title="${esc(f)}">${f in fmtLabels ? ico('books', f) : esc(f)}</span>`
       ).join('');
       return `<div class="book-row" data-detail="books:${b.id}">
         ${thumbHtml}
@@ -213,7 +212,7 @@ function render() {
   } else {
     html = page.map(b => {
       const fmtBadges = b.formats.map(f =>
-        `<span class="badge ${fmtCls[f] || ''}">${fmtLabels[f] || esc(f)}</span>`).join('');
+        `<span class="badge ${fmtCls[f] || ''}">${f in fmtLabels ? `${ico('books', f)} ${fmtLabels[f]}` : esc(f)}</span>`).join('');
       const r = Math.max(0, Math.min(5, b.rating || 0));
       const stars = r > 0
         ? '★'.repeat(r) + `<span class="empty">${'★'.repeat(5 - r)}</span>`

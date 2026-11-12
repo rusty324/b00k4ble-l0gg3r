@@ -36,23 +36,22 @@ function renderMedia(listOnly = false) {
   });
   _shownIds.media = items.map(m => m.id);   // what bulk edit's "Select all" means
 
-  const typeIcon  = { movie: '🎬', tv: '📺' };
-  const fmtIcons  = MEDIA_FORMAT_ICON;      // shared with the form (core.js)
+  const typeIcon  = t => ico('media', t === 'tv' ? 'tv' : 'movie');   // custom-icons.js
+  const fmtIcon   = f => (f in MEDIA_FORMAT_ICON ? ico('media', f) : esc(f));
   // "DVD — "Don't Call Me Shirley!" Edition" on hover, plain "DVD" otherwise.
   const fmtTitle  = (m, f) => (MEDIA_FORMAT_LABEL[f] || f) + (m.editions && m.editions[f] ? ` — ${m.editions[f]}` : '');
   const seasonsBadge = m => m.type === 'tv' && m.seasons && m.seasons.length
     ? `<span class="badge badge-seasons">${esc(seasonsText(m.seasons, m.seasonCount))}</span>` : '';
 
   // Filter toolbar
-  const typePills = [['all','All'],['movie','🎬 Movies'],['tv','📺 TV Shows']].map(([v,l]) =>
+  const typePills = [['all','All'],['movie',`${ico('media','movie')} Movies`],['tv',`${ico('media','tv')} TV Shows`]].map(([v,l]) =>
     `<button class="pill${mediaFilters.type===v?' active':''}" onclick="setMediaFilter('type','${v}')">${l}</button>`
   ).join('');
   const statusPills = [['all','All'], ...statusPairs('media')].map(([v,l]) =>
     `<button class="pill${mediaFilters.status===v?' active':''}" onclick="setMediaFilter('status','${v}')">${l}</button>`
   ).join('');
   // Same values and icons as the form's format checkboxes.
-  const formatPills = [['all','All'],['bluray','🥏 Blu-ray'],['dvd','💿 DVD'],
-                       ['digital','💻 Digital'],['streaming','📡 Streaming']].map(([v,l]) =>
+  const formatPills = [['all','All'], ...['bluray', 'dvd', 'digital', 'streaming'].map(f => [f, `${ico('media', f)} ${esc(MEDIA_FORMAT_LABEL[f])}`])].map(([v,l]) =>
     `<button class="pill${mediaFilters.format===v?' active':''}" onclick="setMediaFilter('format','${v}')">${l}</button>`
   ).join('');
   const sortSelect = `<select class="sort-select" aria-label="Sort movies and TV shows" onchange="setMediaSort(this.value)">
@@ -108,8 +107,8 @@ function renderMedia(listOnly = false) {
     </div>`;
   } else if (viewMode === 'list') {
     const rows = items.map(m => {
-      const icon    = typeIcon[m.type] || '🎬';
-      const formats = (m.formats || []).map(f => fmtIcons[f] || '').join(' ');
+      const icon    = typeIcon(m.type);
+      const formats = (m.formats || []).map(f => fmtIcon(f)).join(' ');
       const fmtTip  = (m.formats || []).map(f => fmtTitle(m, f)).join('; ');
       return `<div class="book-row" data-detail="media:${m.id}">
         ${m.posterUrl
@@ -136,9 +135,9 @@ function renderMedia(listOnly = false) {
     contentHtml = `<div class="books-list">${rows}</div>`;
   } else {
     const cards = items.map(m => {
-      const icon      = typeIcon[m.type] || '🎬';
+      const icon      = typeIcon(m.type);
       const fmtBadges = (m.formats || []).map(f =>
-        `<span class="badge badge-media" title="${esc(fmtTitle(m, f))}">${fmtIcons[f] || esc(f)}</span>`).join('');
+        `<span class="badge badge-media" title="${esc(fmtTitle(m, f))}">${fmtIcon(f)}</span>`).join('');
       const mr = Math.max(0, Math.min(5, m.rating || 0));
       const stars = mr > 0
         ? `<span class="stars">${'★'.repeat(mr)}<span class="empty">${'★'.repeat(5-mr)}</span></span>`

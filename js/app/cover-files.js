@@ -169,6 +169,7 @@ function referencedCoverPaths() {
   books.forEach(b => add(b.coverUrl));
   mediaLibrary.forEach(m => add(m.posterUrl));
   videoGames.forEach(g => add(g.coverUrl));
+  if (typeof referencedIconPaths === 'function') referencedIconPaths().forEach(p => out.add(p));   // custom-icons.js
   return out;
 }
 

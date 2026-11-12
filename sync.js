@@ -506,10 +506,14 @@ window.ghCoverFiles = {
       try { await store.client.getBytes(path); return; } catch { throw err; }
     }
   },
+  // -> the file names in a folder ([] when it doesn't exist yet).
+  async list(relDir) {
+    return (await store.client.listDir(coverPath(relDir))).map(f => f.name);
+  },
   // -> { bytes, type } ; throws when absent or unreadable.
   async get(rel) {
     const { bytes } = await store.client.getBytes(coverPath(rel));
-    if (!rel.endsWith('.json')) return { bytes, type: 'image/jpeg' };
+    if (!rel.endsWith('.json')) return { bytes, type: rel.endsWith('.png') ? 'image/png' : 'image/jpeg' };
     const env = JSON.parse(new TextDecoder().decode(bytes));
     if (!isEnvelope(env)) return { bytes: unb64(env.data), type: env.type };
     const pw = coverPassword();
@@ -524,5 +528,8 @@ seedFromApp();
 store.init();          // background refresh, cross-tab, offline retry
 // Covers picked while offline or before sync was set up go up once it can.
 window.flushCoverUploads?.();
-store.onChange(e => { if (e.type === 'sync-status' && e.status === 'ok') window.flushCoverUploads?.(); });
+window.refreshCustomIcons?.();
+store.onChange(e => {
+  if (e.type === 'sync-status' && e.status === 'ok') { window.flushCoverUploads?.(); window.refreshCustomIcons?.(); }
+});
 paintBadge();

@@ -45,7 +45,7 @@ function detailBook(b) {
         const s = seriesGaps().find(x => x.books.includes(b));
         return s ? `Missing ${esc(compressRanges(s.missing, '#'))}` : '';
       })()),
-      fact('Formats', (b.formats || []).map(f => esc(BOOK_FORMAT_LABEL[f] || f)).join('<br>')),
+      fact('Formats', (b.formats || []).map(f => f in BOOK_FORMAT_LABEL ? `${ico('books', f)} ${esc(BOOK_FORMAT_LABEL[f].replace(/^\S+\s/, ''))}` : esc(f)).join('<br>')),
       fact('Finished', b.status === 'read' && b.finished ? esc(finishedLabel(b.finished)) : ''),
       fact('ISBN', esc(b.isbn || '')),
       fact('ASIN', esc(b.asin || '')),
@@ -59,7 +59,7 @@ function detailMedia(m) {
   const status = statusLabel('media', m.status);
   const formats = (m.formats || []).map(f => {
     const ed = m.editions && m.editions[f];
-    return `${MEDIA_FORMAT_ICON[f] || ''} ${esc(MEDIA_FORMAT_LABEL[f] || f)}${ed ? ` — ${esc(ed)}` : ''}`;
+    return `${f in MEDIA_FORMAT_ICON ? ico('media', f) : ''} ${esc(MEDIA_FORMAT_LABEL[f] || f)}${ed ? ` — ${esc(ed)}` : ''}`;
   }).join('<br>');
   return {
     cover: m.posterUrl, title: m.title,
@@ -79,7 +79,7 @@ function detailMedia(m) {
 function detailGame(g) {
   const status = statusLabel('games', g.status);
   const platforms = (g.platforms || []).map(p => {
-    const f = (p.formats || []).map(x => `${GAME_FORMAT_ICON[x] || ''} ${esc(GAME_FORMAT_LABEL[x] || x)}`).join(', ');
+    const f = (p.formats || []).map(x => `${gameFormatIcon(x)} ${esc(GAME_FORMAT_LABEL[x] || x)}`).join(', ');
     return `${esc(platformLabel(p.platform))}${f ? ` — ${f}` : ''}`;
   }).join('<br>');
   const dlc = (g.dlc || []).map(d =>

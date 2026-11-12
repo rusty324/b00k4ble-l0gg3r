@@ -36,7 +36,7 @@ function createRowEditor(o) {
       const label = o.label(row);
       const chips = o.chips(row).map(c =>
         `<button type="button" class="fmt-chip${c.on ? ' active' : ''}" aria-pressed="${!!c.on}"
-                 data-row="${i}" data-chip="${esc(c.key)}">${esc(c.text)}</button>`).join('');
+                 data-row="${i}" data-chip="${esc(c.key)}">${c.html != null ? c.html : esc(c.text)}</button>`).join('');
       return `<div class="platform-entry">
         <span class="platform-entry-name${o.labelClass ? ' ' + o.labelClass : ''}">${esc(label)}</span>
         <div class="platform-entry-formats">${chips}</div>

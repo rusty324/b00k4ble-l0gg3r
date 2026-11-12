@@ -16,7 +16,7 @@ const NEXT_SORTS = [
   ['foryou', 'For you'], ['series', 'Next in series'], ['waiting', 'Waiting longest'],
   ['recent', 'Recently added'],
 ];
-const NEXT_FORMATS = [['all', 'All'], ['physical', '📚 Physical'], ['ebook', '📱 E-book'], ['audio', '🎧 Audio']];
+const NEXT_FORMATS = [['all', 'All'], ['physical', 'Physical'], ['ebook', 'E-book'], ['audio', 'Audio']];   // icons: custom-icons.js
 const NEXT_PAGE = 25;
 const NEXT_PREF = 'nextReadsPrefs';
 
@@ -166,7 +166,6 @@ function nextReadsButton() {
 
 function nextRow({ b, reason }) {
   const cover = b.coverUrl || (_coverCache[b.id] && !['none', 'pending'].includes(_coverCache[b.id]) ? _coverCache[b.id] : '');
-  const icons = { physical: '📚', ebook: '📱', audio: '🎧' };
   return `<button type="button" class="next-item" onclick="openDetail('books', ${b.id})">
       ${cover ? `<img class="next-thumb" src="${esc(cover)}" alt="" loading="lazy">`
               : `<span class="next-thumb next-thumb-none" aria-hidden="true">${esc((b.title || '?')[0].toUpperCase())}</span>`}
@@ -175,7 +174,7 @@ function nextRow({ b, reason }) {
         ${b.author ? `<span class="next-author">${esc(b.author)}${b.series ? ` · ${esc(b.series)}` : ''}</span>` : ''}
         <span class="next-reason">${esc(reason)}</span>
       </span>
-      <span class="next-formats" aria-hidden="true">${(b.formats || []).map(f => icons[f] || '').join('')}</span>
+      <span class="next-formats" aria-hidden="true">${(b.formats || []).map(f => f in ICON_SETS.books.items ? ico('books', f) : '').join('')}</span>
     </button>`;
 }
 
@@ -198,7 +197,7 @@ function paintNextReads() {
     <p class="dupes-intro">From your ${total} unread book${total === 1 ? '' : 's'}${noRecent
       ? '. Mark books as Read to get suggestions based on them; until then, longest-waiting first.' : '.'}</p>
     <div class="filter-row"><span class="filter-label">Order</span><div class="pill-group">${pills(NEXT_SORTS, _next.sort, 'setNextSort')}</div></div>
-    <div class="filter-row"><span class="filter-label">Format</span><div class="pill-group">${pills(NEXT_FORMATS, _next.format, 'setNextFormat')}</div></div>
+    <div class="filter-row"><span class="filter-label">Format</span><div class="pill-group">${pills(NEXT_FORMATS.map(([v, l]) => [v, v === 'all' ? l : `${ico('books', v)} ${l}`]), _next.format, 'setNextFormat')}</div></div>
     <div class="next-list">${list.length ? list.slice(0, _next.shown).map(nextRow).join('') : `<p class="muted">${esc(empty)}</p>`}</div>
     ${list.length > _next.shown ? `<button type="button" class="btn btn-sm next-more" onclick="showMoreNext()">Show ${Math.min(NEXT_PAGE, list.length - _next.shown)} more</button>` : ''}
     <div class="detail-actions"><span class="detail-spacer"></span>

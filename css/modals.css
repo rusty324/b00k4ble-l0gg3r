@@ -425,3 +425,20 @@ img.cover-unavailable { background: var(--gray-50); opacity: 0.6; }
 .cover-dl-progress > div { height: 100%; background: var(--owned); transition: width 0.2s; }
 .cover-dl-status { font-size: 14px; color: var(--text-muted); margin: 0 0 8px; }
 .cover-dl-status b { color: var(--text); }
+
+/* ─── YOUR OWN ICONS (js/app/custom-icons.js) ─────────────────────── */
+img.fmt-icon { width: 1.15em; height: 1.15em; object-fit: contain; vertical-align: -0.2em; display: inline-block; }
+.toggle-row { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 14px; cursor: pointer; }
+.toggle-row input { position: static; width: 18px; height: 18px; clip: auto; clip-path: none; opacity: 1; overflow: visible; }
+.icon-rows { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+.icon-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.icon-row .btn { min-height: 44px; }
+/* A checkerboard behind the preview, so transparency shows. */
+.icon-preview {
+  width: 56px; height: 56px; flex: none; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  background: repeating-conic-gradient(var(--gray-100) 0 25%, var(--surface) 0 50%) 0 0 / 12px 12px; border: 1px solid var(--border);
+}
+.icon-preview img { width: 44px; height: 44px; object-fit: contain; }
+.icon-emoji { font-size: 28px; }
+.icon-name { flex: 1; min-width: 120px; display: flex; flex-direction: column; font-weight: 500; }
+.icon-name .muted { font-weight: 400; font-size: 13px; color: var(--text-muted); }

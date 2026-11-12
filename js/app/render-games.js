@@ -24,7 +24,7 @@ function gamePlatformBadges(g) {
   if (!(g.platforms || []).length)
     return '<span class="badge badge-platform">Unknown platform</span>';
   return g.platforms.map(p => {
-    const icons = (p.formats || []).map(f => GAME_FORMAT_ICON[f] || '').join('');
+    const icons = (p.formats || []).map(f => gameFormatIcon(f)).join('');
     const names = (p.formats || []).map(f => GAME_FORMAT_LABEL[f] || f).join(', ');
     const label = platformLabel(p.platform);
     return `<span class="badge badge-platform" title="${esc(names ? label + ' — ' + names : label)}">${
@@ -104,8 +104,8 @@ function renderGames(listOnly = false) {
   ).join('');
   // Same values and icons as the form's per-platform format buttons.
   const formatPills = [['all', 'All'], ...GAME_FORMATS.map(f =>
-    [f, `${GAME_FORMAT_ICON[f]} ${GAME_FORMAT_LABEL[f]}`])].map(([v,l]) =>
-    `<button class="pill${gameFilters.format===v?' active':''}" onclick="setGameFilter('format','${v}')">${esc(l)}</button>`
+    [f, `${gameFormatIcon(f)} ${esc(GAME_FORMAT_LABEL[f])}`])].map(([v,l]) =>
+    `<button class="pill${gameFilters.format===v?' active':''}" onclick="setGameFilter('format','${v}')">${l}</button>`
   ).join('');
   const genreRow = genreFilterRow('games');
 

@@ -59,6 +59,7 @@
           <button class="settings-item" id="settingsGeminiBtn" onclick="openGeminiKeyModal(); closeSettingsMenu()">🔍 Image recognition key…</button>
           <button class="settings-item" id="settingsDupesBtn" onclick="openDuplicates(); closeSettingsMenu()">🧹 Find duplicates…</button>
           <button class="settings-item" id="settingsCoverDlBtn" onclick="openCoverDownload(); closeSettingsMenu()">🖼 Save copies of linked covers…</button>
+          <button class="settings-item" id="settingsIconsBtn" onclick="openIconSheet(); closeSettingsMenu()">🎨 Icons…</button>
           <button class="settings-item" id="settingsSyncBtn" onclick="openSyncModal(); closeSettingsMenu()">🔄 Sync &amp; backup…</button>
         </div>
       </div>
@@ -118,9 +119,9 @@
       <span class="filter-label">Format</span>
       <div id="formatPills" class="pill-group">
         <button class="pill active" onclick="setFilter('format','all',this)">All</button>
-        <button class="pill" onclick="setFilter('format','physical',this)">📚 Physical</button>
-        <button class="pill" onclick="setFilter('format','ebook',this)">📱 E-book</button>
-        <button class="pill" onclick="setFilter('format','audio',this)">🎧 Audio</button>
+        <button class="pill" onclick="setFilter('format','physical',this)"><span data-icon="books:physical">📚</span> Physical</button>
+        <button class="pill" onclick="setFilter('format','ebook',this)"><span data-icon="books:ebook">📱</span> E-book</button>
+        <button class="pill" onclick="setFilter('format','audio',this)"><span data-icon="books:audio">🎧</span> Audio</button>
       </div>
     </div>
 
@@ -209,9 +210,9 @@
     <div class="form-group">
       <label>Format <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-light)">(select all that apply)</span></label>
       <div class="radio-group" id="f-format-group">
-        <label class="radio-btn active" for="fmt-physical">📚 Physical<input type="checkbox" id="fmt-physical" value="physical" checked></label>
-        <label class="radio-btn" for="fmt-ebook">📱 E-book<input type="checkbox" id="fmt-ebook" value="ebook"></label>
-        <label class="radio-btn" for="fmt-audio">🎧 Audiobook<input type="checkbox" id="fmt-audio" value="audio"></label>
+        <label class="radio-btn active" for="fmt-physical"><span data-icon="books:physical">📚</span> Physical<input type="checkbox" id="fmt-physical" value="physical" checked></label>
+        <label class="radio-btn" for="fmt-ebook"><span data-icon="books:ebook">📱</span> E-book<input type="checkbox" id="fmt-ebook" value="ebook"></label>
+        <label class="radio-btn" for="fmt-audio"><span data-icon="books:audio">🎧</span> Audiobook<input type="checkbox" id="fmt-audio" value="audio"></label>
       </div>
       <div id="fmt-error" style="display:none;font-size:12px;color:var(--coral-600);margin-top:0.35rem">Select at least one format.</div>
     </div>
@@ -313,10 +314,10 @@
     <div class="form-group">
       <label>Type</label>
       <div class="radio-group" id="wl-type-group">
-        <label class="radio-btn active" for="wl-type-book">📚 Book<input type="radio" name="wl-type" id="wl-type-book" value="book" checked></label>
-        <label class="radio-btn" for="wl-type-movie">🎬 Movie<input type="radio" name="wl-type" id="wl-type-movie" value="movie"></label>
-        <label class="radio-btn" for="wl-type-tv">📺 TV Show<input type="radio" name="wl-type" id="wl-type-tv" value="tv"></label>
-        <label class="radio-btn" for="wl-type-game">🎮 Game<input type="radio" name="wl-type" id="wl-type-game" value="game"></label>
+        <label class="radio-btn active" for="wl-type-book"><span data-icon="wishlist:book">📚</span> Book<input type="radio" name="wl-type" id="wl-type-book" value="book" checked></label>
+        <label class="radio-btn" for="wl-type-movie"><span data-icon="wishlist:movie">🎬</span> Movie<input type="radio" name="wl-type" id="wl-type-movie" value="movie"></label>
+        <label class="radio-btn" for="wl-type-tv"><span data-icon="wishlist:tv">📺</span> TV Show<input type="radio" name="wl-type" id="wl-type-tv" value="tv"></label>
+        <label class="radio-btn" for="wl-type-game"><span data-icon="wishlist:game">🎮</span> Game<input type="radio" name="wl-type" id="wl-type-game" value="game"></label>
       </div>
     </div>
 
@@ -389,8 +390,8 @@
     <div class="form-group">
       <label>Type</label>
       <div class="radio-group" id="m-type-group">
-        <label class="radio-btn active" for="m-type-movie">🎬 Movie<input type="radio" name="m-type" id="m-type-movie" value="movie" checked></label>
-        <label class="radio-btn" for="m-type-tv">📺 TV Show<input type="radio" name="m-type" id="m-type-tv" value="tv"></label>
+        <label class="radio-btn active" for="m-type-movie"><span data-icon="media:movie">🎬</span> Movie<input type="radio" name="m-type" id="m-type-movie" value="movie" checked></label>
+        <label class="radio-btn" for="m-type-tv"><span data-icon="media:tv">📺</span> TV Show<input type="radio" name="m-type" id="m-type-tv" value="tv"></label>
       </div>
     </div>
 
@@ -413,10 +414,10 @@
     <div class="form-group">
       <label>Format <span class="opt">(select all that apply)</span></label>
       <div class="radio-group" id="m-format-group">
-        <label class="radio-btn" for="m-fmt-bluray">🥏 Blu-ray<input type="checkbox" id="m-fmt-bluray" value="bluray"></label>
-        <label class="radio-btn" for="m-fmt-dvd">💿 DVD<input type="checkbox" id="m-fmt-dvd" value="dvd"></label>
-        <label class="radio-btn" for="m-fmt-digital">💻 Digital<input type="checkbox" id="m-fmt-digital" value="digital"></label>
-        <label class="radio-btn" for="m-fmt-streaming">📡 Streaming<input type="checkbox" id="m-fmt-streaming" value="streaming"></label>
+        <label class="radio-btn" for="m-fmt-bluray"><span data-icon="media:bluray">🥏</span> Blu-ray<input type="checkbox" id="m-fmt-bluray" value="bluray"></label>
+        <label class="radio-btn" for="m-fmt-dvd"><span data-icon="media:dvd">💿</span> DVD<input type="checkbox" id="m-fmt-dvd" value="dvd"></label>
+        <label class="radio-btn" for="m-fmt-digital"><span data-icon="media:digital">💻</span> Digital<input type="checkbox" id="m-fmt-digital" value="digital"></label>
+        <label class="radio-btn" for="m-fmt-streaming"><span data-icon="media:streaming">📡</span> Streaming<input type="checkbox" id="m-fmt-streaming" value="streaming"></label>
       </div>
       <!-- One edition box per held format that is ticked — filled by renderMediaEditions() -->
       <div class="edition-rows" id="m-editions"></div>
@@ -818,6 +819,11 @@
   <div class="modal" id="coverDlBody"></div>
 </div>
 
+<!-- Your own icons in place of the built-in emoji — filled by openIconSheet() (js/app/custom-icons.js) -->
+<div class="modal-backdrop" id="iconsModal" onclick="handleIconsBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="iconsTitle">
+  <div class="modal" id="iconsBody"></div>
+</div>
+
 <!-- Phone filters — filled by openFilterSheet() (js/app/filters-sheet.js) -->
 <div class="modal-backdrop" id="filterModal" onclick="handleFilterBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="filterSheetTitle">
   <div class="modal detail-modal filter-sheet" id="filterBody"></div>
@@ -898,6 +904,7 @@
 <script src="js/app/series-view.js"></script>
 <script src="js/app/cover-files.js"></script>
 <script src="js/app/cover-download.js"></script>
+<script src="js/app/custom-icons.js"></script>
 <script src="js/app/filters-sheet.js"></script>
 <script src="js/app/app-init.js"></script>
 <!-- Module, so deferred: app-init.js has already initialised by the time
