@@ -16,6 +16,12 @@
 const REPO_COVER = 'repo:';
 const isRepoCover = u => typeof u === 'string' && u.startsWith(REPO_COVER);
 const COVER_MAX_W = 300, COVER_MAX_H = 450;
+// A saved cover is at most this big: if the first JPEG is over, it is
+// re-encoded at lower quality, then smaller, until it fits. Typical covers
+// come out at 20–60 KB and never get near it.
+const COVER_MAX_BYTES = 120 * 1024;
+// A source image larger than this is refused before decoding it.
+const COVER_SOURCE_MAX = 25 * 1024 * 1024;
 // A picked image no record ended up using (the form was cancelled) is
 // dropped after this long rather than uploaded.
 const COVER_UNUSED_MS = 60 * 60 * 1000;
@@ -58,23 +64,41 @@ const pendingFlag = on => { try { on ? localStorage.setItem(PENDING_KEY, '1') : 
 const hasPending = () => { try { return localStorage.getItem(PENDING_KEY) === '1'; } catch { return true; } };
 
 // ─── picking and resizing ─────────────────────────────────────────────
+class CoverError extends Error {
+  constructor(reason, message) { super(message); this.reason = reason; }
+}
+const kb = n => `${Math.round(n / 1024).toLocaleString()} KB`;
+
+const canvasJpeg = (canvas, q) => new Promise((resolve, reject) =>
+  canvas.toBlob(b => b ? resolve(b) : reject(new CoverError('encode', 'Could not encode the image')), 'image/jpeg', q));
+
+// -> a JPEG Blob of at most COVER_MAX_W×COVER_MAX_H and COVER_MAX_BYTES.
 async function resizeCover(file) {
+  if (file.size > COVER_SOURCE_MAX) throw new CoverError('too-big', `That image is ${kb(file.size)}; the limit is ${kb(COVER_SOURCE_MAX)}.`);
   const img = await new Promise((resolve, reject) => {
     const el = new Image();
     const url = URL.createObjectURL(file);
     el.onload = () => { URL.revokeObjectURL(url); resolve(el); };
-    el.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Not an image this browser can read')); };
+    el.onerror = () => { URL.revokeObjectURL(url); reject(new CoverError('not-image', 'Not an image this browser can read.')); };
     el.src = url;
   });
-  const scale = Math.min(1, COVER_MAX_W / img.naturalWidth, COVER_MAX_H / img.naturalHeight);
-  const w = Math.max(1, Math.round(img.naturalWidth * scale)), h = Math.max(1, Math.round(img.naturalHeight * scale));
-  const canvas = document.createElement('canvas');
-  canvas.width = w; canvas.height = h;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);   // a transparent PNG gets white, not black
-  ctx.drawImage(img, 0, 0, w, h);
-  return new Promise((resolve, reject) =>
-    canvas.toBlob(b => b ? resolve(b) : reject(new Error('Could not encode the image')), 'image/jpeg', 0.85));
+  let scale = Math.min(1, COVER_MAX_W / img.naturalWidth, COVER_MAX_H / img.naturalHeight);
+  let blob = null;
+  // Quality first (it costs the least to the eye), then size, a few rounds.
+  for (let round = 0; round < 5; round++) {
+    const w = Math.max(1, Math.round(img.naturalWidth * scale)), h = Math.max(1, Math.round(img.naturalHeight * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);   // a transparent PNG gets white, not black
+    ctx.drawImage(img, 0, 0, w, h);
+    for (const q of round === 0 ? [0.85, 0.72, 0.6] : [0.6, 0.5]) {
+      blob = await canvasJpeg(canvas, q);
+      if (blob.size <= COVER_MAX_BYTES) return blob;
+    }
+    scale *= 0.8;
+  }
+  throw new CoverError('too-big', `Could not get that image under ${kb(COVER_MAX_BYTES)}.`);
 }
 
 // Keep the picked image here and return the field value that points at it.
@@ -89,6 +113,53 @@ async function storeCoverFile(kind, file) {
   await coverPut({ path, bytes: await blob.arrayBuffer(), type: 'image/jpeg', dirty: true, at: Date.now() });
   _coverUrls.set(path, Promise.resolve(URL.createObjectURL(blob)));
   return REPO_COVER + path;
+}
+
+// ─── saving a copy of a linked cover ──────────────────────────────────
+const isLinkCover = u => typeof u === 'string' && /^(https?:|data:image\/)/i.test(u.trim());
+
+// Download a cover from its link. A web page may only read another site's
+// image if that site allows it (CORS) — most image CDNs do, some don't — so a
+// refusal is an expected outcome, reported as reason 'blocked'.
+async function fetchCoverBlob(url) {
+  let res;
+  try {
+    res = await fetch(url, { mode: 'cors', credentials: 'omit', referrerPolicy: 'no-referrer' });
+  } catch {
+    throw navigator.onLine === false
+      ? new CoverError('offline', 'You are offline.')
+      : new CoverError('blocked', "That site doesn't let other sites download its images.");
+  }
+  if (!res.ok) throw new CoverError('http', `The site answered ${res.status}${res.status === 404 ? ' (not found)' : ''}.`);
+  const len = Number(res.headers.get('content-length')) || 0;
+  if (len > COVER_SOURCE_MAX) throw new CoverError('too-big', `That image is ${kb(len)}; the limit is ${kb(COVER_SOURCE_MAX)}.`);
+  const type = (res.headers.get('content-type') || '').toLowerCase();
+  if (type && !type.startsWith('image/') && !type.startsWith('application/octet-stream'))
+    throw new CoverError('not-image', "That link isn't an image.");
+  return res.blob();
+}
+
+// -> the "repo:" value for a copy of the image at url.
+async function copyCoverFromLink(url, kind) {
+  return storeCoverFile(kind, await fetchCoverBlob(url.trim()));
+}
+
+// The forms' "Save a copy" button: swap the link in the field for a copy.
+async function saveCoverCopy(inputId, kind) {
+  const input = document.getElementById(inputId);
+  const msg = document.getElementById(inputId + '-msg');
+  const say = t => { if (msg) msg.textContent = t; };
+  const url = input ? input.value.trim() : '';
+  if (isRepoCover(url)) { say('This cover is already a saved copy.'); return; }
+  if (!isLinkCover(url)) { say('Paste an image link first.'); return; }
+  say('Saving a copy…');
+  try {
+    input.value = await copyCoverFromLink(url, kind);
+    paintCoverPreview(inputId);
+    say('Saved a copy — it replaces the link when you save.');
+  } catch (err) {
+    say(`${err.message || 'That image could not be saved.'} The link stays as it is.`);
+  }
 }
 
 // ─── uploading ────────────────────────────────────────────────────────

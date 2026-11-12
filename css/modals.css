@@ -419,3 +419,9 @@ label:has(> input[type="checkbox"]:focus):not(:hover) { outline: 2px solid var(-
 .cover-preview { width: 56px; height: 84px; object-fit: cover; border-radius: 3px; flex: none; background: var(--gray-50); border: 1px solid var(--border); }
 img.cover-loading { background: var(--gray-50); }
 img.cover-unavailable { background: var(--gray-50); opacity: 0.6; }
+
+/* ─── SAVE COPIES OF LINKED COVERS (js/app/cover-download.js) ──────── */
+.cover-dl-progress { height: 8px; border-radius: 4px; background: var(--missing); overflow: hidden; margin: 12px 0 8px; }
+.cover-dl-progress > div { height: 100%; background: var(--owned); transition: width 0.2s; }
+.cover-dl-status { font-size: 14px; color: var(--text-muted); margin: 0 0 8px; }
+.cover-dl-status b { color: var(--text); }
