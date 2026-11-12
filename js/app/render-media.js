@@ -3,7 +3,21 @@
 
 // ─── MEDIA RENDERING (Movies & TV tab) ────────────────────────────────
 // What the search box matches against (shared with the filters sheet's counts).
-const mediaSearchText = m => [m.title, m.year, ...(m.genre || []), ...Object.values(m.editions || {})].join(' ');
+const mediaSearchText = m => [m.title, m.year, ...(m.genre || []),
+  ...(m.copies || []).flatMap(c => [c.edition, c.set, c.note])].filter(Boolean).join(' ');
+
+// A title's copies as compact badges: one per format with a count
+// ("🥏 ×2"), at most three, then "+N". The tooltip lists every copy.
+const copyLine = c => [MEDIA_FORMAT_LABEL[c.format] || c.format, c.edition, c.set && `set: ${c.set}`].filter(Boolean).join(' — ');
+function mediaCopyBadges(m, cls = 'badge badge-media') {
+  const by = new Map();
+  for (const c of m.copies || []) { if (!by.has(c.format)) by.set(c.format, []); by.get(c.format).push(c); }
+  const groups = [...by];
+  const shown = groups.slice(0, 3).map(([f, cs]) =>
+    `<span class="${cls}" title="${esc(cs.map(copyLine).join('\n'))}">${f in MEDIA_FORMAT_ICON ? ico('media', f) : esc(f)}${cs.length > 1 ? ` ×${cs.length}` : ''}</span>`);
+  if (groups.length > 3) shown.push(`<span class="${cls}" title="${esc(groups.slice(3).flatMap(([, cs]) => cs.map(copyLine)).join('\n'))}">+${groups.length - 3}</span>`);
+  return shown.join('');
+}
 
 // listOnly: replace just the results container, leaving the toolbar (and
 // the focused search input inside it) intact — used by the search path.
@@ -37,9 +51,6 @@ function renderMedia(listOnly = false) {
   _shownIds.media = items.map(m => m.id);   // what bulk edit's "Select all" means
 
   const typeIcon  = t => ico('media', t === 'tv' ? 'tv' : 'movie');   // custom-icons.js
-  const fmtIcon   = f => (f in MEDIA_FORMAT_ICON ? ico('media', f) : esc(f));
-  // "DVD — "Don't Call Me Shirley!" Edition" on hover, plain "DVD" otherwise.
-  const fmtTitle  = (m, f) => (MEDIA_FORMAT_LABEL[f] || f) + (m.editions && m.editions[f] ? ` — ${m.editions[f]}` : '');
   const seasonsBadge = m => m.type === 'tv' && m.seasons && m.seasons.length
     ? `<span class="badge badge-seasons">${esc(seasonsText(m.seasons, m.seasonCount))}</span>` : '';
 
@@ -108,8 +119,8 @@ function renderMedia(listOnly = false) {
   } else if (viewMode === 'list') {
     const rows = items.map(m => {
       const icon    = typeIcon(m.type);
-      const formats = (m.formats || []).map(f => fmtIcon(f)).join(' ');
-      const fmtTip  = (m.formats || []).map(f => fmtTitle(m, f)).join('; ');
+      const formats = mediaCopyBadges(m, 'copy-chip');
+      const fmtTip  = (m.copies || []).map(copyLine).join('; ');
       return `<div class="book-row" data-detail="media:${m.id}">
         ${m.posterUrl
           ? `<img class="book-row-thumb" src="${esc(m.posterUrl)}" alt="" loading="lazy">`
@@ -136,8 +147,7 @@ function renderMedia(listOnly = false) {
   } else {
     const cards = items.map(m => {
       const icon      = typeIcon(m.type);
-      const fmtBadges = (m.formats || []).map(f =>
-        `<span class="badge badge-media" title="${esc(fmtTitle(m, f))}">${fmtIcon(f)}</span>`).join('');
+      const fmtBadges = mediaCopyBadges(m);
       const mr = Math.max(0, Math.min(5, m.rating || 0));
       const stars = mr > 0
         ? `<span class="stars">${'★'.repeat(mr)}<span class="empty">${'★'.repeat(5-mr)}</span></span>`

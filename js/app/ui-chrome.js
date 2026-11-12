@@ -165,12 +165,6 @@ document.querySelectorAll('#f-format-group input[type="checkbox"]').forEach(cb =
   });
 });
 
-// Sync media format checkbox styling
-document.querySelectorAll('#m-format-group input[type="checkbox"]').forEach(cb => {
-  cb.addEventListener('change', function() {
-    this.closest('.radio-btn').classList.toggle('active', this.checked);
-  });
-});
 
 // Game platform picks drive a list of per-platform rows, so the handler goes
 // through toggleGamePlatform() rather than styling the button directly — that

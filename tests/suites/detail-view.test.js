@@ -77,7 +77,7 @@ const GAMES = [{ id: 1700000000004, title: 'Horizon Zero Dawn', status: 'complet
   // ── 5. Movies & TV: the edition and seasons, readable on a phone ────
   await page.click('.tab[data-tab="media"]'); await page.waitForTimeout(300);
   await viaDetail(card('#altContent', 'Airplane!'));
-  check('the DVD edition is spelled out — no hover needed', (await detailFact(page, 'Formats')) === '💿 DVD — “Don’t Call Me Shirley!” Edition', await detailFact(page, 'Formats'));
+  check('the DVD edition is spelled out — no hover needed', (await detailFact(page, 'Copy')) === '💿 DVD — “Don’t Call Me Shirley!” Edition', await detailFact(page, 'Copy'));
   await closeDetailSheet(page);
   await viaDetail(card('#altContent', 'Rick and Morty'));
   check('seasons owned are spelled out', (await detailFact(page, 'Seasons')) === 'Season 1 of 8', await detailFact(page, 'Seasons'));

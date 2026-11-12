@@ -1,4 +1,4 @@
-// Editions per format, TV seasons, the search ✕, and the phone zoom-out fix.
+// Editions on copies, TV seasons, the search ✕, and the phone zoom-out fix.
 const { launch, BASE, REPO, tmp, shot, viaDetail, detailFact, closeDetailSheet } = require('../lib');
 const results = []; const check = (n, ok, d='') => results.push(`${ok?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);
 const J = JSON.stringify;
@@ -70,7 +70,7 @@ const MEDIA = [
     };
   });
   check('an edition is kept, trimmed, for a held format', J(n.kept) === '{"dvd":"Shirley Edition"}', J(n.kept));
-  check('an edition for a format not ticked is dropped', n.orphan === false);
+  check('an edition for a format not held is dropped', n.orphan === false);
   check('streaming takes no edition', n.streaming === false);
   check('a blank edition is not stored', n.blank === false);
   check('a title with none of these gains no new keys', J(n.none) === '[]', J(n.none));
@@ -82,24 +82,24 @@ const MEDIA = [
   // ── 3. Editions in the form ─────────────────────────────────────────
   await viaDetail(page.locator('#altContent .book-card', { hasText: 'Airplane!' }), 'Edit');
   await page.waitForSelector('#mediaModal.open');
-  const rows = () => page.locator('#m-editions .edition-row input').evaluateAll(els => els.map(e => e.dataset.fmt));
-  check('editing a DVD title shows one edition box, for DVD', J(await rows()) === '["dvd"]', J(await rows()));
-  await page.fill('#m-editions input[data-fmt="dvd"]', '“Don’t Call Me Shirley!” Edition');
-  check('typing keeps focus in the box (it is not rebuilt per keystroke)', await page.evaluate(() => document.activeElement && document.activeElement.dataset.fmt === 'dvd'));
-  await page.click('label[for="m-fmt-bluray"]'); await page.waitForTimeout(100);
-  check('ticking Blu-ray adds its own box beside DVD', J(await rows()) === '["bluray","dvd"]', J(await rows()));
-  await page.click('label[for="m-fmt-streaming"]'); await page.waitForTimeout(100);
-  check('ticking Streaming adds no box', J(await rows()) === '["bluray","dvd"]');
-  await page.click('label[for="m-fmt-dvd"]'); await page.click('label[for="m-fmt-dvd"]'); await page.waitForTimeout(100);
-  check('unticking and reticking DVD keeps what was typed', await page.inputValue('#m-editions input[data-fmt="dvd"]') === '“Don’t Call Me Shirley!” Edition');
-  await page.click('label[for="m-fmt-bluray"]'); await page.click('label[for="m-fmt-streaming"]'); await page.waitForTimeout(100);
+  // The Copies editor (js/app/media-copies.js) replaced the format checkboxes.
+  const rows = () => page.locator('#m-copies .copy-row').evaluateAll(els => els.map(e => e.querySelector('select').value));
+  check('editing a DVD title shows one copy, a DVD', J(await rows()) === '["dvd"]', J(await rows()));
+  await page.fill('#m-copies [data-copy="0"] [data-field="edition"]', '“Don’t Call Me Shirley!” Edition');
+  check('typing keeps focus in the box (it is not rebuilt per keystroke)', await page.evaluate(() => document.activeElement && document.activeElement.dataset.field === 'edition'));
+  await page.click('button:has-text("Add a copy")'); await page.waitForTimeout(100);
+  await page.selectOption('#m-copies [data-copy="1"] select', 'streaming'); await page.waitForTimeout(100);
+  check('a Streaming copy takes no edition box', await page.locator('#m-copies [data-copy="1"] [data-field="edition"]').isHidden());
+  check('…and the first copy keeps what was typed', await page.inputValue('#m-copies [data-copy="0"] [data-field="edition"]') === '“Don’t Call Me Shirley!” Edition');
+  await page.click('#m-copies button[aria-label="Remove copy 2"]'); await page.waitForTimeout(100);
+  check('removing a copy leaves the other', J(await rows()) === '["dvd"]');
   check('the Seasons group stays hidden for a movie', await page.evaluate(() => document.getElementById('m-seasons-group').style.display === 'none'));
   await page.click('button[onclick="saveMediaItem()"]'); await page.waitForTimeout(400);
   const air = await page.evaluate(() => mediaLibrary.find(m => m.id === 1700000000001));
-  check('saved: the DVD edition, and nothing for the unticked Blu-ray', J(air.editions) === J({ dvd: '“Don’t Call Me Shirley!” Edition' }) && J(air.formats) === '["dvd"]', J(air.editions));
+  check('saved: the DVD edition, and no streaming copy', J(air.editions) === J({ dvd: '“Don’t Call Me Shirley!” Edition' }) && J(air.formats) === '["dvd"]', J(air.editions));
   const card = page.locator('#altContent .book-card', { hasText: 'Airplane!' });
   await viaDetail(card);
-  check('the detail sheet spells the edition out', (await detailFact(page, 'Formats')) === '💿 DVD — “Don’t Call Me Shirley!” Edition', await detailFact(page, 'Formats'));
+  check('the detail sheet spells the edition out', (await detailFact(page, 'Copy')) === '💿 DVD — “Don’t Call Me Shirley!” Edition', await detailFact(page, 'Copy'));
   await closeDetailSheet(page);
   check('and the format badge carries it on hover', await card.locator('.badge-media').first().getAttribute('title') === 'DVD — “Don’t Call Me Shirley!” Edition');
 
