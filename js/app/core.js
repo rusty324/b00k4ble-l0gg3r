@@ -801,10 +801,22 @@ function normalizeMediaCopies(m, legacyFormats) {
     if (set) copy.set = set;
     const note = copyText(c.note, 200);
     if (note) copy.note = note;
+    // TV: which seasons this copy holds (a box of S1–3, a digital S4).
+    const seasons = m.type === 'tv' ? normalizeSeasons(c.seasons) : [];
+    if (seasons.length) copy.seasons = seasons;
     out.push(copy);
+  }
+  // Seasons recorded before copies had their own: they move onto the first
+  // copy, once, so the title's owned seasons stay what they were.
+  if (m.type === 'tv' && out.length && !out.some(c => c.seasons)) {
+    const legacy = normalizeSeasons(m.seasons);
+    if (legacy.length) out[0].seasons = legacy;
   }
   return out;
 }
+
+// The seasons a title holds: every copy's, together.
+const copySeasons = copies => [...new Set(copies.flatMap(c => c.seasons || []))].sort((a, b) => a - b);
 
 // What the derived fields say for a list of copies.
 const copyFormats = copies => [...new Set(copies.map(c => c.format).filter(Boolean))];
@@ -845,8 +857,9 @@ function normalizeMediaItem(m) {
   // unchanged on disk and in the data repo.
   const editions = copyEditions(copies);
   if (Object.keys(editions).length) item.editions = editions; else delete item.editions;
-  // Seasons belong to TV. A title switched to Movie drops them.
-  const seasons = item.type === 'tv' ? normalizeSeasons(m.seasons) : [];
+  // Seasons belong to TV. A title switched to Movie drops them. With copies
+  // they are derived: the union of what each copy holds.
+  const seasons = item.type !== 'tv' ? [] : copies.length ? copySeasons(copies) : normalizeSeasons(m.seasons);
   if (seasons.length) item.seasons = seasons; else delete item.seasons;
   const count = Math.round(Number(m.seasonCount));
   if (item.type === 'tv' && count >= 1 && count <= 999) item.seasonCount = count; else delete item.seasonCount;

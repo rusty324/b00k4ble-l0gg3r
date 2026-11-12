@@ -60,6 +60,7 @@ function detailMedia(m) {
   // One line per copy: format, edition, and the set it came in.
   const formats = (m.copies || []).map(c =>
     `${c.format in MEDIA_FORMAT_ICON ? ico('media', c.format) : ''} ${esc(MEDIA_FORMAT_LABEL[c.format] || c.format)}${
+      c.seasons ? ` · ${esc(c.seasons.length === 1 ? `Season ${c.seasons[0]}` : `Seasons ${compressRanges(c.seasons)}`)}` : ''}${
       c.edition ? ` — ${esc(c.edition)}` : ''}${c.set ? ` <span class="muted">· in ${esc(c.set)}</span>` : ''}`).join('<br>');
   return {
     cover: m.posterUrl, title: m.title,

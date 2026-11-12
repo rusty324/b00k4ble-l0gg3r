@@ -8,7 +8,7 @@ const mediaSearchText = m => [m.title, m.year, ...(m.genre || []),
 
 // A title's copies as compact badges: one per format with a count
 // ("🥏 ×2"), at most three, then "+N". The tooltip lists every copy.
-const copyLine = c => [MEDIA_FORMAT_LABEL[c.format] || c.format, c.edition, c.set && `set: ${c.set}`].filter(Boolean).join(' — ');
+const copyLine = c => [MEDIA_FORMAT_LABEL[c.format] || c.format, c.seasons && `S${compressRanges(c.seasons)}`, c.edition, c.set && `set: ${c.set}`].filter(Boolean).join(' — ');
 function mediaCopyBadges(m, cls = 'badge badge-media') {
   const by = new Map();
   for (const c of m.copies || []) { if (!by.has(c.format)) by.set(c.format, []); by.get(c.format).push(c); }
