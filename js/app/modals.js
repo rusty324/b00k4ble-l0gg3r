@@ -310,60 +310,23 @@ function setMediaRadio(name, val) {
   });
 }
 
-function setMediaFormats(vals) {
-  document.querySelectorAll('#m-format-group input[type="checkbox"]').forEach(cb => {
-    cb.checked = vals.includes(cb.value);
-    cb.closest('.radio-btn').classList.toggle('active', cb.checked);
-  });
-}
-
 // ─── MEDIA MODAL: EDITIONS & SEASONS ─────────────────────────────────
 // Working copies for the open form. Editions are kept for every format even
 // while it is unticked, so ticking DVD off and on again does not lose what was
 // typed; saveMediaItem() keeps only the ticked ones (and the normalizer
 // enforces the same).
-let _mediaEditions    = {};         // format -> edition text
 let _mediaSeasons     = new Set();  // owned season numbers
 let _mediaSeasonCount = null;       // the show's total, when known
 let _mediaSeasonShown = 0;          // how many season chips are on offer
 let _seasonSeq        = 0;
 
 function setMediaExtras(m) {
-  _mediaEditions    = { ...((m && m.editions) || {}) };
   _mediaSeasons     = new Set((m && m.seasons) || []);
   _mediaSeasonCount = (m && m.seasonCount) || null;
   _mediaSeasonShown = 0;
   _seasonSeq++;                     // a count still arriving for the last show is stale
-  renderMediaEditions();
+  setMediaCopies(m ? m.copies : []);
   syncMediaSeasons();
-}
-
-const checkedMediaFormats = () =>
-  [...document.querySelectorAll('#m-format-group input[type="checkbox"]:checked')].map(cb => cb.value);
-
-// Rebuilt only when the ticked formats change, never per keystroke — typing
-// writes straight into _mediaEditions, so the box being typed in keeps focus.
-function renderMediaEditions() {
-  const box = document.getElementById('m-editions');
-  if (!box) return;
-  box.innerHTML = checkedMediaFormats().filter(f => EDITION_FORMATS.includes(f)).map(f => `
-    <div class="edition-row">
-      <span class="edition-label">${ico('media', f)} ${esc(MEDIA_FORMAT_LABEL[f])} edition <span class="opt">(optional)</span></span>
-      <input type="text" class="plain" data-fmt="${f}" maxlength="120" autocomplete="off"
-             aria-label="${esc(MEDIA_FORMAT_LABEL[f])} edition" placeholder="e.g. Collector's Edition"
-             value="${esc(_mediaEditions[f] || '')}" oninput="setMediaEdition(this)">
-    </div>`).join('');
-}
-
-function setMediaEdition(el) { _mediaEditions[el.dataset.fmt] = el.value; }
-
-function editionsForSave() {
-  const out = {};
-  for (const f of checkedMediaFormats()) {
-    const v = (_mediaEditions[f] || '').trim();
-    if (v && EDITION_FORMATS.includes(f)) out[f] = v;
-  }
-  return out;
 }
 
 const mediaTypeIsTv = () => document.querySelector('input[name="m-type"]:checked')?.value === 'tv';
@@ -443,8 +406,6 @@ document.querySelectorAll('input[name="m-type"]').forEach(r => r.addEventListene
   const editing = mediaEditingId !== null ? mediaLibrary.find(x => x.id === mediaEditingId) : null;
   refreshMediaSeasonCount(pendingTmdb ? pendingTmdb.tmdbId : editing && editing.tmdbId);
 }));
-document.querySelectorAll('#m-format-group input[type="checkbox"]').forEach(cb =>
-  cb.addEventListener('change', renderMediaEditions));
 
 function openMediaModal(id) {
   if (id !== null && id !== undefined) {
@@ -461,7 +422,6 @@ function openMediaModal(id) {
     setLinksField('m', m.links);
     setMediaRadio('m-type',   m.type   || 'movie');
     setMediaRadio('m-status', m.status || 'want');
-    setMediaFormats(m.formats || []);
     updateMediaStars(mediaRating);
     setMediaExtras(m);
     refreshMediaSeasonCount(m.tmdbId);   // a show may have gained seasons since
@@ -472,7 +432,6 @@ function openMediaModal(id) {
     ['m-title', 'm-year', 'm-notes', 'm-posterUrl'].forEach(fid => document.getElementById(fid).value = '');
     setGenreValues('m-genre', []);
     setLinksField('m', []);
-    setMediaFormats([]);
     updateMediaStars(0);
     setMediaRadio('m-type',   'movie');
     setMediaRadio('m-status', 'want');
@@ -515,9 +474,7 @@ function saveMediaItem() {
   const links   = readLinksField('m');
   const type    = document.querySelector('input[name="m-type"]:checked')?.value   || 'movie';
   const status  = document.querySelector('input[name="m-status"]:checked')?.value || 'want';
-  const formats = [...document.querySelectorAll('#m-format-group input[type="checkbox"]:checked')]
-    .map(cb => cb.value);
-  const editions = editionsForSave();
+  const copies   = mediaCopiesForSave();
   const seasons  = type === 'tv' ? [..._mediaSeasons] : [];
   // The field wins; a TMDb pick only fills a blank one.
   const typedPoster = document.getElementById('m-posterUrl').value.trim();
@@ -526,12 +483,12 @@ function saveMediaItem() {
   if (mediaEditingId !== null) {
     const i = mediaLibrary.findIndex(x => x.id === mediaEditingId);
     if (i !== -1) {
-      mediaLibrary[i] = normalizeMediaItem({ ...mediaLibrary[i], ...renamedBlurb(mediaLibrary[i], title), title, type, year, genre, formats, status, notes, rating: mediaRating, links,
-        editions, seasons, seasonCount: _mediaSeasonCount, ...tmdb });
+      mediaLibrary[i] = normalizeMediaItem({ ...mediaLibrary[i], ...renamedBlurb(mediaLibrary[i], title), title, type, year, genre, copies, status, notes, rating: mediaRating, links,
+        seasons, seasonCount: _mediaSeasonCount, ...tmdb });
     }
   } else {
-    mediaLibrary.push(normalizeMediaItem({ id: newId(), title, type, year, genre, formats, status, notes, rating: mediaRating, links,
-      editions, seasons, seasonCount: _mediaSeasonCount, ...tmdb }));
+    mediaLibrary.push(normalizeMediaItem({ id: newId(), title, type, year, genre, copies, status, notes, rating: mediaRating, links,
+      seasons, seasonCount: _mediaSeasonCount, ...tmdb }));
   }
 
   saveMedia();

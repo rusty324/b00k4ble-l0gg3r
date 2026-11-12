@@ -136,8 +136,8 @@ const isImg = s => /^img:blob:\d/.test(s);
     check('Movies & TV: the format badge and the type/format pills use yours',
       isImg(await iconIn(page, '#altContent .book-card .badge-media')) && isImg(await iconIn(page, '#altContent .pill:has-text("DVD")')) &&
       isImg(await iconIn(page, '#altContent .pill:has-text("Movies")')) && !isImg(await iconIn(page, '#altContent .pill:has-text("TV Shows")')));
-    await page.evaluate(() => openMediaModal(null)); await page.waitForTimeout(150);
-    check('…and the form', isImg(await iconIn(page, 'label[for="m-fmt-dvd"]')) && isImg(await iconIn(page, 'label[for="m-type-movie"]')));
+    await page.evaluate(() => openMediaModal(1700000000101)); await page.waitForTimeout(150);
+    check('…and the form', isImg(await iconIn(page, '#m-copies .copy-fmt')) && isImg(await iconIn(page, 'label[for="m-type-movie"]')));
     await page.evaluate(() => closeMediaModal());
 
     // Wishlist

@@ -769,6 +769,51 @@ function seasonsText(seasons, count) {
 
 // Normalize media items — coerces every field the render/sort/search paths
 // call string or array methods on, so malformed imports can't freeze the tab
+// ─── COPIES (Movies & TV) ────────────────────────────────────────────
+// One record per title; what you hold is a list of copies — two Blu-ray
+// editions, or one copy that came in a box set. `copies` is the source of
+// truth; `formats` and `editions` are still written, derived from it, so
+// every older read (and an older cached page) keeps working.
+const MEDIA_COPY_FORMATS = ['bluray', 'dvd', 'digital', 'streaming'];
+const COPY_TEXT_MAX = 120;
+const copyText = (v, max = COPY_TEXT_MAX) => (v == null ? '' : String(v).trim().slice(0, max));
+const newCopyId = () => Math.random().toString(36).slice(2, 8);
+
+// A record without `copies` (anything saved before them) becomes one copy per
+// format, carrying that format's edition. Ids are derived — <format>-<n> in
+// array order — so loading the same record twice gives the same JSON; a
+// random id would make every record look changed on every load.
+function normalizeMediaCopies(m, legacyFormats) {
+  const raw = Array.isArray(m.copies) ? m.copies
+    : legacyFormats.map(f => ({ format: f, edition: m.editions && typeof m.editions === 'object' ? m.editions[f] : '' }));
+  const out = [], used = new Set(), n = {};
+  for (const c of raw) {
+    if (!c || typeof c !== 'object') continue;
+    const format = copyText(c.format, 40);
+    n[format] = (n[format] || 0) + 1;
+    let id = copyText(c.id, 40) || `${format || 'copy'}-${n[format]}`;
+    while (used.has(id)) id += 'x';
+    used.add(id);
+    const copy = { id, format };
+    const edition = format === 'streaming' ? '' : copyText(c.edition);
+    if (edition) copy.edition = edition;
+    const set = copyText(c.set);
+    if (set) copy.set = set;
+    const note = copyText(c.note, 200);
+    if (note) copy.note = note;
+    out.push(copy);
+  }
+  return out;
+}
+
+// What the derived fields say for a list of copies.
+const copyFormats = copies => [...new Set(copies.map(c => c.format).filter(Boolean))];
+function copyEditions(copies) {
+  const out = {};
+  for (const c of copies) if (c.edition && EDITION_FORMATS.includes(c.format) && !out[c.format]) out[c.format] = c.edition;
+  return out;
+}
+
 function normalizeMediaItem(m) {
   const genre = Array.isArray(m.genre) ? m.genre.map(String)
     : (m.genre && typeof m.genre === 'string')
@@ -792,9 +837,13 @@ function normalizeMediaItem(m) {
     ...(m.tmdbId != null ? { tmdbId: m.tmdbId } : {}),
   }, m.links));
 
+  // Copies win; formats and editions are derived from them (see above).
+  const copies = normalizeMediaCopies(m, formats);
+  item.formats = copyFormats(copies);
+  if (copies.length) item.copies = copies; else delete item.copies;
   // Stored only when there is something to store, so a title without them is
   // unchanged on disk and in the data repo.
-  const editions = normalizeEditions(m.editions, item.formats);
+  const editions = copyEditions(copies);
   if (Object.keys(editions).length) item.editions = editions; else delete item.editions;
   // Seasons belong to TV. A title switched to Movie drops them.
   const seasons = item.type === 'tv' ? normalizeSeasons(m.seasons) : [];

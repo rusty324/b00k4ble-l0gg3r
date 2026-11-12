@@ -57,16 +57,16 @@ function detailBook(b) {
 
 function detailMedia(m) {
   const status = statusLabel('media', m.status);
-  const formats = (m.formats || []).map(f => {
-    const ed = m.editions && m.editions[f];
-    return `${f in MEDIA_FORMAT_ICON ? ico('media', f) : ''} ${esc(MEDIA_FORMAT_LABEL[f] || f)}${ed ? ` — ${esc(ed)}` : ''}`;
-  }).join('<br>');
+  // One line per copy: format, edition, and the set it came in.
+  const formats = (m.copies || []).map(c =>
+    `${c.format in MEDIA_FORMAT_ICON ? ico('media', c.format) : ''} ${esc(MEDIA_FORMAT_LABEL[c.format] || c.format)}${
+      c.edition ? ` — ${esc(c.edition)}` : ''}${c.set ? ` <span class="muted">· in ${esc(c.set)}</span>` : ''}`).join('<br>');
   return {
     cover: m.posterUrl, title: m.title,
     sub: [m.type === 'tv' ? 'TV show' : 'Movie', m.year].filter(Boolean).join(' · '),
     badges: `<span class="badge ${statusClass('media', m.status)}">${esc(status)}</span>${detailStars(m.rating)}`,
     facts: [
-      fact('Formats', formats),
+      fact((m.copies || []).length === 1 ? 'Copy' : 'Copies', formats),
       fact('Seasons', m.type === 'tv' ? esc(seasonsText(m.seasons, m.seasonCount)) : ''),
       fact('Missing', (() => { const gap = seasonGaps(m);
         return gap.length ? `${gap.length === 1 ? 'Season' : 'Seasons'} ${esc(compressRanges(gap))}` : ''; })()),

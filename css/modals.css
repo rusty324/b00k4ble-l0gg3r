@@ -442,3 +442,27 @@ img.fmt-icon { width: 1.15em; height: 1.15em; object-fit: contain; vertical-alig
 .icon-emoji { font-size: 28px; }
 .icon-name { flex: 1; min-width: 120px; display: flex; flex-direction: column; font-weight: 500; }
 .icon-name .muted { font-weight: 400; font-size: 13px; color: var(--text-muted); }
+
+/* ─── COPIES EDITOR (js/app/media-copies.js) ───────────────────────── */
+.copies-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.copies-title { font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.copies-sum { font-size: 13px; color: var(--text-muted); }
+.copy-rows { display: flex; flex-direction: column; gap: 10px; margin: 8px 0; }
+.copy-row { position: relative; border: 1px solid var(--border-mid); border-radius: 10px; padding: 10px 12px 12px; margin: 0; min-width: 0; }
+.copy-row legend { padding: 0 6px; font-size: 13px; }
+.copy-n { font-weight: 600; }
+.copy-fmt { color: var(--text-muted); }
+.copy-remove { position: absolute; top: 2px; right: 4px; width: 44px; height: 44px; border: 0; background: transparent; color: var(--text-muted); font-size: 20px; cursor: pointer; border-radius: 8px; }
+.copy-remove:hover { color: var(--coral-600); }
+.copy-fields { display: grid; grid-template-columns: minmax(120px, 1fr) 2fr; gap: 10px; }
+.copy-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-muted); min-width: 0; }
+.copy-field[hidden] { display: none; }
+.copy-field select, .copy-field input { min-height: 40px; }
+.copy-set { margin-top: 8px; }
+.copy-quick { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; font-size: 12px; color: var(--text-muted); }
+.copy-setinfo { margin-top: 6px; font-size: 13px; color: var(--text-muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.copy-chip + .copy-chip { margin-left: 4px; }
+@media (max-width: 480px) {
+  .copy-fields { grid-template-columns: 1fr; }
+  .copy-quick .btn, .copy-setinfo .btn { min-height: 44px; }
+}

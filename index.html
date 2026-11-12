@@ -411,16 +411,14 @@
       <div class="hint">Press Enter (or a comma) to add a genre. Tap a pill, then tap it again to remove it.</div>
     </div>
 
-    <div class="form-group">
-      <label>Format <span class="opt">(select all that apply)</span></label>
-      <div class="radio-group" id="m-format-group">
-        <label class="radio-btn" for="m-fmt-bluray"><span data-icon="media:bluray">🥏</span> Blu-ray<input type="checkbox" id="m-fmt-bluray" value="bluray"></label>
-        <label class="radio-btn" for="m-fmt-dvd"><span data-icon="media:dvd">💿</span> DVD<input type="checkbox" id="m-fmt-dvd" value="dvd"></label>
-        <label class="radio-btn" for="m-fmt-digital"><span data-icon="media:digital">💻</span> Digital<input type="checkbox" id="m-fmt-digital" value="digital"></label>
-        <label class="radio-btn" for="m-fmt-streaming"><span data-icon="media:streaming">📡</span> Streaming<input type="checkbox" id="m-fmt-streaming" value="streaming"></label>
-      </div>
-      <!-- One edition box per held format that is ticked — filled by renderMediaEditions() -->
-      <div class="edition-rows" id="m-editions"></div>
+    <!-- What you hold: one row per disc, file or licence — js/app/media-copies.js -->
+    <div class="form-group copies-group">
+      <div class="copies-head"><span class="copies-title" id="m-copies-title">Copies</span><span class="copies-sum" id="m-copies-sum"></span></div>
+      <div class="hint">One row per disc, file or license you hold. Two Blu-ray editions are fine, and a copy can belong to a set.</div>
+      <div class="copy-rows" id="m-copies" role="group" aria-labelledby="m-copies-title"></div>
+      <div class="links-row"><button type="button" class="btn btn-sm" onclick="addMediaCopy()">＋ Add a copy</button></div>
+      <datalist id="m-edition-list"></datalist>
+      <datalist id="m-set-list"></datalist>
     </div>
 
     <!-- TV only: which seasons are owned — filled by renderMediaSeasons() -->
@@ -894,6 +892,7 @@
 <script src="js/app/ui-chrome.js"></script>
 <script src="js/app/row-editor.js"></script>
 <script src="js/app/modals.js"></script>
+<script src="js/app/media-copies.js"></script>
 <script src="js/app/detail-view.js"></script>
 <script src="js/app/blurbs.js"></script>
 <script src="js/app/missing-view.js"></script>

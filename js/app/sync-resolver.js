@@ -94,7 +94,7 @@ function resolvedRecords(collection, local, remote, choice) {
 
 const resolveName = (...rs) => (rs.find(r => r && r.title) || {}).title || 'Untitled';
 const fieldLabel = f => ({ genre: 'genres', formats: 'formats', coverUrl: 'cover', posterUrl: 'poster',
-  seasonCount: 'season count', tmdbId: 'TMDb id', notDuplicateOf: 'duplicate marks', ignoredGaps: 'ignored gaps' }[f] || f);
+  seasonCount: 'season count', copies: 'copies (formats, editions, sets)', tmdbId: 'TMDb id', notDuplicateOf: 'duplicate marks', ignoredGaps: 'ignored gaps' }[f] || f);
 
 function titleList(records, label) {
   if (!records.length) return '';
