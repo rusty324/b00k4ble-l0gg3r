@@ -348,7 +348,7 @@ function renderMediaEditions() {
   if (!box) return;
   box.innerHTML = checkedMediaFormats().filter(f => EDITION_FORMATS.includes(f)).map(f => `
     <div class="edition-row">
-      <span class="edition-label">${MEDIA_FORMAT_ICON[f]} ${esc(MEDIA_FORMAT_LABEL[f])} edition <span class="opt">(optional)</span></span>
+      <span class="edition-label">${ico('media', f)} ${esc(MEDIA_FORMAT_LABEL[f])} edition <span class="opt">(optional)</span></span>
       <input type="text" class="plain" data-fmt="${f}" maxlength="120" autocomplete="off"
              aria-label="${esc(MEDIA_FORMAT_LABEL[f])} edition" placeholder="e.g. Collector's Edition"
              value="${esc(_mediaEditions[f] || '')}" oninput="setMediaEdition(this)">
@@ -864,7 +864,7 @@ const platformEditor = createRowEditor({
   rows: () => _gamePlatforms,
   label: p => platformLabel(p.platform),
   chips: p => formatsFor(p.platform).map(f =>
-    ({ key: f, text: `${GAME_FORMAT_ICON[f]} ${GAME_FORMAT_LABEL[f]}`, on: p.formats.includes(f) })),
+    ({ key: f, html: `${gameFormatIcon(f)} ${esc(GAME_FORMAT_LABEL[f])}`, on: p.formats.includes(f) })),
   onChip: (p, f) => {
     const i = p.formats.indexOf(f);
     if (i === -1) p.formats.push(f); else p.formats.splice(i, 1);

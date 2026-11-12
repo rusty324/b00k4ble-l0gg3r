@@ -129,9 +129,9 @@ function seriesCover(e, cls = 'series-cover') {
   return `<span class="${cls} series-tile" data-book-id="${e.members[0].id}" aria-hidden="true" style="background:${tileColor(e.name)}">${esc(initials(e.name))}</span>`;
 }
 
-const FMT_BADGE = { physical: ['badge-physical', '📚 Physical'], ebook: ['badge-ebook', '📱 E-book'], audio: ['badge-audio', '🎧 Audiobook'] };
+const FMT_BADGE = { physical: ['badge-physical', 'Physical'], ebook: ['badge-ebook', 'E-book'], audio: ['badge-audio', 'Audiobook'] };   // icons: custom-icons.js
 const formatBadges = members => [...new Set(members.flatMap(b => b.formats || []))]
-  .map(f => `<span class="badge ${(FMT_BADGE[f] || [''])[0]}">${(FMT_BADGE[f] || [, esc(f)])[1]}</span>`).join('');
+  .map(f => `<span class="badge ${(FMT_BADGE[f] || [''])[0]}">${FMT_BADGE[f] ? `${ico('books', f)} ${FMT_BADGE[f][1]}` : esc(f)}</span>`).join('');
 
 function volumeChip(b) {
   const n = splitSeries(b.series).number;
@@ -261,7 +261,7 @@ function openSeriesSheet(key) {
   e.members.filter(b => !seen.has(b.id)).forEach(b => rows.push({ at: firstNumber(b), b }));
   rows.sort((x, y) => x.at - y.at);
   const sub = b => [isWholeOwned(b) ? '' : 'Companion work', statusLabel('books', b.status),
-    (b.formats || []).map(f => (FMT_BADGE[f] || [, f])[1].replace(/^\S+\s/, '')).join(', ')].filter(Boolean).join(' · ');
+    (b.formats || []).map(f => (FMT_BADGE[f] || [, f])[1]).join(', ')].filter(Boolean).join(' · ');
   document.getElementById('seriesBody').innerHTML = `
     <div class="series-sheet-head">
       ${seriesCover(e, 'series-sheet-cover')}

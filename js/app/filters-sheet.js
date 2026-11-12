@@ -26,7 +26,7 @@ const FILTER_KINDS = {
     facets: () => [
       { key: 'collection', label: 'Collection', options: [['series', 'In a series'], ['standalone', 'Standalone'], ['gaps', 'Series with gaps']],
         match: bookCollectionMatch },
-      { key: 'format', label: 'Format', options: [['ebook', '📱 E-book'], ['audio', '🎧 Audio'], ['physical', '📚 Physical']],
+      { key: 'format', label: 'Format', html: true, options: () => [['ebook', 'E-book'], ['audio', 'Audio'], ['physical', 'Physical']].map(([v, l]) => [v, `${ico('books', v)} ${l}`]),
         match: (b, v) => (b.formats || []).includes(v) },
       { key: 'status', label: 'Status', options: statusPairs('books'), match: (b, v) => b.status === v },
       genreFacet(() => allBookGenres()),
@@ -39,9 +39,9 @@ const FILTER_KINDS = {
     noun: n => (n === 1 ? 'title' : 'titles'),
     total: list => list.length,
     facets: () => [
-      { key: 'type', label: 'Type', options: [['movie', '🎬 Movies'], ['tv', '📺 TV Shows']], match: (m, v) => m.type === v },
+      { key: 'type', label: 'Type', html: true, options: () => [['movie', 'Movies'], ['tv', 'TV Shows']].map(([v, l]) => [v, `${ico('media', v)} ${l}`]), match: (m, v) => m.type === v },
       { key: 'status', label: 'Status', options: statusPairs('media'), match: (m, v) => m.status === v },
-      { key: 'format', label: 'Format', options: [['bluray', '🥏 Blu-ray'], ['dvd', '💿 DVD'], ['digital', '💻 Digital'], ['streaming', '📡 Streaming']],
+      { key: 'format', label: 'Format', html: true, options: () => ['bluray', 'dvd', 'digital', 'streaming'].map(f => [f, `${ico('media', f)} ${esc(MEDIA_FORMAT_LABEL[f])}`]),
         match: (m, v) => (m.formats || []).includes(v) },
       genreFacet(() => allMediaGenres()),
     ],
@@ -56,7 +56,7 @@ const FILTER_KINDS = {
       { key: 'platform', label: 'Platform', options: GAME_PLATFORMS.map(p => [p, platformLabel(p)]),
         match: (g, v) => (g.platforms || []).some(p => p.platform === v) },
       { key: 'status', label: 'Status', options: statusPairs('games'), match: (g, v) => g.status === v },
-      { key: 'format', label: 'Format', options: GAME_FORMATS.map(f => [f, `${GAME_FORMAT_ICON[f]} ${GAME_FORMAT_LABEL[f]}`]),
+      { key: 'format', label: 'Format', html: true, options: () => GAME_FORMATS.map(f => [f, `${gameFormatIcon(f)} ${esc(GAME_FORMAT_LABEL[f])}`]),
         match: (g, v) => (g.platforms || []).some(p => (p.formats || []).includes(v)) },
       genreFacet(() => allGameGenres()),
     ],
@@ -147,7 +147,7 @@ function paintFilterSheet() {
       const n = pool.filter(x => f.match(x, v)).length;
       const off = !n && !on;
       return `<button type="button" class="facet-opt${on ? ' on' : ''}" aria-pressed="${on}" ${off ? 'disabled' : ''}
-          data-facet="${esc(f.key)}" data-value="${esc(v)}">${on ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>' : ''}${esc(label)}
+          data-facet="${esc(f.key)}" data-value="${esc(v)}">${on ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>' : ''}${f.html ? label : esc(label)}
           <span class="facet-n">${n.toLocaleString()}</span></button>`;
     }).join('');
     return `<div class="facet-group"><div class="facet-label" id="facet-${esc(f.key)}">${esc(f.label)}</div>

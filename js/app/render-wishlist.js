@@ -9,7 +9,7 @@ const ICON_DELETE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"
 // the focused search input inside it) intact — used by the search path.
 function renderWishlist(listOnly = false) {
   const alt = document.getElementById('altContent');
-  const typeIcon = { book: '📚', movie: '🎬', tv: '📺', game: '🎮' };
+  const typeIcon = t => ico('wishlist', t in ICON_SETS.wishlist.items ? t : 'book');   // custom-icons.js
 
   // Apply filters
   let items = bookWishlist;
@@ -29,8 +29,8 @@ function renderWishlist(listOnly = false) {
   });
 
   // Filter toolbar
-  const typePills = [['all','All'],['book','📚 Books'],['movie','🎬 Movies'],
-                     ['tv','📺 TV Shows'],['game','🎮 Games']].map(([v,l]) =>
+  const typePills = [['all','All'],['book',`${ico('wishlist','book')} Books`],['movie',`${ico('wishlist','movie')} Movies`],
+                     ['tv',`${ico('wishlist','tv')} TV Shows`],['game',`${ico('wishlist','game')} Games`]].map(([v,l]) =>
     `<button class="pill${wishlistFilters.type===v?' active':''}" onclick="setWishlistFilter('type','${v}')">${l}</button>`
   ).join('');
   const sortSelect = `<select class="sort-select" aria-label="Sort wishlist" onchange="setWishlistSort(this.value)">
@@ -77,7 +77,7 @@ function renderWishlist(listOnly = false) {
     </div>`;
   } else {
     const rows = items.map(item => {
-      const icon = typeIcon[item.type] || '📚';
+      const icon = typeIcon(item.type);
       return `<div class="book-row wish-row">
         <div class="book-row-initial" style="font-size:18px;background:none;color:var(--text)">${icon}</div>
         <div class="book-row-content">
