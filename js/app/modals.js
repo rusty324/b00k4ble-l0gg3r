@@ -338,6 +338,7 @@ function syncMediaSeasons() {
   const tv = mediaTypeIsTv();
   group.style.display = tv ? '' : 'none';
   if (tv) renderMediaSeasons();
+  if (typeof renderMediaCopies === 'function') renderMediaCopies();   // per-copy seasons, and the group's visibility
 }
 
 // One chip per season up to whichever is highest: the known total, the
@@ -392,6 +393,7 @@ function refreshMediaSeasonCount(tmdbId) {
         !document.getElementById('mediaModal').classList.contains('open')) return;
     _mediaSeasonCount = n;
     renderMediaSeasons();
+    renderMediaCopies();
   });
 }
 
@@ -475,7 +477,8 @@ function saveMediaItem() {
   const type    = document.querySelector('input[name="m-type"]:checked')?.value   || 'movie';
   const status  = document.querySelector('input[name="m-status"]:checked')?.value || 'want';
   const copies   = mediaCopiesForSave();
-  const seasons  = type === 'tv' ? [..._mediaSeasons] : [];
+  // With copies, a show's seasons are each copy's (the normalizer unions them).
+  const seasons  = type === 'tv' && !copies.length ? [..._mediaSeasons] : [];
   // The field wins; a TMDb pick only fills a blank one.
   const typedPoster = document.getElementById('m-posterUrl').value.trim();
   const tmdb = pendingTmdb ? { ...pendingTmdb, posterUrl: typedPoster || pendingTmdb.posterUrl || '' } : { posterUrl: typedPoster };

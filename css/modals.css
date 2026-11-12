@@ -466,3 +466,5 @@ img.fmt-icon { width: 1.15em; height: 1.15em; object-fit: contain; vertical-alig
   .copy-fields { grid-template-columns: 1fr; }
   .copy-quick .btn, .copy-setinfo .btn { min-height: 44px; }
 }
+.copy-seasons { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.copy-field-label { font-size: 12px; color: var(--text-muted); }

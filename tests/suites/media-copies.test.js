@@ -44,6 +44,9 @@ const MEDIA = [
       long: N({ copies: [{ format: 'dvd', edition: 'x'.repeat(200) }] }).copies[0].edition.length,
       dupIds: N({ copies: [{ id: 'a', format: 'dvd' }, { id: 'a', format: 'dvd' }] }).copies.map(c => c.id),
       label: fieldLabel('copies'),
+      tvLegacy: N({ type: 'tv', formats: ['bluray', 'dvd'], seasons: [2, 1] }),
+      tvPer: N({ type: 'tv', copies: [{ id: 'a', format: 'bluray', seasons: [3, 1, 2] }, { id: 'b', format: 'digital', seasons: [4, 2] }] }),
+      movieDrops: N({ type: 'movie', copies: [{ id: 'a', format: 'bluray', seasons: [1] }] }),
     };
     function J(x) { return JSON.stringify(x); }
   });
@@ -57,6 +60,10 @@ const MEDIA = [
   check('a streaming copy keeps no edition', J(n.streaming) === J([{ id: 'streaming-1', format: 'streaming' }]), J(n.streaming));
   check('edition text is capped at 120 characters', n.long === 120);
   check('copy ids stay unique within a record', new Set(n.dupIds).size === 2, J(n.dupIds));
+  check('TV: seasons saved before copies move onto the first copy', J(n.tvLegacy.copies.map(c => c.seasons || null)) === '[[1,2],null]' && J(n.tvLegacy.seasons) === '[1,2]', J(n.tvLegacy));
+  check('…and that is stable on the next load', await page.evaluate(r => JSON.stringify(normalizeMediaItem(r)) === JSON.stringify(r), n.tvLegacy));
+  check("TV: each copy keeps its seasons; the title's are their union", J(n.tvPer.copies.map(c => c.seasons)) === '[[1,2,3],[2,4]]' && J(n.tvPer.seasons) === '[1,2,3,4]', J(n.tvPer));
+  check('a Movie keeps no seasons on its copies', !n.movieDrops.copies[0].seasons && !('seasons' in n.movieDrops));
   check('the sync resolver names the field', /copies/.test(n.label), n.label);
 
   // ── 2. Cards, detail ───────────────────────────────────────────────

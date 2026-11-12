@@ -54,6 +54,7 @@ function renderMediaCopies() {
   const editing = typeof mediaEditingId !== 'undefined' && mediaEditingId !== null;
   box.innerHTML = _mediaCopies.length ? _mediaCopies.map((c, i) => {
     const n = i + 1, held = c.format !== 'streaming';
+    const tv = typeof mediaTypeIsTv === 'function' && mediaTypeIsTv();
     const inSet = c.set ? sets.get(textKey(c.set)) || 0 : 0;
     return `<fieldset class="copy-row" data-copy="${i}">
       <legend><span class="copy-n">Copy ${n}</span> <span class="copy-fmt">${ico('media', c.format)} ${esc(MEDIA_FORMAT_LABEL[c.format] || c.format)}</span></legend>
@@ -72,12 +73,60 @@ function renderMediaCopies() {
       <label class="copy-field copy-set"><span>Part of a set <span class="opt">(optional)</span></span>
         <input type="text" class="plain" data-field="set" maxlength="120" autocomplete="off" list="m-set-list"
                placeholder="e.g. a box set or collection" value="${esc(c.set || '')}" oninput="setMediaCopyField(${i}, this)"></label>
+      ${tv ? copySeasonChips(c, i) : ''}
       ${inSet && editing ? `<div class="copy-setinfo">In this set: ${inSet} title${inSet === 1 ? '' : 's'}.
         <button type="button" class="btn btn-sm" onclick="showMediaSet(${i})">Show the set</button></div>` : ''}
     </fieldset>`;
   }).join('') : '<p class="hint copy-none">No copies yet — add one for each disc, file or licence you hold.</p>';
   const sum = document.getElementById('m-copies-sum');
   if (sum) sum.textContent = mediaCopiesSummary(_mediaCopies);
+  // A TV show with copies picks seasons per copy; the title-wide picker is
+  // only for a show with no copies at all.
+  const group = document.getElementById('m-seasons-group');
+  if (group && typeof mediaTypeIsTv === 'function') group.style.display = mediaTypeIsTv() && !_mediaCopies.length ? '' : 'none';
+}
+
+// ─── seasons, per copy (TV) ───────────────────────────────────────────
+// One chip per season up to the known total (TMDb), the highest this copy
+// holds, or as far as "+ Season" has been pressed for it.
+function copySeasonChips(c, i) {
+  const have = new Set(c.seasons || []);
+  const n = Math.max(_mediaSeasonCount || 0, ...have, c._shown || 0, 1);
+  c._shown = n;
+  const all = n > 1 && have.size === n && Math.max(...have) === n;
+  const chips = [];
+  for (let s = 1; s <= n; s++) {
+    const on = have.has(s);
+    chips.push(`<button type="button" class="fmt-chip season-chip${on ? ' active' : ''}" aria-pressed="${on}"
+      aria-label="Copy ${i + 1}, season ${s}" onclick="toggleCopySeason(${i}, ${s})">${s}</button>`);
+  }
+  if (n > 1) chips.push(`<button type="button" class="fmt-chip season-all${all ? ' active' : ''}" aria-pressed="${all}"
+      onclick="toggleAllCopySeasons(${i})">All</button>`);
+  chips.push(`<button type="button" class="fmt-chip season-add" onclick="addCopySeason(${i})">+ Season</button>`);
+  return `<div class="copy-seasons"><span class="copy-field-label">Seasons on this copy${_mediaSeasonCount ? ` <span class="opt">(TMDb lists ${_mediaSeasonCount})</span>` : ''}</span>
+    <div class="season-chips">${chips.join('')}</div></div>`;
+}
+function toggleCopySeason(i, s) {
+  const c = _mediaCopies[i]; if (!c) return;
+  const set = new Set(c.seasons || []);
+  if (set.has(s)) set.delete(s); else set.add(s);
+  c.seasons = [...set].sort((a, b) => a - b);
+  renderMediaCopies();
+  document.querySelector(`#m-copies [data-copy="${i}"] [aria-label="Copy ${i + 1}, season ${s}"]`)?.focus();
+}
+function toggleAllCopySeasons(i) {
+  const c = _mediaCopies[i]; if (!c) return;
+  const n = c._shown || 1, have = c.seasons || [];
+  const all = have.length === n && Math.max(...have) === n;
+  c.seasons = all ? [] : Array.from({ length: n }, (_, k) => k + 1);
+  renderMediaCopies();
+  document.querySelector(`#m-copies [data-copy="${i}"] .season-all`)?.focus();
+}
+function addCopySeason(i) {
+  const c = _mediaCopies[i]; if (!c) return;
+  c._shown = (c._shown || 1) + 1;
+  renderMediaCopies();
+  document.querySelector(`#m-copies [data-copy="${i}"] .season-add`)?.focus();
 }
 
 function setMediaCopyField(i, el) {
@@ -113,7 +162,7 @@ function removeMediaCopy(i) {
 }
 
 // What saveMediaItem() stores; the normalizer trims, caps and drops empties.
-const mediaCopiesForSave = () => _mediaCopies.filter(c => c.format).map(c => ({ ...c }));
+const mediaCopiesForSave = () => _mediaCopies.filter(c => c.format).map(({ _shown, ...c }) => c);
 
 // "Show the set": the set's name in the search box, the form closed.
 function showMediaSet(i) {

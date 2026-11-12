@@ -117,28 +117,42 @@ const MEDIA = [
     (await page.inputValue('#mediaSearchInput')) === '' && (await titles()).length === 2 && !(await clearVisible('#mediaSearchInput')), J(await titles()));
   check('and, with the keyboard down, a tap on ✕ does not raise it again', await page.evaluate(() => document.activeElement.id !== 'mediaSearchInput'));
 
-  // ── 5. Seasons: an existing show with a TMDb id ─────────────────────
+  // ── 5. Seasons: an existing show with a TMDb id, picked per copy ────
   await viaDetail(page.locator('#altContent .book-card', { hasText: 'Rick and Morty' }), 'Edit');
   await page.waitForSelector('#mediaModal.open'); await page.waitForTimeout(400);
-  const chips = () => page.locator('#m-season-chips .fmt-chip').allTextContents().then(a => a.map(t => t.trim()));
-  check('a TV show shows the Seasons group', await page.evaluate(() => document.getElementById('m-seasons-group').style.display === ''));
-  check('TMDb is asked how many seasons it has, and one chip each is offered',
-    tvAsks.includes('/3/tv/60625') && J(await chips()) === J(['1','2','3','4','5','6','7','8','All','+ Season']), J(await chips()));
-  check('the hint says where the count came from', /TMDb lists 8 seasons/.test(await page.textContent('#m-seasons-hint')));
-  await page.locator('#m-season-chips .season-chip', { hasText: /^1$/ }).click();
+  const copyChips = i => page.locator(`#m-copies [data-copy="${i}"] .copy-seasons .fmt-chip`).allTextContents().then(a => a.map(t => t.trim()));
+  check('a show with a copy picks seasons on the copy, not title-wide', await page.evaluate(() => document.getElementById('m-seasons-group').style.display === 'none') &&
+    await page.locator('#m-copies [data-copy="0"] .copy-seasons').count() === 1);
+  check('TMDb is asked how many seasons it has, and the copy offers one chip each',
+    tvAsks.includes('/3/tv/60625') && J(await copyChips(0)) === J(['1','2','3','4','5','6','7','8','All','+ Season']), J(await copyChips(0)));
+  check('the copy says where the count came from', /TMDb lists 8/.test(await page.textContent('#m-copies [data-copy="0"] .copy-seasons')));
+  await page.click('#m-copies [aria-label="Copy 1, season 1"]');
   await page.click('button[onclick="saveMediaItem()"]'); await page.waitForTimeout(400);
-  const rm = await page.evaluate(() => mediaLibrary.find(m => m.id === 1700000000002));
-  check('saved: season 1 owned, 8 known', J(rm.seasons) === '[1]' && rm.seasonCount === 8, J({ s: rm.seasons, c: rm.seasonCount }));
+  let rm = await page.evaluate(() => mediaLibrary.find(m => m.id === 1700000000002));
+  check('saved: season 1 on the Blu-ray copy, 8 known', J(rm.copies[0].seasons) === '[1]' && J(rm.seasons) === '[1]' && rm.seasonCount === 8, J(rm));
   check('the card reads "Season 1 of 8"', (await page.locator('#altContent .book-card', { hasText: 'Rick and Morty' }).locator('.badge-seasons').textContent()) === 'Season 1 of 8');
 
-  // All, and back
+  // A second copy with other seasons; "All" on a copy
   await viaDetail(page.locator('#altContent .book-card', { hasText: 'Rick and Morty' }), 'Edit');
   await page.waitForSelector('#mediaModal.open'); await page.waitForTimeout(300);
-  await page.locator('#m-season-chips .season-all').click();
-  check('"All" ticks every season', (await page.locator('#m-season-chips .season-chip.active').count()) === 8);
+  await page.click('button:has-text("Add a copy")'); await page.selectOption('#m-copies [data-copy="1"] select', 'digital');
+  await page.click('#m-copies [aria-label="Copy 2, season 4"]'); await page.click('#m-copies [aria-label="Copy 2, season 5"]');
+  await page.click('button[onclick="saveMediaItem()"]'); await page.waitForTimeout(400);
+  rm = await page.evaluate(() => mediaLibrary.find(m => m.id === 1700000000002));
+  check('each copy keeps its own seasons; the title holds their union',
+    J(rm.copies.map(c => c.seasons)) === '[[1],[4,5]]' && J(rm.seasons) === '[1,4,5]', J(rm.copies));
+  await viaDetail(page.locator('#altContent .book-card', { hasText: 'Rick and Morty' }));
+  const cf = await detailFact(page, 'Copies');
+  check('the detail sheet gives each copy its seasons', /Blu-ray · Season 1/.test(cf) && /Digital · Seasons 4–5/.test(cf), cf);
+  await closeDetailSheet(page);
+  await viaDetail(page.locator('#altContent .book-card', { hasText: 'Rick and Morty' }), 'Edit');
+  await page.waitForSelector('#mediaModal.open'); await page.waitForTimeout(300);
+  await page.locator('#m-copies [data-copy="0"] .season-all').click();
+  check('"All" on a copy ticks every season', (await page.locator('#m-copies [data-copy="0"] .season-chip.active').count()) === 8);
   await page.click('button[onclick="saveMediaItem()"]'); await page.waitForTimeout(400);
   check('…and the card says so', (await page.locator('#altContent .book-card', { hasText: 'Rick and Morty' }).locator('.badge-seasons').textContent()) === 'All 8 seasons');
 
+  const chips = () => page.locator('#m-season-chips .fmt-chip').allTextContents().then(a => a.map(t => t.trim()));
   // ── 6. A new show from a TMDb pick ──────────────────────────────────
   await page.click('#addBtn'); await page.waitForSelector('#mediaModal.open');
   await page.evaluate(() => { _tmdbResults = [{ title: 'Futurama', year: '1999', type: 'tv', tmdbId: 615, genre: [] }]; tmdbPick(0); });
