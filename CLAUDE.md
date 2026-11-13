@@ -22,6 +22,7 @@ cd tests && npm ci          # once
 node tests/run.js           # all suites, Chromium (from the repo root)
 node tests/run.js dup sync  # only suites whose file name contains a word
 BROWSER=webkit node tests/run.js
+JOBS=1 node tests/run.js    # one suite at a time (default: one per CPU, up to 4)
 ```
 
 In a Claude Code container, Chromium is pre-installed at

@@ -135,7 +135,7 @@ function setGameCopyField(i, el, repaint = false) {
   if (c.platform) hideGamePlatformError();
   paintGamePlatformButtons();
   renderGameCopies();
-  document.querySelector(`#g-copies [data-copy="${i}"] [data-field="${f}"]`)?.focus();
+  focusField(document.querySelector(`#g-copies [data-copy="${i}"] [data-field="${f}"]`));
 }
 
 function syncGameCopySummary() {
@@ -156,7 +156,7 @@ function addGameCopy(prefill = {}) {
   paintGamePlatformButtons();
   renderGameCopies();
   const row = document.querySelector(`#g-copies [data-copy="${_gameCopies.length - 1}"]`);
-  (row?.querySelector('[data-field="platformText"]') || row?.querySelector('select'))?.focus();
+  focusField(row?.querySelector('[data-field="platformText"]') || row?.querySelector('select'));
   if (prefill.platform) hideGamePlatformError();
 }
 
@@ -166,7 +166,7 @@ function removeGameCopy(i) {
   paintGamePlatformButtons();
   renderGameCopies();
   const rows = document.querySelectorAll('#g-copies .copy-row');
-  (rows[Math.min(i, rows.length - 1)]?.querySelector('select') || document.querySelector('#g-copies + .links-row button'))?.focus();
+  focusField(rows[Math.min(i, rows.length - 1)]?.querySelector('select') || document.querySelector('#g-copies + .links-row button'));
 }
 
 // A platform button: on adds a copy there (PC from Steam, the usual case);

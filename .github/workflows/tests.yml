@@ -26,9 +26,17 @@ jobs:
       - name: Install test dependencies
         working-directory: tests
         run: npm ci
+      # The browser download is cached per Playwright version (the lockfile);
+      # --with-deps still installs the system libraries, which are not.
+      - name: Cache ${{ matrix.browser }}
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ matrix.browser }}-${{ runner.os }}-${{ hashFiles('tests/package-lock.json') }}
       - name: Install ${{ matrix.browser }}
         working-directory: tests
         run: npx playwright install --with-deps ${{ matrix.browser }}
+      # Suites run four at a time (tests/run.js), one per runner CPU.
       - name: Run suites
         run: node tests/run.js
         env:
