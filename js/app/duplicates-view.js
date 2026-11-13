@@ -26,7 +26,7 @@ function dupBuckets(kind, r) {
   switch (kind) {
     case 'books':    return [dupIsbn(r) && `i:${dupIsbn(r)}`, dupAsin(r) && `a:${dupAsin(r)}`, tk && `t:${tk}`];
     case 'media':    return [r.tmdbId != null && `m:${r.type}:${r.tmdbId}`, tk && `t:${r.type}:${tk}`];
-    case 'games':    return [tk && `t:${tk}`];
+    case 'games':    { const bk = dupTitleKey(splitEdition(r.title).base); return [bk && `t:${bk}`]; }
     case 'wishlist': return [tk && `t:${r.type}:${tk}`];
   }
   return [];
@@ -101,7 +101,7 @@ function openDuplicates() {
         <div class="missing-item dup-group">
           ${g.map(r => dupRow(d.kind, r)).join('')}
           <div class="missing-actions">
-            ${d.kind === 'media' ? `<button type="button" class="btn btn-sm btn-primary" onclick="mergeDuplicates(${jsArg(g.map(r => r.id))})">Merge</button>` : ''}
+            ${d.kind === 'media' || d.kind === 'games' ? `<button type="button" class="btn btn-sm btn-primary" onclick="openMergeDialog('${d.kind}', ${jsArg(g.map(r => r.id))})">Merge into one title</button>` : ''}
             <button type="button" class="btn btn-sm" onclick="markNotDuplicates('${d.kind}', ${jsArg(g.map(r => r.id))})">Not duplicates</button>
           </div>
         </div>`).join('')}</div>`).join('')
@@ -130,18 +130,62 @@ function deleteDupItem(kind, id) {
   if (!collectionArray(kind).some(r => r.id === id)) { renderPage(); openDuplicates(); }
 }
 
-// Movies & TV: one title holding every copy, kept on the oldest record.
-function mergeDuplicates(ids) {
-  const recs = ids.map(id => mediaLibrary.find(m => m.id === id)).filter(Boolean);
+// ─── Merge ────────────────────────────────────────────────────────────
+// Movies & TV and Games: one title holding every copy. The dialog names the
+// survivor, says where the entries disagreed and what wins, and offers to
+// treat set-like edition text ("… Collection") as a set.
+let _merge = null;   // { kind, ids }
+
+function mergeRecs(kind, ids) {
+  return ids.map(id => collectionArray(kind).find(r => r.id === id)).filter(Boolean);
+}
+
+function openMergeDialog(kind, ids) {
+  const recs = mergeRecs(kind, ids);
   if (recs.length < 2) return;
-  if (!confirm(`Merge ${recs.length} entries for "${recs[0].title}" into one title with all their copies?`)) return;
-  const merged = mergeMediaRecords(recs[0], recs.slice(1));
-  const drop = new Set(recs.slice(1).map(r => r.id));
-  mediaLibrary = mediaLibrary.filter(m => !drop.has(m.id)).map(m => (m.id === merged.id ? merged : m));
-  saveMedia();
+  _merge = { kind, ids };
+  const survivor = mergeSurvivor(recs);
+  const preview = mergeRecords(kind, survivor, recs.filter(r => r !== survivor));
+  const differs = (label, vals, shown, won) => new Set(vals.map(String)).size > 1
+    ? `<li><strong>${label}:</strong> ${vals.map(v => esc(shown(v))).join(' vs ')} → <strong>${esc(shown(won))}</strong></li>` : '';
+  const disagreements = [
+    differs('Status', recs.map(r => r.status), v => statusLabel(kind, v), preview.status),
+    differs('Rating', recs.map(r => r.rating || 0), v => (v ? `${v}★` : 'unrated'), preview.rating || 0),
+    differs('Year', recs.map(r => r.year || ''), v => v || 'none', preview.year || ''),
+  ].join('');
+  const setLike = setLikeEditions(recs);
+  const copies = preview.copies || [];
+  document.getElementById('dupesBody').innerHTML = `
+    <div class="modal-title" id="dupesTitle">Merge into one title</div>
+    <p>Keeps <strong>${esc(survivor.title)}</strong>${survivor.year ? ` (${esc(String(survivor.year))})` : ''} with
+      ${copies.length} cop${copies.length === 1 ? 'y' : 'ies'}; the other ${recs.length - 1 === 1 ? 'entry is' : `${recs.length - 1} entries are`} removed.</p>
+    ${disagreements ? `<p class="hint">Where they disagreed:</p><ul class="merge-diffs">${disagreements}</ul>` : ''}
+    ${setLike.map(e => `<label class="merge-set"><input type="checkbox" checked data-set-edition="${esc(e)}">
+      Treat “${esc(e)}” as a set, not an edition</label>`).join('')}
+    <div class="detail-actions"><span class="detail-spacer"></span>
+      <button type="button" class="btn" onclick="openDuplicates()">Cancel</button>
+      <button type="button" class="btn btn-primary" onclick="confirmMerge()">Merge</button></div>`;
+}
+
+function confirmMerge() {
+  if (!_merge) return;
+  const { kind, ids } = _merge;
+  _merge = null;
+  const recs = mergeRecs(kind, ids);
+  if (recs.length < 2) return openDuplicates();
+  const asSets = [...document.querySelectorAll('#dupesBody [data-set-edition]')].filter(b => b.checked).map(b => b.dataset.setEdition);
+  const survivor = mergeSurvivor(recs);
+  const merged = mergeRecords(kind, survivor, recs.filter(r => r !== survivor), { asSets });
+  const drop = new Set(recs.filter(r => r !== survivor).map(r => r.id));
+  const keep = list => list.filter(r => !drop.has(r.id)).map(r => (r.id === merged.id ? merged : r));
+  if (kind === 'media') { mediaLibrary = keep(mediaLibrary); saveMedia(); }
+  else { videoGames = keep(videoGames); saveGames(); }
   renderPage();
   openDuplicates();
 }
+
+// Kept for the media suite and any caller from before the dialog.
+function mergeDuplicates(ids, kind = 'media') { openMergeDialog(kind, ids); }
 
 // Every record in the group is marked distinct from every other, so the
 // group never comes back; a new copy added later still matches as usual.

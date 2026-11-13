@@ -466,12 +466,17 @@ function handleMediaBackdrop(e) {
 }
 
 // "Add as another copy": the next save folds this form into that record.
-let _mediaMergeInto = null;
-function addAsAnotherCopy(id) {
+let _mediaMergeInto = null, _gameMergeInto = null;
+function addAsAnotherCopy(id, kind = 'media') {
+  if (kind === 'games') { _gameMergeInto = id; saveGameItem(); _gameMergeInto = null; return; }
   _mediaMergeInto = id;
   saveMediaItem();
   _mediaMergeInto = null;
 }
+// A game of the same name from another year, answered "Separate game": the
+// two are marked not-duplicates once the new one exists.
+let _gameSeparateFrom = null;
+function markGameSeparate(id) { _gameSeparateFrom = id; paintDup('games'); }
 
 function saveMediaItem() {
   const title = document.getElementById('m-title').value.trim();
@@ -554,15 +559,15 @@ const DUP_FORMS = {
     open: id => { closeMediaModal(); openMediaModal(id); },
   },
   games: {
-    note: 'g-dup', fields: ['g-title'],
+    note: 'g-dup', fields: ['g-title', 'g-year'],
     adding: () => gameEditingId === null,
-    draft: () => ({ title: document.getElementById('g-title').value }),
+    draft: () => ({ title: document.getElementById('g-title').value, year: document.getElementById('g-year').value }),
     describe: g => {
       const on = (g.platforms || []).map(p => platformLabel(p.platform)).join(', ');
       return `“${g.title}”${on ? ` on ${on}` : ''}`;
     },
-    // Another platform belongs on the existing game, not on a second card.
-    extra: 'Got it on another platform too? Open it and tick that platform instead.',
+    // Another platform or edition belongs on the existing game, not a second card.
+    extra: 'Another platform or edition? Add it as another copy.',
     open: id => { closeGameModal(); openGameModal(id); },
   },
 };
@@ -577,10 +582,23 @@ function paintDup(kind) {
   if (!box) return null;
   const dup = f.adding() ? findDuplicate(kind, f.draft()) : null;
   if (!dup) {
-    box.hidden = true;
-    box.textContent = '';
     box.classList.remove('armed');
     _dupAck[kind] = undefined;          // a changed draft has to be confirmed afresh
+    // Games: the same name from another year — a remake, or another copy?
+    // Asked, never blocking.
+    const twin = kind === 'games' && f.adding() ? findRemakeCandidate(f.draft()) : null;
+    if (twin) {
+      const name = `“${twin.title}” (${twin.year})`;
+      box.hidden = false;
+      box.innerHTML = _gameSeparateFrom === twin.id
+        ? `<div>Will be saved as a separate game from ${esc(name)}.</div>`
+        : `<div>Same title as ${esc(name)}. Separate game, or another copy?</div>
+          <button type="button" class="btn btn-sm" onclick="markGameSeparate(${twin.id})">Separate game</button>
+          <button type="button" class="btn btn-sm btn-primary" onclick="addAsAnotherCopy(${twin.id}, 'games')">Another copy</button>`;
+      return null;
+    }
+    box.hidden = true;
+    box.textContent = '';
     return null;
   }
   const t = idAsTime(dup.id);
@@ -592,7 +610,7 @@ function paintDup(kind) {
     ${f.extra ? `<div class="dup-extra">${esc(f.extra)}</div>` : ''}
     ${armed ? '<div class="dup-armed">Tap Save again to add another copy anyway.</div>' : ''}
     <button type="button" class="btn btn-sm" onclick="openDuplicate('${kind}', ${dup.id})">Open it</button>
-    ${kind === 'media' ? `<button type="button" class="btn btn-sm btn-primary" onclick="addAsAnotherCopy(${dup.id})">Add as another copy</button>` : ''}`;
+    ${kind === 'media' || kind === 'games' ? `<button type="button" class="btn btn-sm btn-primary" onclick="addAsAnotherCopy(${dup.id}, '${kind}')">Add as another copy</button>` : ''}`;
   return dup;
 }
 
@@ -622,6 +640,7 @@ function openDuplicate(kind, id) { _wishlistMove = null; DUP_FORMS[kind].open(id
 
 function resetDup(kind) {
   _dupAck[kind] = undefined;
+  if (kind === 'games') _gameSeparateFrom = null;
   clearTimeout(_dupTimer[kind]);
   paintDup(kind);
 }
@@ -946,7 +965,7 @@ function saveGameItem() {
     return;
   }
   hideGamePlatformError();
-  if (gameEditingId === null && dupBlocksSave('games')) return;
+  if (gameEditingId === null && _gameMergeInto === null && dupBlocksSave('games')) return;
   commitGameDlc();            // a name typed but not yet Entered still counts
   const dlc = _gameDlc.map(d => ({ name: d.name, owned: d.owned, ...(d.via ? { via: d.via } : {}) }));
   const status    = document.querySelector('input[name="g-status"]:checked')?.value || 'want';
@@ -959,8 +978,20 @@ function saveGameItem() {
       videoGames[i] = normalizeVideoGame({ ...videoGames[i], ...renamedBlurb(videoGames[i], title), title, copies, dlc, year, genre, status, notes, coverUrl, rating: gameRating, links });
     }
   } else {
-    videoGames.push(normalizeVideoGame({ id: newId(), title, copies, dlc, year, genre, status, notes, coverUrl, rating: gameRating, links }));
+    const draft = normalizeVideoGame({ id: newId(), title, copies, dlc, year, genre, status, notes, coverUrl, rating: gameRating, links });
+    const into = _gameMergeInto === null ? -1 : videoGames.findIndex(x => x.id === _gameMergeInto);
+    if (into !== -1) videoGames[into] = mergeRecords('games', videoGames[into], [draft]);
+    else {
+      const twin = _gameSeparateFrom === null ? -1 : videoGames.findIndex(x => x.id === _gameSeparateFrom);
+      if (twin !== -1) {
+        const mark = (r, id) => ({ ...r, notDuplicateOf: [...new Set([...(r.notDuplicateOf || []).map(Number), id])].sort((a, b) => a - b) });
+        videoGames[twin] = mark(videoGames[twin], draft.id);
+        videoGames.push(mark(draft, videoGames[twin].id));
+      } else videoGames.push(draft);
+    }
   }
+  _gameMergeInto = null;
+  _gameSeparateFrom = null;
 
   saveGames();
   if (gameEditingId === null) completeWishlistMove('games');

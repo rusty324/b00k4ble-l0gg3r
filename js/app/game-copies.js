@@ -85,6 +85,8 @@ function renderGameCopies() {
       <label class="copy-field copy-set"><span>Part of a set <span class="opt">(optional)</span></span>
         <input type="text" class="plain" data-field="set" maxlength="120" autocomplete="off"
                placeholder="e.g. a bundle or collection" value="${esc(c.set || '')}" oninput="setGameCopyField(${i}, this)"></label>
+      ${gameEditingId !== null && _gameCopies.length > 1 && videoGames.some(g => g.id === gameEditingId && (g.copies || []).some(x => x.id === c.id))
+        ? `<div class="copy-split"><button type="button" class="btn btn-sm" onclick="splitGameCopy(${i})">Move to its own title</button></div>` : ''}
     </fieldset>`;
   }).join('') : '<p class="hint copy-none">No copies yet — tap a platform above, or add one for each disc, download or subscription.</p>';
   const sum = document.getElementById('g-copies-sum');
@@ -181,4 +183,27 @@ function toggleGamePlatform(value) {
   paintGamePlatformButtons();
   renderGameCopies();
   document.getElementById(`g-plat-${value}`)?.focus();
+}
+
+// "Move to its own title": the copy (and any DLC that came with it) becomes a
+// game of its own, marked not-a-duplicate of this one — undoes a wrong merge.
+function splitGameCopy(i) {
+  const c = _gameCopies[i];
+  const idx = videoGames.findIndex(g => g.id === gameEditingId);
+  if (!c || idx === -1 || _gameCopies.length < 2) return;
+  if (!confirm('Move this copy to a title of its own? It keeps the same title, which you can then change.')) return;
+  const orig = videoGames[idx];
+  const { _other, _storeOther, _opensOther, ...copy } = c;
+  const id = newId();
+  const mark = (ids, x) => [...new Set([...(ids || []).map(Number), x])].sort((a, b) => a - b);
+  const came = d => d.via === c.id;
+  videoGames.push(normalizeVideoGame({ ...orig, id, copies: [copy], dlc: (orig.dlc || []).filter(came), notDuplicateOf: mark(orig.notDuplicateOf, orig.id) }));
+  videoGames[idx] = normalizeVideoGame({ ...orig, copies: (orig.copies || []).filter(x => x.id !== c.id),
+    dlc: (orig.dlc || []).filter(d => !came(d)), notDuplicateOf: mark(orig.notDuplicateOf, id) });
+  _gameCopies.splice(i, 1);
+  _gameDlc = _gameDlc.filter(d => !came(d));
+  saveGames();
+  paintGamePlatformButtons();
+  renderGameCopies();
+  renderPage();
 }
