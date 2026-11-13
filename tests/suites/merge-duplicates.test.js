@@ -31,8 +31,11 @@ const WISH = [{ id: 1700000000301, title: 'Heat', type: 'movie', creator: '', no
 
   // ── 1. Find duplicates → Merge ─────────────────────────────────────
   await page.evaluate(() => openDuplicates()); await page.waitForTimeout(200);
-  check('the Movies & TV group offers Merge', await page.locator('#dupesBody button:has-text("Merge")').count() === 1);
-  await page.click('#dupesBody button:has-text("Merge")'); await page.waitForTimeout(300);
+  check('the Movies & TV group offers Merge', await page.locator('#dupesBody button:has-text("Merge into one title")').count() === 1);
+  await page.click('#dupesBody button:has-text("Merge into one title")'); await page.waitForTimeout(200);
+  const dlg = await page.innerText('#dupesBody');
+  check('the dialog names the survivor and where the entries disagreed', /Keeps Alien \(1979\) with 2 copies/.test(dlg) && /Status: Want to Watch vs Watched → Watched/.test(dlg), dlg);
+  await page.click('#dupesBody .btn-primary:text-is("Merge")'); await page.waitForTimeout(300);
   let all = await lib();
   const alien = all.filter(m => m.title === 'Alien');
   check('one Alien is left, the oldest', alien.length === 1 && alien[0].id === 1700000000201, J(alien.map(m => m.id)));

@@ -177,46 +177,9 @@ function showMediaSet(i) {
   if (input) { input.value = set; input.focus(); }
 }
 
-// ─── merging, splitting ───────────────────────────────────────────────
-// One title from several records of the same thing: every copy of each, the
-// first record's fields, and blanks filled from the others. Copy ids that
-// would collide are renewed. Used by the add form's "Add as another copy"
-// and by Find duplicates → Merge.
-function mergeMediaRecords(target, sources) {
-  const out = { ...target };
-  const copies = [...(target.copies || [])];
-  const ids = new Set(copies.map(c => c.id));
-  const notes = [String(target.notes || '').trim()].filter(Boolean);
-  const genre = [...(target.genre || [])], links = [...(target.links || [])];
-  const merged = new Set(sources.map(s => s.id));
-  const notDup = new Set((target.notDuplicateOf || []).map(Number));
-  for (const s of sources) {
-    for (const c of s.copies || []) {
-      const id = !c.id || ids.has(c.id) ? newCopyId() : c.id;
-      ids.add(id);
-      copies.push({ ...c, id });
-    }
-    for (const k of ['year', 'posterUrl', 'tmdbId', 'blurb']) if ((out[k] == null || out[k] === '') && s[k] != null && s[k] !== '') out[k] = s[k];
-    if ((s.seasonCount || 0) > (out.seasonCount || 0)) out.seasonCount = s.seasonCount;
-    // The status furthest along wins: watched over want, want over not-interested.
-    const rank = st => ({ watched: 2, want: 1 }[st] || 0);
-    if (rank(s.status) > rank(out.status)) out.status = s.status;
-    if ((s.rating || 0) > (out.rating || 0) && !out.rating) out.rating = s.rating;
-    const n = String(s.notes || '').trim();
-    if (n && !notes.includes(n)) notes.push(n);
-    for (const g of s.genre || []) if (!genre.some(x => textKey(x) === textKey(g))) genre.push(g);
-    for (const l of s.links || []) if (!links.some(x => (x.url || x) === (l.url || l))) links.push(l);
-    (s.notDuplicateOf || []).forEach(id => notDup.add(Number(id)));
-  }
-  merged.forEach(id => notDup.delete(id));
-  notDup.delete(target.id);
-  out.copies = copies;
-  out.notes = notes.join('\n\n');
-  out.genre = genre;
-  out.links = links;
-  if (notDup.size) out.notDuplicateOf = [...notDup].sort((a, b) => a - b); else delete out.notDuplicateOf;
-  return normalizeMediaItem(out);
-}
+// ─── splitting ────────────────────────────────────────────────────────
+// (Merging is shared with Games: js/app/merge.js.)
+const mergeMediaRecords = (target, sources) => mergeRecords('media', target, sources);
 
 // "Move to its own title": the copy becomes a record of its own, marked as
 // not a duplicate of this one so Find duplicates leaves the pair alone.

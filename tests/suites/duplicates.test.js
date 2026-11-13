@@ -144,7 +144,7 @@ const GAMES = [{ id: 1750000000020, title: 'Mass Effect', status: 'completed', p
   await page.fill('#g-title', 'mass effect'); await page.waitForTimeout(300);
   n = await note('g-dup');
   check('a game already in the library names its platforms', !n.hidden && /“Mass Effect” on PC, Xbox/.test(n.text), n.text);
-  check('and points to adding a platform there instead', /Open it and tick that platform instead/.test(n.text));
+  check('and offers to add it as another copy instead', /Add it as another copy/.test(n.text) && /Add as another copy/.test(n.text), n.text);
   await page.locator('#g-dup button', { hasText: 'Open it' }).click(); await page.waitForTimeout(300);
   check('"Open it" opens the existing game for editing', await page.evaluate(() => gameEditingId === 1750000000020 && document.getElementById('gameModalTitle').textContent === 'Edit game'));
   await page.evaluate(() => closeGameModal());

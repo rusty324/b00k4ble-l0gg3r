@@ -417,6 +417,61 @@ function dupTitleKey(title) {
   return titleSortKey(plain).replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '');
 }
 
+// ─── game editions ────────────────────────────────────────────────────
+// "Fallout 4: Game of the Year Edition" is Fallout 4 in another edition; a
+// remaster is another copy of the same game, a remake is a game of its own.
+// splitEdition takes only a trailing phrase that ends in one of the endings
+// below — never a word in the middle — so "Ultimate Chicken Horse" and
+// "Gold Rush" stay whole. A title ending in a set word is a bundle of games,
+// not an edition: it is left whole and flagged.
+const EDITION_WORDS = ['Definitive', 'Complete', 'Game of the Year', 'Special', 'Deluxe', 'Digital Deluxe', 'Ultimate', 'Gold',
+  'Anniversary', 'Enhanced', "Collector's", 'Standard', 'HD'];
+const EDITION_ENDINGS = ['Edition', 'Remastered', 'Remaster', 'GOTY', "Director's Cut"];
+const SET_WORDS = ['Collection', 'Box Set', 'Trilogy', 'Anthology', 'Bundle', 'Legendary Edition', 'Complete Series'];
+const reWords = list => list.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/'/g, "['’]?").replace(/ /g, '\\s+')).join('|');
+const EDITION_END_RE = new RegExp(`(?:${reWords(EDITION_ENDINGS)})$`, 'i');
+const EDITION_TAIL_RE = new RegExp(`\\s((?:(?:${reWords(EDITION_WORDS)})\\s+)*(?:${reWords(EDITION_ENDINGS)}))$`, 'i');
+const SET_END_RE = new RegExp(`(?:${reWords(SET_WORDS)})\\)?$`, 'i');
+
+function splitEdition(title) {
+  const t = String(title || '').trim();
+  if (SET_END_RE.test(t)) return { base: t, edition: '', set: true };
+  const ok = (base, edition) => (base.trim() && edition.trim() ? { base: base.trim().replace(/\s*[:\-–—]$/, '').trim(), edition: edition.trim() } : null);
+  let m = t.match(/^(.*?)\s*\(([^)]+)\)$/);
+  if (m && EDITION_END_RE.test(m[2].trim())) { const r = ok(m[1], m[2]); if (r) return r; }
+  m = t.match(/^(.*\S)\s*(?::|\s[-–—])\s*([^:–—]+)$/);
+  if (m && EDITION_END_RE.test(m[2].trim())) { const r = ok(m[1], m[2]); if (r) return r; }
+  m = t.match(EDITION_TAIL_RE);
+  if (m) { const r = ok(t.slice(0, m.index), m[1]); if (r) return r; }
+  return { base: t, edition: '' };
+}
+
+// Same game by its base title, and no different years without an edition word
+// to explain them (Resident Evil 2, 1998 and 2019, are two games).
+function sameGame(a, b) {
+  const A = splitEdition(a.title), B = splitEdition(b.title);
+  const k = dupTitleKey(A.base);
+  if (!k || k !== dupTitleKey(B.base)) return false;
+  if (A.edition || B.edition) return true;
+  const ya = String(a.year || '').trim(), yb = String(b.year || '').trim();
+  return !ya || !yb || ya === yb;
+}
+
+// The add form's gentler question: a game of the same name from another year
+// — a remake, or another copy? Null when there is nothing to ask.
+function findRemakeCandidate(draft, excludeId = null) {
+  const A = splitEdition(draft.title);
+  const k = dupTitleKey(A.base);
+  if (!k || A.edition) return null;
+  const ya = String(draft.year || '').trim();
+  if (!ya) return null;
+  return videoGames.find(g => {
+    if (g.id === excludeId) return false;
+    const B = splitEdition(g.title), yb = String(g.year || '').trim();
+    return !B.edition && dupTitleKey(B.base) === k && yb && yb !== ya;
+  }) || null;
+}
+
 // Word order ignored, so "Tolkien, J.R.R." and "J. R. R. Tolkien" agree.
 function dupAuthorKey(author) {
   return String(author || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
@@ -430,8 +485,10 @@ function dupAuthorKey(author) {
 //   media — same TMDb id and type outright (TMDb numbers movies and TV
 //           separately); else same title and type, and the same year when
 //           both have one, so a remake is not a duplicate of the original.
-//   games — same title. Another platform is not another game: it belongs on
-//           the existing record's platform list.
+//   games — same title once a trailing edition is set aside (splitEdition):
+//           an edition word on either side matches whatever the years; with
+//           none, two different years are two games (a remake). Another
+//           platform is not another game: it is another copy.
 //   wishlist — same type and title, and creators that agree (as books).
 // The same rule decides both the add form's warning and ⋯ → Find duplicates
 // (js/app/duplicates-view.js), so the two can never disagree.
@@ -459,7 +516,7 @@ function sameRecord(kind, a, b) {
              (sameTitle && (!ya || !yb || ya === yb));
     }
     case 'games':
-      return sameTitle;
+      return sameGame(a, b);
     case 'wishlist':
       return (a.type || 'book') === (b.type || 'book') && sameTitle && namesAgree(a.creator, b.creator);
   }
