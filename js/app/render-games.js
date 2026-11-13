@@ -13,7 +13,7 @@
 
 // "PC · PS5" — the platforms alone, for the line under a title.
 const gamePlatformText = g =>
-  (g.platforms || []).map(p => platformLabel(p.platform)).join(' · ');
+  platformsOf(g).map(p => platformLabel(p.platform)).join(' · ');
 
 // Compact badges from the copies: "PC · Steam", "PS4 · Physical", with
 // "via <launcher>" when a PC copy opens elsewhere and "×2" for repeats.
@@ -73,13 +73,13 @@ function renderGames(listOnly = false) {
   // A game can be on several platforms, so these are both "has one like
   // this", not "is this".
   if (gameFilters.platform !== 'all')
-    items = items.filter(g => (g.platforms || []).some(p => p.platform === gameFilters.platform));
+    items = items.filter(g => platformsOf(g).some(p => p.platform === gameFilters.platform));
   if (gameFilters.platform === 'pc' && gameFilters.store && gameFilters.store !== 'all')
     items = items.filter(g => gameHasPcStore(g, gameFilters.store));
   if (gameFilters.status !== 'all') items = items.filter(g => g.status === gameFilters.status);
   if (gameFilters.format !== 'all')
     items = items.filter(g =>
-      (g.platforms || []).some(p => (p.formats || []).includes(gameFilters.format)));
+      platformsOf(g).some(p => p.formats.includes(gameFilters.format)));
   // Several genres widen rather than narrow: ticking Adventure and RPG shows
   // games that are either, which is what a list of checkboxes reads as. The
   // menu says so, so it is never left to guess.

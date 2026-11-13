@@ -48,7 +48,7 @@ function openEditModal(id) {
   closeOlAC();
   olHint('');
 
-  setBookCopies(b.copies && b.copies.length ? b.copies : (b.formats || ['physical']).map(format => ({ id: newCopyId(), format })));
+  setBookCopies(b.copies && b.copies.length ? b.copies : [{ id: newCopyId(), format: 'physical' }]);
   setRadio('status', b.status);
   updateStars(currentRating);
   document.getElementById('fmt-error').style.display = 'none';
@@ -557,7 +557,7 @@ const DUP_FORMS = {
     adding: () => gameEditingId === null,
     draft: () => ({ title: document.getElementById('g-title').value, year: document.getElementById('g-year').value }),
     describe: g => {
-      const on = (g.platforms || []).map(p => platformLabel(p.platform)).join(', ');
+      const on = platformsOf(g).map(p => platformLabel(p.platform)).join(', ');
       return `“${g.title}”${on ? ` on ${on}` : ''}`;
     },
     // Another platform or edition belongs on the existing game, not a second card.

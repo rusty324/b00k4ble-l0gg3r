@@ -42,7 +42,7 @@ const WISH = [
   await page.click('label[for="fmt-audio"]');
   await page.click('button[onclick="saveBook()"]'); await page.waitForTimeout(400);
   const b = await page.evaluate(() => books.find(x => x.title === 'Piranesi'));
-  check('saving adds it to the library with everything carried over', !!b && b.isbn === '9781635575637' && b.author === 'Susanna Clarke' && b.links.length === 1, J(b));
+  check('saving adds it to the library with everything carried over', !!b && b.copies.some(c => c.isbn === '9781635575637') && b.author === 'Susanna Clarke' && b.links.length === 1, J(b));
   check('and removes it from the wishlist', !(await wishTitles()).includes('Piranesi'), J(await wishTitles()));
   check('a banner says what happened', /Moved “Piranesi” from your wishlist/.test(await page.textContent('#statusBanner')));
   check('the removal is a recorded deletion, so sync will not bring it back',

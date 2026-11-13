@@ -502,8 +502,6 @@ function findDuplicate(kind, draft, excludeId = null) {
   return collectionArray(kind).find(r => r.id !== excludeId && sameRecord(kind, draft, r)) || null;
 }
 
-const dupIsbn = r => String(r.isbn || '').replace(/[^0-9Xx]/g, '').toUpperCase();
-const dupAsin = r => String(r.asin || '').toUpperCase();
 // Names that agree: equal, or blank on either side (a blank rules nothing out).
 const namesAgree = (x, y) => { const a = dupAuthorKey(x), b = dupAuthorKey(y); return !a || !b || a === b; };
 
@@ -673,7 +671,14 @@ function bookFieldsFromCopies(copies) {
     narrator: [...new Set(copies.filter(c => c.narrator).flatMap(c => c.narrator.split(',').map(x => x.trim())))].join(', '),
   };
 }
+// What the old title-level fields used to say, from the copies. Nothing
+// stores these any more; every reader asks here.
+const formatsOf = r => [...new Set((r.copies || []).map(c => c.format).filter(Boolean))];
+const platformsOf = g => gamePlatformsFromCopies(g.copies || []);
+const bookNarrator = b => bookFieldsFromCopies(b.copies || []).narrator;
+const bookAsin = b => bookFieldsFromCopies(b.copies || []).asin;
 // Every ISBN / ASIN a book holds, for duplicate detection and scan lookup.
+// (A draft from a form may carry a bare isbn / asin too.)
 const bookIsbns = b => new Set([...(b.copies || []).map(c => cleanIsbn(c.isbn)), cleanIsbn(b.isbn)].filter(Boolean));
 const bookAsins = b => new Set([...(b.copies || []).map(c => cleanAsin(c.asin)), cleanAsin(b.asin)].filter(Boolean));
 
@@ -705,10 +710,7 @@ function normalizeBook(b) {
   const series = b.series ? String(b.series) : '';
   // What you hold: one copy per edition — its format, and the identifiers
   // and narrator that belong to that edition rather than to the book.
-  // `formats`, `isbn`, `asin` and `narrator` are still written, derived from
-  // the copies, so every older reader keeps working.
   const copies = normalizeBookCopies(b, formats);
-  const derived = bookFieldsFromCopies(copies);
   // Kept only while the book is Read, like a narrator only while it is an audiobook.
   const finished = status === 'read' ? normalizeFinished(b.finished) : '';
   const _searchStr = searchFold([title, author, series, finished, ...genre,
@@ -720,10 +722,12 @@ function normalizeBook(b) {
 
   const book = dropEmpty(applyLinks({
     ...b, id: normalizeId(b.id), title, series, author, finished, status, genre, rating, _searchStr,
-    ...derived,
   }, b.links));
-  if (copies.length) book.copies = copies; else delete book.copies;
-  for (const k of ['isbn', 'asin', 'narrator']) if (!derived[k]) delete book[k];
+  // Copies are the record — kept even when empty, since a book with no
+  // `copies` at all reads as one from before them (and becomes Physical).
+  // The old title-level fields are only read, to migrate.
+  book.copies = copies;
+  for (const k of ['formats', 'format', 'isbn', 'asin', 'narrator']) delete book[k];
   delete book.tags;   // the spread carried the old name in; only `genre` is stored
   // Only a book in a series can carry its series's ignored gaps.
   const ignoredGaps = series ? normalizeIgnoredGaps(b.ignoredGaps) : [];
@@ -943,11 +947,11 @@ function normalizeVideoGame(g) {
     rating: Number.isFinite(+g.rating) ? Math.max(0, Math.min(5, Math.round(+g.rating))) : 0,
     ...(g.coverUrl != null ? { coverUrl: String(g.coverUrl) } : {}),
   }, g.links));
-  // `copies` is the source of truth; `platforms` is derived from it on every
-  // load so the rest of the app, and an older cached page, keep reading it.
+  // `copies` is the record; the old `platforms` (and before it `platform`
+  // and `formats`) are only read, to migrate (platformsOf() derives them).
   const copies = normalizeGameCopies(g);
-  if (copies.length) game.copies = copies; else delete game.copies;
-  game.platforms = gamePlatformsFromCopies(copies);
+  game.copies = copies;
+  delete game.platforms;
   delete game.platform;
   delete game.formats;
   // Only stored when there is something to store: most games have none, and an
@@ -1009,8 +1013,7 @@ function seasonsText(seasons, count) {
 // ─── COPIES (Movies & TV) ────────────────────────────────────────────
 // One record per title; what you hold is a list of copies — two Blu-ray
 // editions, or one copy that came in a box set. `copies` is the source of
-// truth; `formats` and `editions` are still written, derived from it, so
-// every older read (and an older cached page) keeps working.
+// truth; the old `formats` / `editions` are only read, to migrate.
 const MEDIA_COPY_FORMATS = ['bluray', 'dvd', 'digital', 'streaming'];
 const COPY_TEXT_MAX = 120;
 const copyText = (v, max = COPY_TEXT_MAX) => (v == null ? '' : String(v).trim().slice(0, max));
@@ -1080,20 +1083,17 @@ function normalizeMediaItem(m) {
     type: m.type || 'movie',
     status: m.status === 'watching' ? 'watched' : (m.status || 'want'),
     genre,
-    formats,
     rating: Number.isFinite(+m.rating) ? Math.max(0, Math.min(5, Math.round(+m.rating))) : 0,
     ...(m.posterUrl != null ? { posterUrl: String(m.posterUrl) } : {}),
     ...(m.tmdbId != null ? { tmdbId: m.tmdbId } : {}),
   }, m.links));
 
-  // Copies win; formats and editions are derived from them (see above).
+  // Copies are the record. The old `formats` and `editions` are read once, to
+  // migrate a record from before copies, and no longer stored (formatsOf()).
   const copies = normalizeMediaCopies(m, formats);
-  item.formats = copyFormats(copies);
   if (copies.length) item.copies = copies; else delete item.copies;
-  // Stored only when there is something to store, so a title without them is
-  // unchanged on disk and in the data repo.
-  const editions = copyEditions(copies);
-  if (Object.keys(editions).length) item.editions = editions; else delete item.editions;
+  delete item.formats;
+  delete item.editions;
   // Seasons belong to TV. A title switched to Movie drops them. With copies
   // they are derived: the union of what each copy holds.
   const seasons = item.type !== 'tv' ? [] : copies.length ? copySeasons(copies) : normalizeSeasons(m.seasons);

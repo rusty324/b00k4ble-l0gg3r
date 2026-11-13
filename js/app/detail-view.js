@@ -39,7 +39,7 @@ function detailBook(b) {
     title: b.title, sub: b.author,
     badges: `<span class="badge ${statusClass('books', b.status)}">${esc(status)}</span>${detailStars(b.rating)}`,
     facts: [
-      fact('Narrated by', esc(b.narrator || '')),
+      fact('Narrated by', esc(bookNarrator(b))),
       fact('Series', esc(b.series || '')),
       fact('Series gaps', (() => {
         const s = seriesGaps().find(x => x.books.includes(b));

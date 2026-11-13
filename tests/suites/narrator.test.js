@@ -32,11 +32,11 @@ const BOOKS = [
   const n = await page.evaluate(() => {
     const N = x => normalizeBook({ id: 1, title: 'X', author: 'A', ...x });
     return {
-      kept:     N({ formats: ['audio'], narrator: '  Scott Brick ' }).narrator,
-      list:     N({ formats: ['audio'], narrator: ['Martin Jarvis', ' Stephen Fry ', ''] }).narrator,
-      noAudio:  'narrator' in N({ formats: ['ebook'], narrator: 'Someone' }),
-      blank:    'narrator' in N({ formats: ['audio'], narrator: '  ' }),
-      absent:   'narrator' in N({ formats: ['audio'] }),
+      kept:     bookNarrator(N({ formats: ['audio'], narrator: '  Scott Brick ' })),
+      list:     bookNarrator(N({ formats: ['audio'], narrator: ['Martin Jarvis', ' Stephen Fry ', ''] })),
+      noAudio:  !!bookNarrator(N({ formats: ['ebook'], narrator: 'Someone' })) || 'narrator' in N({ formats: ['ebook'], narrator: 'Someone' }),
+      blank:    !!bookNarrator(N({ formats: ['audio'], narrator: '  ' })),
+      absent:   !!bookNarrator(N({ formats: ['audio'] })),
       search:   N({ formats: ['audio'], narrator: 'Scott Brick' })._searchStr.includes('scott brick'),
       idem:     (() => { const a = N({ formats: ['audio'], narrator: 'X Y' }); return J(normalizeBook(a)) === J(a); })(),
     };
@@ -80,18 +80,18 @@ const BOOKS = [
   check('adding another format keeps what was typed', await shown() && (await page.inputValue(NARR)) === 'Ray Porter');
   await page.click('label[for="fmt-ebook"]');
   await page.click('button[onclick="saveBook()"]'); await page.waitForTimeout(400);
-  check('saved with the narrator', await page.evaluate(() => books.find(b => b.title === 'Project Hail Mary').narrator) === 'Ray Porter');
+  check('saved with the narrator', await page.evaluate(() => bookNarrator(books.find(b => b.title === 'Project Hail Mary'))) === 'Ray Porter');
 
   await viaDetail(page.locator('#booksGrid .book-card', { hasText: 'Project Hail Mary' }), 'Edit');
   await page.waitForSelector('#modal.open');
   check('editing an audiobook shows its narrator', await shown() && (await page.inputValue(NARR)) === 'Ray Porter');
   // It was saved as Physical + Audiobook (Physical is ticked by default), so
   // unticking Audiobook leaves it print-only.
-  check('(it is Physical + Audiobook)', await page.evaluate(() => JSON.stringify(books.find(b => b.title === 'Project Hail Mary').formats)) === '["physical","audio"]');
+  check('(it is Physical + Audiobook)', await page.evaluate(() => JSON.stringify(formatsOf(books.find(b => b.title === 'Project Hail Mary')))) === '["physical","audio"]');
   await page.click('label[for="fmt-audio"]');
   await page.click('button[onclick="saveBook()"]'); await page.waitForTimeout(400);
   check('switching it to print-only drops the narrator on save',
-    await page.evaluate(() => !('narrator' in books.find(b => b.title === 'Project Hail Mary'))));
+    await page.evaluate(() => !bookNarrator(books.find(b => b.title === 'Project Hail Mary'))));
 
   await viaDetail(page.locator('#booksGrid .book-card', { hasText: 'Dune' }), 'Edit');
   await page.waitForSelector('#modal.open');
@@ -105,12 +105,12 @@ const BOOKS = [
   check('picking an Audible result ticks Audiobook and fills the narrator',
     await shown() && (await page.inputValue(NARR)) === 'Andy Serkis');
   await page.click('button[onclick="saveBook()"]'); await page.waitForTimeout(400);
-  check('…and it is saved', await page.evaluate(() => books.find(b => b.title === 'The Hobbit').narrator) === 'Andy Serkis');
+  check('…and it is saved', await page.evaluate(() => bookNarrator(books.find(b => b.title === 'The Hobbit'))) === 'Andy Serkis');
 
   // ── 5. Export/import keeps it ───────────────────────────────────────
   const [dlf] = await Promise.all([page.waitForEvent('download'), page.evaluate(() => exportData())]);
   const ex = JSON.parse(fs.readFileSync(await dlf.path(), 'utf8'));
-  check('exports carry the narrator', ex.items.find(b => b.title === 'Leviathan Wakes').narrator === 'Jefferson Mays');
+  check('exports carry the narrator', ex.items.find(b => b.title === 'Leviathan Wakes').copies.some(c => c.narrator === 'Jefferson Mays'));
 
   // ── 6. The Audiobookshelf import script ─────────────────────────────
   const dir = tmp('abs-');

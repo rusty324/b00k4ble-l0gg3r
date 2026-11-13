@@ -30,7 +30,7 @@ function renderMedia(listOnly = false) {
   if (mediaFilters.status !== 'all') items = items.filter(m => m.status === mediaFilters.status);
   // An item can hold several formats, so this is "has it", not "is it".
   if (mediaFilters.format !== 'all')
-    items = items.filter(m => (m.formats || []).includes(mediaFilters.format));
+    items = items.filter(m => formatsOf(m).includes(mediaFilters.format));
   // Several genres widen rather than narrow — see GENRE_FILTERS.
   if (mediaFilters.genres.length) {
     const wanted = new Set(mediaFilters.genres.map(textKey));

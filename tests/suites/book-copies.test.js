@@ -32,27 +32,27 @@ const BOOKS = [
   const n = await page.evaluate(() => {
     const N = x => normalizeBook({ id: 1, title: 'X', ...x });
     const legacy = N({ formats: ['physical', 'audio'], isbn: '978-0-441-01359-3', asin: 'b002v1of70', narrator: 'Scott Brick' });
-    const older = b => ({ ...b, formats: [...b.formats], isbn: '0000000000' });   // an older page, editing the old fields
+    const older = b => ({ ...b, formats: ['ebook'], isbn: '0000000000' });   // an older page, editing the old fields
     const two = N({ copies: [{ id: 'h', format: 'physical', isbn: '9780441013593', edition: 'Hardback' },
                              { id: 'p', format: 'physical', isbn: '9780593099322', edition: 'Paperback' },
                              { id: 'a', format: 'audio', asin: 'B002V1OF70', narrator: ['Scott Brick', 'Simon Vance'] }] });
     return {
-      legacy, again: JSON.stringify(normalizeBook(legacy)) === JSON.stringify(legacy),
+      legacy, legacyFormats: formatsOf(legacy), legacyNarr: bookNarrator(legacy), legacyAsin: bookAsin(legacy), twoFormats: formatsOf(two), twoNarr: bookNarrator(two), again: JSON.stringify(normalizeBook(legacy)) === JSON.stringify(legacy),
       ebookOnly: N({ formats: ['ebook'], isbn: '123', asin: 'B0X' }).copies,
-      two, round: normalizeBook(older(two)),
+      two, round: normalizeBook(older(two)), roundFormats: formatsOf(normalizeBook(older(two))),
       printNarr: N({ copies: [{ format: 'physical', narrator: 'Nope' }] }).copies[0],
       noFormat: N({ copies: [{ format: 'scroll' }, { format: 'ebook' }] }).copies.map(c => c.format),
     };
   });
   check('legacy formats become copies; the ISBN goes to print, the ASIN and narrator to the audiobook',
     J(n.legacy.copies) === J([{ id: 'physical-1', format: 'physical', isbn: '9780441013593' }, { id: 'audio-1', format: 'audio', asin: 'B002V1OF70', narrator: 'Scott Brick' }]), J(n.legacy.copies));
-  check('…formats, isbn, asin and narrator are still written, derived', J(n.legacy.formats) === '["physical","audio"]' &&
-    n.legacy.isbn === '9780441013593' && n.legacy.asin === 'B002V1OF70' && n.legacy.narrator === 'Scott Brick', J(n.legacy));
+  check('…the old title-level fields are not stored; helpers derive them', ['formats', 'isbn', 'asin', 'narrator'].every(k => !(k in n.legacy)) &&
+    J(n.legacyFormats) === '["physical","audio"]' && n.legacyNarr === 'Scott Brick' && n.legacyAsin === 'B002V1OF70', J(n));
   check('…and loading it again gives identical JSON', n.again);
   check('an e-book-only record keeps both identifiers on its one copy', J(n.ebookOnly) === J([{ id: 'ebook-1', format: 'ebook', isbn: '123', asin: 'B0X' }]), J(n.ebookOnly));
-  check('two print editions keep their own ISBNs; formats derive to one each', n.two.copies.length === 3 &&
-    J(n.two.formats) === '["physical","audio"]' && n.two.isbn === '9780441013593' && n.two.narrator === 'Scott Brick, Simon Vance', J(n.two));
-  check('copies win over an older page editing the old isbn', n.round.isbn === '9780441013593' && n.round.copies.length === 3, J(n.round));
+  check('two print editions keep their own ISBNs; formats lists each once', n.two.copies.length === 3 &&
+    J(n.twoFormats) === '["physical","audio"]' && n.twoNarr === 'Scott Brick, Simon Vance', J(n.two));
+  check('copies win over an older page editing the old fields', !('isbn' in n.round) && J(n.roundFormats) === '["physical","audio"]' && n.round.copies.length === 3, J(n.round));
   check('a print copy keeps no narrator', !('narrator' in n.printNarr));
   check('an unknown format is dropped', J(n.noFormat) === '["ebook"]');
 

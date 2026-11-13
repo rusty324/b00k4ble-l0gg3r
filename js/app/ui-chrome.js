@@ -160,7 +160,7 @@ function populateDataLists() {
     seriesNames.map(s => `<option value="${esc(s)}">`).join('');
 
   // Each narrator of a multi-narrator book is offered on its own.
-  const narrators = [...preferredSpellings(books.flatMap(b => String(b.narrator || '').split(',')))
+  const narrators = [...preferredSpellings(books.flatMap(b => String(bookNarrator(b) || '').split(',')))
     .values()].sort();
   const dl = document.getElementById('dl-narrators');
   if (dl) dl.innerHTML = narrators.map(n => `<option value="${esc(n)}">`).join('');

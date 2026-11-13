@@ -130,7 +130,7 @@ function seriesCover(e, cls = 'series-cover') {
 }
 
 const FMT_BADGE = { physical: ['badge-physical', 'Physical'], ebook: ['badge-ebook', 'E-book'], audio: ['badge-audio', 'Audiobook'] };   // icons: custom-icons.js
-const formatBadges = members => [...new Set(members.flatMap(b => b.formats || []))]
+const formatBadges = members => [...new Set(members.flatMap(b => formatsOf(b)))]
   .map(f => `<span class="badge ${(FMT_BADGE[f] || [''])[0]}">${FMT_BADGE[f] ? `${ico('books', f)} ${FMT_BADGE[f][1]}` : esc(f)}</span>`).join('');
 
 function volumeChip(b) {
@@ -261,7 +261,7 @@ function openSeriesSheet(key) {
   e.members.filter(b => !seen.has(b.id)).forEach(b => rows.push({ at: firstNumber(b), b }));
   rows.sort((x, y) => x.at - y.at);
   const sub = b => [isWholeOwned(b) ? '' : 'Companion work', statusLabel('books', b.status),
-    (b.formats || []).map(f => (FMT_BADGE[f] || [, f])[1]).join(', ')].filter(Boolean).join(' · ');
+    formatsOf(b).map(f => (FMT_BADGE[f] || [, f])[1]).join(', ')].filter(Boolean).join(' · ');
   document.getElementById('seriesBody').innerHTML = `
     <div class="series-sheet-head">
       ${seriesCover(e, 'series-sheet-cover')}
