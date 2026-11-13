@@ -3,6 +3,11 @@
 //   node tests/run.js                 all suites, Chromium
 //   BROWSER=webkit node tests/run.js  all suites, WebKit (Safari's engine)
 //   node tests/run.js dup sync        only suites whose name contains a word
+//   JOBS=1 node tests/run.js          one suite at a time (default: one per CPU, up to 4)
+//
+// Suites run in parallel, each in its own process with its own browser, so a
+// crash in one cannot take the others down. The biggest files start first,
+// since they take longest, and results print in name order once all are done.
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -48,19 +53,32 @@ function run(file, env) {
   const browser = process.env.BROWSER || 'chromium';
   console.log(`Running ${suites.length} suite(s) in ${browser}\n`);
 
+  const jobs = Math.max(1, Number(process.env.JOBS) || Math.min(4, require('os').cpus().length));
+  const queue = [...suites].sort((a, b) =>
+    fs.statSync(path.join(__dirname, 'suites', b)).size - fs.statSync(path.join(__dirname, 'suites', a)).size);
+  const results = new Map();
+  const started = Date.now();
+  await Promise.all(Array.from({ length: Math.min(jobs, queue.length) }, async () => {
+    for (let s; (s = queue.shift());) {
+      const t = Date.now();
+      const r = await run(path.join(__dirname, 'suites', s), env);
+      results.set(s, { ...r, secs: (Date.now() - t) / 1000 });
+    }
+  }));
+
   let failed = 0;
   for (const s of suites) {
-    const t = Date.now();
-    const { code, out } = await run(path.join(__dirname, 'suites', s), env);
+    const { code, out, secs } = results.get(s);
     const summary = (out.match(/(\d+)\/(\d+) checks passed/) || [])[0] || 'no summary';
     const ok = code === 0;
-    console.log(`${ok ? 'ok  ' : 'FAIL'}  ${s.padEnd(30)} ${summary}  (${((Date.now() - t) / 1000).toFixed(1)}s)`);
+    console.log(`${ok ? 'ok  ' : 'FAIL'}  ${s.padEnd(30)} ${summary}  (${secs.toFixed(1)}s)`);
     if (!ok) {
       failed++;
       // Only what went wrong, not every passing line.
       console.log(out.split('\n').filter(l => /^FAIL|SUITE ERROR|^\s+at /.test(l)).slice(0, 25).map(l => '      ' + l).join('\n'));
     }
   }
+  console.log(`\n${jobs} at a time, ${((Date.now() - started) / 1000).toFixed(0)}s in all`);
   server.close();
   console.log(`\n${suites.length - failed}/${suites.length} suites passed in ${browser}`);
   process.exit(failed ? 1 : 0);
