@@ -66,8 +66,8 @@ async function open(browser, viewport) {
   check('the button opens the sheet, focus on its close button', await sheetOpen() &&
     await page.evaluate(() => document.activeElement.getAttribute('aria-label') === 'Close filters'));
   check('sections: Collection, Format, Status, Genre', J(await page.locator('#filterBody .facet-label').allInnerTexts()) ===
-    J(['COLLECTION', 'FORMAT', 'STATUS', 'GENRE (ANY OF)']) || J(await page.locator('#filterBody .facet-label').allTextContents()) ===
-    J(['Collection', 'Format', 'Status', 'Genre (any of)']), J(await page.locator('#filterBody .facet-label').allTextContents()));
+    J(['COLLECTION', 'FORMAT', 'STATUS', 'GENRE']) || J(await page.locator('#filterBody .facet-label').allTextContents()) ===
+    J(['Collection', 'Format', 'Status', 'Genre']), J(await page.locator('#filterBody .facet-label').allTextContents()));
   check('every option has a count', await count('collection', 'series') === 4 && await count('collection', 'standalone') === 1 &&
     await count('collection', 'gaps') === 2 && await count('format', 'ebook') === 3 && await count('status', 'want') === 3,
     J([await count('collection', 'series'), await count('collection', 'gaps'), await count('format', 'ebook')]));
@@ -86,7 +86,12 @@ async function open(browser, viewport) {
   await opt('status', 'read').click(); await page.waitForTimeout(250);
   check('facets combine', J(await cards()) === J(['Saga Three']) && /Show 1 book\b/.test(await show()));
   await opt('collection', 'gaps').click(); await page.waitForTimeout(250);
-  check('tapping a chosen option again clears it', await opt('collection', 'gaps').getAttribute('aria-pressed') === 'false' && /Show 1 book\b/.test(await show()));
+  check('tapping a shown option again hides it instead', await opt('collection', 'gaps').getAttribute('aria-pressed') === 'mixed' &&
+    J(await cards()) === J([]) && /Show 0 books/.test(await show()), J(await cards()));
+  await opt('collection', 'gaps').click(); await page.waitForTimeout(250);
+  check('…and a third tap clears it', await opt('collection', 'gaps').getAttribute('aria-pressed') === 'false' && /Show 1 book\b/.test(await show()));
+  await opt('status', 'read').click(); await page.waitForTimeout(250);
+  check('hiding Read leaves everything else', /Show 4 books/.test(await show()) && !(await cards()).includes('Saga Three'), await show());
   await opt('status', 'read').click(); await page.waitForTimeout(250);
 
   await opt('genres', 'Fantasy').click(); await opt('genres', 'Mystery').click(); await page.waitForTimeout(250);
@@ -103,8 +108,8 @@ async function open(browser, viewport) {
   await page.click('#filtersBtn-books'); await page.waitForTimeout(200);
   check('the counts follow the search too', await count('collection', 'gaps') === 0 && await count('format', 'audio') === 1, J(await count('format', 'audio')));
   await page.click('#filterBody .filter-clear'); await page.waitForTimeout(250);
-  check('"Clear all" clears every facet (the search stays)', await page.evaluate(() => filters.format === 'all' && filters.status === 'all' &&
-    filters.collection === 'all' && !filters.genres.length) && /Show 2 books/.test(await show()));
+  check('"Clear all" clears every facet (the search stays)', await page.evaluate(() => !facetOn(filters.format) && !facetOn(filters.status) &&
+    !facetOn(filters.collection) && !facetOn(filters.genres)) && /Show 2 books/.test(await show()));
   await page.click('#filterBody .filter-show'); await page.waitForTimeout(200);
   check('"Show N" closes the sheet', !(await sheetOpen()));
   await page.fill('#searchInput', ''); await page.waitForTimeout(500);
@@ -122,7 +127,7 @@ async function open(browser, viewport) {
   await page.evaluate(() => switchTab('media')); await page.waitForTimeout(250);
   check('Movies & TV: rows hidden, Filters shown', await page.locator('#altContent .facet-row').first().isHidden() && await page.locator('#filtersBtn-media').isVisible());
   await page.click('#filtersBtn-media'); await page.waitForTimeout(200);
-  check('its facets: Type, Status, Format, Genre', J(await page.locator('#filterBody .facet-label').allTextContents()) === J(['Type', 'Status', 'Format', 'Genre (any of)']));
+  check('its facets: Type, Status, Format, Genre', J(await page.locator('#filterBody .facet-label').allTextContents()) === J(['Type', 'Status', 'Format', 'Genre']));
   check('with counts', await count('type', 'movie') === 2 && await count('type', 'tv') === 1 && /Show 3 titles/.test(await show()));
   await opt('type', 'tv').click(); await page.waitForTimeout(250);
   check('a facet filters the tab beneath', J(await page.locator('#altContent .book-title').allInnerTexts()) === J(['A Show']) &&

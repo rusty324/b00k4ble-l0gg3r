@@ -108,9 +108,9 @@ const BOOKS = [
   // ── 4. Genres: curly and straight are one ───────────────────────────
   const genres = await page.evaluate(() => allBookGenres());
   check("Children's and Children’s are one genre in the menu and suggestions", J(genres) === J(["Children's"]), J(genres));
-  await page.evaluate(() => { filters.genres = ["Children's"]; render(); });
+  await page.evaluate(() => { filters.genres = { in: ["Children's"], out: [] }; render(); });
   check('filtering by it shows both books', await page.locator('#booksGrid .book-card').count() === 2);
-  await page.evaluate(() => { filters.genres = []; render(); });
+  await page.evaluate(() => { filters.genres = newFacet(); render(); });
   const pill = await page.evaluate(() => { openAddModal(); commitGenrePill('f-genre', 'children’s'); const v = getGenreValues('f-genre'); closeModal(); return v; });
   check('typing a variant in the genre field takes the library\'s spelling', J(pill) === J(["Children's"]), J(pill));
 

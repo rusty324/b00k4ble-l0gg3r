@@ -26,16 +26,12 @@ function renderMedia(listOnly = false) {
 
   // Apply filters
   let items = mediaLibrary;
-  if (mediaFilters.type !== 'all') items = items.filter(m => m.type === mediaFilters.type);
-  if (mediaFilters.status !== 'all') items = items.filter(m => m.status === mediaFilters.status);
-  // An item can hold several formats, so this is "has it", not "is it".
-  if (mediaFilters.format !== 'all')
-    items = items.filter(m => formatsOf(m).includes(mediaFilters.format));
-  // Several genres widen rather than narrow — see GENRE_FILTERS.
-  if (mediaFilters.genres.length) {
-    const wanted = new Set(mediaFilters.genres.map(textKey));
-    items = items.filter(m => (m.genre || []).some(x => wanted.has(textKey(x))));
-  }
+  // Each row: any shown value, and none of the hidden (core.js facetPasses).
+  // A title can hold several formats, so a format is "has a copy in it".
+  items = items.filter(m => facetPasses(mediaFilters.type, v => m.type === v) &&
+    facetPasses(mediaFilters.status, v => m.status === v) &&
+    facetPasses(mediaFilters.format, v => formatsOf(m).includes(v)) &&
+    facetPasses(mediaFilters.genres, v => hasGenre(m, v)));
   if (mediaSearch.trim()) items = items.filter(m => matchesAll(mediaSearchText(m), mediaSearch));
 
   // Sort
@@ -55,16 +51,9 @@ function renderMedia(listOnly = false) {
     ? `<span class="badge badge-seasons">${esc(seasonsText(m.seasons, m.seasonCount))}</span>` : '';
 
   // Filter toolbar
-  const typePills = [['all','All'],['movie',`${ico('media','movie')} Movies`],['tv',`${ico('media','tv')} TV Shows`]].map(([v,l]) =>
-    `<button class="pill${mediaFilters.type===v?' active':''}" onclick="setMediaFilter('type','${v}')">${l}</button>`
-  ).join('');
-  const statusPills = [['all','All'], ...statusPairs('media')].map(([v,l]) =>
-    `<button class="pill${mediaFilters.status===v?' active':''}" onclick="setMediaFilter('status','${v}')">${l}</button>`
-  ).join('');
-  // Same values and icons as the form's format checkboxes.
-  const formatPills = [['all','All'], ...['bluray', 'dvd', 'digital', 'streaming'].map(f => [f, `${ico('media', f)} ${esc(MEDIA_FORMAT_LABEL[f])}`])].map(([v,l]) =>
-    `<button class="pill${mediaFilters.format===v?' active':''}" onclick="setMediaFilter('format','${v}')">${l}</button>`
-  ).join('');
+  const typePills = facetPills(mediaFilters.type, [['movie', `${ico('media','movie')} Movies`], ['tv', `${ico('media','tv')} TV Shows`]], "setMediaFilter('type', ");
+  const statusPills = facetPills(mediaFilters.status, statusPairs('media'), "setMediaFilter('status', ");
+  const formatPills = facetPills(mediaFilters.format, ['bluray', 'dvd', 'digital', 'streaming'].map(f => [f, `${ico('media', f)} ${esc(MEDIA_FORMAT_LABEL[f])}`]), "setMediaFilter('format', ");
   const sortSelect = `<select class="sort-select" aria-label="Sort movies and TV shows" onchange="setMediaSort(this.value)">
     <option value="added-desc"${mediaSort==='added-desc'?' selected':''}>Newest added</option>
     <option value="added-asc"${mediaSort==='added-asc'?' selected':''}>Oldest added</option>
@@ -102,8 +91,7 @@ function renderMedia(listOnly = false) {
 
   let contentHtml;
   if (!items.length) {
-    const narrowed = mediaFilters.type !== 'all' || mediaFilters.status !== 'all' ||
-                     mediaFilters.format !== 'all' || mediaFilters.genres.length > 0;
+    const narrowed = Object.values(mediaFilters).some(facetOn);
     const emptyMsg = mediaSearch.trim()
       ? { h: 'No results', p: 'Try a different search term or clear the search.' }
       : narrowed
@@ -180,8 +168,9 @@ function renderMedia(listOnly = false) {
   alt.innerHTML = toolbar + `<div id="mediaListWrap">${contentHtml}</div>`;
 }
 
+// A pill cycles its value show → hide → off; "All" clears the row.
 function setMediaFilter(key, val) {
-  mediaFilters[key] = val;
+  if (val === 'all') clearFacet(mediaFilters[key]); else cycleFacet(mediaFilters[key], val);
   renderMedia();
 }
 

@@ -13,7 +13,7 @@ function renderWishlist(listOnly = false) {
 
   // Apply filters
   let items = bookWishlist;
-  if (wishlistFilters.type !== 'all') items = items.filter(w => w.type === wishlistFilters.type);
+  items = items.filter(w => facetPasses(wishlistFilters.type, v => w.type === v));
   if (wishlistSearch.trim()) {
     items = items.filter(w => matchesAll([w.title, w.creator, w.notes].join(' '), wishlistSearch));
   }
@@ -29,10 +29,8 @@ function renderWishlist(listOnly = false) {
   });
 
   // Filter toolbar
-  const typePills = [['all','All'],['book',`${ico('wishlist','book')} Books`],['movie',`${ico('wishlist','movie')} Movies`],
-                     ['tv',`${ico('wishlist','tv')} TV Shows`],['game',`${ico('wishlist','game')} Games`]].map(([v,l]) =>
-    `<button class="pill${wishlistFilters.type===v?' active':''}" onclick="setWishlistFilter('type','${v}')">${l}</button>`
-  ).join('');
+  const typePills = facetPills(wishlistFilters.type, [['book', `${ico('wishlist','book')} Books`], ['movie', `${ico('wishlist','movie')} Movies`],
+    ['tv', `${ico('wishlist','tv')} TV Shows`], ['game', `${ico('wishlist','game')} Games`]], "setWishlistFilter('type', ");
   const sortSelect = `<select class="sort-select" aria-label="Sort wishlist" onchange="setWishlistSort(this.value)">
     <option value="title-asc"${wishlistSort==='title-asc'?' selected':''}>Title A–Z</option>
     <option value="title-desc"${wishlistSort==='title-desc'?' selected':''}>Title Z–A</option>
@@ -63,8 +61,9 @@ function renderWishlist(listOnly = false) {
       heading = 'No results';
       subtext = 'Try a different search term or clear the search.';
     } else {
-      const typeLabel = { book: 'books', movie: 'movies', tv: 'TV shows', game: 'games' }[wishlistFilters.type] || 'items';
-      heading = wishlistFilters.type === 'all' ? 'Your wishlist is empty' : `No ${typeLabel} in your wishlist`;
+      const t = wishlistFilters.type;
+      const typeLabel = t.in.length === 1 && !t.out.length ? ({ book: 'books', movie: 'movies', tv: 'TV shows', game: 'games' }[t.in[0]] || 'items') : 'matches';
+      heading = !facetOn(t) ? 'Your wishlist is empty' : `No ${typeLabel} in your wishlist`;
       subtext = 'Click "Add to wishlist" to track things you want to read or watch.';
     }
     contentHtml = `<div class="empty-state">
@@ -108,7 +107,7 @@ function renderWishlist(listOnly = false) {
 }
 
 function setWishlistFilter(key, val) {
-  wishlistFilters[key] = val;
+  if (val === 'all') clearFacet(wishlistFilters[key]); else cycleFacet(wishlistFilters[key], val);
   renderWishlist();
 }
 

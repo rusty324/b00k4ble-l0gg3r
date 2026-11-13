@@ -9,7 +9,7 @@
 let books = JSON.parse(localStorage.getItem('myLibrary') || '[]').map(normalizeBook);
 
 // Book filters / pagination
-let filters = { format: 'all', status: 'all', genres: [], collection: 'all' };   // collection: the phone Filters sheet (filters-sheet.js)
+let filters = { format: newFacet(), status: newFacet(), genres: newFacet(), collection: newFacet() };   // collection: the phone Filters sheet (filters-sheet.js)
 let currentPage = 1;
 let editingId = null;
 let currentRating = 0;
@@ -32,7 +32,7 @@ if (!['books', 'media', 'wishlist', 'games', 'stats'].includes(activeTab)) activ
 let bookWishlist = JSON.parse(localStorage.getItem('bookWishlist') || '[]')
   .map(normalizeWishlistItem);
 let wishlistEditingId = null;
-let wishlistFilters = { type: 'all' };
+let wishlistFilters = { type: newFacet() };
 let wishlistSort = 'title-asc';
 let wishlistSearch = '';
 let wishlistSearchTimer = null;
@@ -42,7 +42,7 @@ let mediaLibrary = JSON.parse(localStorage.getItem('mediaLibrary') || '[]')
   .map(normalizeMediaItem);
 let mediaEditingId = null;
 let mediaRating = 0;
-let mediaFilters = { type: 'all', status: 'all', format: 'all', genres: [] };
+let mediaFilters = { type: newFacet(), status: newFacet(), format: newFacet(), genres: newFacet() };
 let mediaSort = 'added-desc';
 let mediaSearch = '';
 let mediaSearchTimer = null;
@@ -52,7 +52,7 @@ let videoGames = JSON.parse(localStorage.getItem('videoGames') || '[]')
   .map(normalizeVideoGame);
 let gameEditingId = null;
 let gameRating = 0;
-let gameFilters = { platform: 'all', store: 'all', status: 'all', format: 'all', genres: [] };
+let gameFilters = { platform: newFacet(), store: newFacet(), status: newFacet(), format: newFacet(), genres: newFacet() };
 let gameSort = 'added-desc';
 let gameSearch = '';
 let gameSearchTimer = null;

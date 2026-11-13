@@ -72,21 +72,12 @@ function renderGames(listOnly = false) {
   let items = videoGames;
   // A game can be on several platforms, so these are both "has one like
   // this", not "is this".
-  if (gameFilters.platform !== 'all')
-    items = items.filter(g => platformsOf(g).some(p => p.platform === gameFilters.platform));
-  if (gameFilters.platform === 'pc' && gameFilters.store && gameFilters.store !== 'all')
-    items = items.filter(g => gameHasPcStore(g, gameFilters.store));
-  if (gameFilters.status !== 'all') items = items.filter(g => g.status === gameFilters.status);
-  if (gameFilters.format !== 'all')
-    items = items.filter(g =>
-      platformsOf(g).some(p => p.formats.includes(gameFilters.format)));
-  // Several genres widen rather than narrow: ticking Adventure and RPG shows
-  // games that are either, which is what a list of checkboxes reads as. The
-  // menu says so, so it is never left to guess.
-  if (gameFilters.genres.length) {
-    const wanted = new Set(gameFilters.genres.map(textKey));
-    items = items.filter(g => (g.genre || []).some(x => wanted.has(textKey(x))));
-  }
+  // Each row: any shown value, and none of the hidden (core.js facetPasses).
+  items = items.filter(g => facetPasses(gameFilters.platform, v => platformsOf(g).some(p => p.platform === v)) &&
+    facetPasses(gameFilters.store, v => gameHasPcStore(g, v)) &&
+    facetPasses(gameFilters.status, v => g.status === v) &&
+    facetPasses(gameFilters.format, v => platformsOf(g).some(p => p.formats.includes(v))) &&
+    facetPasses(gameFilters.genres, v => hasGenre(g, v)));
   if (gameSearch.trim()) items = items.filter(g => matchesAll(gameSearchText(g), gameSearch));
 
   // Sort
@@ -103,24 +94,15 @@ function renderGames(listOnly = false) {
 
 
   // Filter toolbar
-  const platformPills = [['all', 'All'], ...knownGamePlatforms().map(p => [p, platformLabel(p)])].map(([v,l]) =>
-    `<button class="pill${gameFilters.platform===v?' active':''}" onclick="setGameFilter('platform',${jsArg(v)})">${esc(l)}</button>`
-  ).join('');
-  // PC only: which store or launcher. Built from the stores in use.
-  const pcStores = gameFilters.platform === 'pc' ? pcStoresInUse() : [];
+  const platformPills = facetPills(gameFilters.platform, knownGamePlatforms().map(p => [p, esc(platformLabel(p))]), "setGameFilter('platform', ");
+  // Only while PC is shown: which store or launcher, from the stores in use.
+  const pcStores = gameFilters.platform.in.includes('pc') ? pcStoresInUse() : [];
   const storeRow = pcStores.length ? `<div class="filter-row facet-row">
       <span class="filter-label">Store</span>
-      <div class="pill-group">${[['all', 'All'], ...pcStores.map(k => [k, storeLabel(k)])].map(([v, l]) =>
-        `<button class="pill${(gameFilters.store || 'all') === v ? ' active' : ''}" onclick="setGameFilter('store',${jsArg(v)})">${esc(l)}</button>`).join('')}</div>
+      <div class="pill-group">${facetPills(gameFilters.store, pcStores.map(k => [k, esc(storeLabel(k))]), "setGameFilter('store', ")}</div>
     </div>` : '';
-  const statusPills = [['all','All'], ...statusPairs('games')].map(([v,l]) =>
-    `<button class="pill${gameFilters.status===v?' active':''}" onclick="setGameFilter('status','${v}')">${l}</button>`
-  ).join('');
-  // Same values and icons as the form's per-platform format buttons.
-  const formatPills = [['all', 'All'], ...GAME_FORMATS.map(f =>
-    [f, `${gameFormatIcon(f)} ${esc(GAME_FORMAT_LABEL[f])}`])].map(([v,l]) =>
-    `<button class="pill${gameFilters.format===v?' active':''}" onclick="setGameFilter('format','${v}')">${l}</button>`
-  ).join('');
+  const statusPills = facetPills(gameFilters.status, statusPairs('games'), "setGameFilter('status', ");
+  const formatPills = facetPills(gameFilters.format, GAME_FORMATS.map(f => [f, `${gameFormatIcon(f)} ${esc(GAME_FORMAT_LABEL[f])}`]), "setGameFilter('format', ");
   const genreRow = genreFilterRow('games');
 
   const sortSelect = `<select class="sort-select" aria-label="Sort video games" onchange="setGameSort(this.value)">
@@ -161,8 +143,7 @@ function renderGames(listOnly = false) {
 
   let contentHtml;
   if (!items.length) {
-    const narrowed = gameFilters.platform !== 'all' || gameFilters.status !== 'all' ||
-                     gameFilters.format !== 'all' || gameFilters.genres.length > 0;
+    const narrowed = Object.values(gameFilters).some(facetOn);
     const emptyMsg = gameSearch.trim()
       ? { h: 'No results', p: 'Try a different search term or clear the search.' }
       : narrowed
@@ -233,9 +214,11 @@ function renderGames(listOnly = false) {
   alt.innerHTML = toolbar + `<div id="gameListWrap">${contentHtml}</div>`;
 }
 
+// A pill cycles its value show → hide → off; "All" clears the row. The Store
+// row belongs to PC: with PC no longer shown, its choices go.
 function setGameFilter(key, val) {
-  gameFilters[key] = val;
-  if (key === 'platform' && val !== 'pc') gameFilters.store = 'all';
+  if (val === 'all') clearFacet(gameFilters[key]); else cycleFacet(gameFilters[key], val);
+  if (!gameFilters.platform.in.includes('pc')) clearFacet(gameFilters.store);
   renderGames();
 }
 
@@ -244,9 +227,8 @@ function setGameFilter(key, val) {
 // the fixed platform/status/format sets, so this is a menu rather than a row
 // of pills that would grow without bound as the library does.
 //
-// Several selected means "matching any": ticking Adventure and RPG shows
-// titles that are either. That is what a list of checkboxes reads as, and
-// the menu header says so rather than leaving it to be inferred.
+// Like every filter row, a genre cycles show → hide → off, and several can be
+// on: shown genres widen ("Adventure or RPG"), hidden ones are left out.
 const GENRE_FILTERS = {
   // Books paginate, so a narrowed result has to go back to page one; the
   // other two render everything at once and have no page to reset.
@@ -259,43 +241,47 @@ const GENRE_FILTERS = {
 const genreBtn  = key => document.getElementById(`${key}GenreBtn`);
 const genreMenu = key => document.getElementById(`${key}GenreMenu`);
 
-// What the closed button reads. Two are spelled out with "or" so the widening
-// behaviour is legible without opening the menu; beyond that it would not fit.
+// What the closed button reads: the shown genres ("A or B"), then the hidden
+// ("not C"), shortened to counts once it would not fit.
 function genreFilterLabel(key) {
-  const chosen = GENRE_FILTERS[key].state().genres;
-  if (!chosen.length) return 'All';
-  if (chosen.length === 1) return chosen[0];
-  if (chosen.length === 2) return chosen.join(' or ');
-  return `${chosen.length} genres`;
+  const f = GENRE_FILTERS[key].state().genres;
+  if (!facetOn(f)) return 'All';
+  const shown = f.in.length === 0 ? '' : f.in.length <= 2 ? f.in.join(' or ') : `${f.in.length} genres`;
+  const hidden = f.out.length === 0 ? '' : f.out.length === 1 ? `not ${f.out[0]}` : `not ${f.out.length} genres`;
+  return [shown, hidden].filter(Boolean).join(', ');
 }
 
-// The whole row, or '' when the library has no genres to offer yet.
+// The whole row, or '' when the library has no genres to offer yet. Each
+// genre cycles show → hide → off, like the pills.
 function genreFilterRow(key) {
   const genres = GENRE_FILTERS[key].all();
   if (!genres.length) return '';
-  const chosen = GENRE_FILTERS[key].state().genres;
+  const f = GENRE_FILTERS[key].state().genres;
 
   return `<div class="filter-row filter-row-menu">
       <span class="filter-label">Genre</span>
       <div class="dropdown-wrap">
-        <button class="pill dropdown-btn${chosen.length ? ' active' : ''}"
+        <button class="pill dropdown-btn${facetOn(f) ? ' active' : ''}"
                 id="${key}GenreBtn" aria-haspopup="true" aria-expanded="false"
                 onclick="toggleGenreMenu('${key}', event)">${esc(genreFilterLabel(key))} <span aria-hidden="true">▾</span></button>
         <div class="dropdown-menu" id="${key}GenreMenu" role="group" aria-label="Filter by genre">
           <div class="dropdown-head">
-            <span>Showing anything matching <strong>any</strong> of these</span>
+            <span>Tap to show, again to hide, again to clear</span>
             <button type="button" class="dropdown-clear" onclick="clearGenreFilter('${key}')"
-                    ${chosen.length ? '' : 'disabled'}>Clear</button>
+                    ${facetOn(f) ? '' : 'disabled'}>Clear</button>
           </div>
-          ${genres.map(g => `<label class="dropdown-opt">
-            <input type="checkbox" value="${esc(g)}"
-                   ${chosen.some(x => textKey(x) === textKey(g)) ? 'checked' : ''}
-                   onchange="toggleGenre('${key}', this.value)">
-            <span>${esc(g)}</span>
-          </label>`).join('')}
+          ${genres.map(g => genreOption(key, f, g)).join('')}
         </div>
       </div>
     </div>`;
+}
+
+function genreOption(key, f, g) {
+  const m = facetMark(f, g);
+  return `<button type="button" class="dropdown-opt genre-opt${m === 'in' ? ' on' : m === 'out' ? ' out' : ''}" data-genre="${esc(g)}"
+      aria-pressed="${m === 'in' ? 'true' : m === 'out' ? 'mixed' : 'false'}" onclick="toggleGenre('${key}', this.dataset.genre)">
+      <span class="genre-mark" aria-hidden="true">${m === 'in' ? '✓' : m === 'out' ? '✕' : ''}</span>
+      <span>${esc(g)}</span>${m === 'out' ? '<span class="sr-only"> (hidden)</span>' : ''}</button>`;
 }
 
 function toggleGenreMenu(key, e) {
@@ -314,35 +300,44 @@ function closeGenreMenus() {
   }
 }
 
-// Repaints the button in place rather than through the row's own markup,
-// since the row is only rebuilt on a full render.
+// Repaints the button and the menu's options in place rather than the row,
+// since rebuilding the row would take the open menu down with it.
 function paintGenreButton(key) {
-  const chosen = GENRE_FILTERS[key].state().genres;
+  const f = GENRE_FILTERS[key].state().genres;
   const btn = genreBtn(key);
   if (btn) {
     btn.firstChild.nodeValue = genreFilterLabel(key) + ' ';
-    btn.classList.toggle('active', chosen.length > 0);
+    btn.classList.toggle('active', facetOn(f));
   }
-  const clear = genreMenu(key)?.querySelector('.dropdown-clear');
-  if (clear) clear.disabled = chosen.length === 0;
+  const menu = genreMenu(key);
+  if (menu) {
+    const clear = menu.querySelector('.dropdown-clear');
+    if (clear) clear.disabled = !facetOn(f);
+    // Each option in place: replacing the node mid-click would read as a
+    // click outside the menu and close it.
+    menu.querySelectorAll('.genre-opt').forEach(o => {
+      const m = facetMark(f, o.dataset.genre);
+      o.classList.toggle('on', m === 'in');
+      o.classList.toggle('out', m === 'out');
+      o.setAttribute('aria-pressed', m === 'in' ? 'true' : m === 'out' ? 'mixed' : 'false');
+      o.querySelector('.genre-mark').textContent = m === 'in' ? '✓' : m === 'out' ? '✕' : '';
+      const sr = o.querySelector('.sr-only');
+      if (m === 'out' && !sr) o.insertAdjacentHTML('beforeend', '<span class="sr-only"> (hidden)</span>');
+      if (m !== 'out' && sr) sr.remove();
+    });
+  }
 }
 
-// Repaints the list only. A full render would rebuild the toolbar and take
-// the open menu down with it, making a second genre impossible to tick
-// without reopening — the same reason the search box uses the listOnly path.
+// Repaints the list only (see paintGenreButton).
 function toggleGenre(key, value) {
-  const chosen = GENRE_FILTERS[key].state().genres;
-  const i = chosen.findIndex(x => textKey(x) === textKey(value));
-  if (i === -1) chosen.push(value);
-  else chosen.splice(i, 1);
+  cycleFacet(GENRE_FILTERS[key].state().genres, value);
   paintGenreButton(key);
   GENRE_FILTERS[key].repaint();
+  genreMenu(key)?.querySelector(`.genre-opt[data-genre="${CSS.escape(value)}"]`)?.focus();
 }
 
 function clearGenreFilter(key) {
-  GENRE_FILTERS[key].state().genres = [];
-  genreMenu(key)?.querySelectorAll('input[type="checkbox"]')
-    .forEach(cb => { cb.checked = false; });
+  clearFacet(GENRE_FILTERS[key].state().genres);
   paintGenreButton(key);
   GENRE_FILTERS[key].repaint();
 }
@@ -353,6 +348,7 @@ document.addEventListener('click', e => {
     const menu = genreMenu(key), btn = genreBtn(key);
     if (!menu || !menu.classList.contains('open')) continue;
     if (btn && btn.contains(e.target)) continue;
+    if (!e.target.isConnected) continue;   // redrawn by the click itself
     if (!menu.contains(e.target)) {
       menu.classList.remove('open');
       if (btn) btn.setAttribute('aria-expanded', 'false');

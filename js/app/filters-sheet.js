@@ -3,11 +3,11 @@
 //
 // The sheet edits the same state the desktop pills do (filters, mediaFilters,
 // gameFilters) and applies each tap at once, so the two can never disagree.
-// Every option shows how many items it would leave, counted with the tab's
-// search and the OTHER facets applied (genre is "any of", so its own choices
-// don't narrow its counts). An option that would leave nothing is disabled,
-// not hidden — unless it is the one already chosen, which must stay tappable
-// to undo. The footer button says how many results there are and closes.
+// A tap cycles an option show → hide → off (core.js cycleFacet); any number
+// can be on. Every option shows how many items match it, counted with the
+// tab's search and the OTHER facets applied. An option that matches nothing
+// is disabled, not hidden — unless it is already on, which must stay
+// tappable to undo. The footer button says how many results there are.
 //
 // Books also get a Collection facet the desktop rows don't have: in a series,
 // standalone, or a series with numbering gaps (the gaps "What am I missing?"
@@ -56,7 +56,7 @@ const FILTER_KINDS = {
       { key: 'platform', label: 'Platform', options: () => knownGamePlatforms().map(p => [p, platformLabel(p)]),
         match: (g, v) => platformsOf(g).some(p => p.platform === v) },
       // Only once PC is chosen: which store or launcher.
-      { key: 'store', label: 'Store', options: () => (gameFilters.platform === 'pc' ? pcStoresInUse().map(k => [k, storeLabel(k)]) : []),
+      { key: 'store', label: 'Store', options: () => (gameFilters.platform.in.includes('pc') ? pcStoresInUse().map(k => [k, storeLabel(k)]) : []),
         match: (g, v) => gameHasPcStore(g, v) },
       { key: 'status', label: 'Status', options: statusPairs('games'), match: (g, v) => g.status === v },
       { key: 'format', label: 'Format', html: true, options: () => GAME_FORMATS.map(f => [f, `${gameFormatIcon(f)} ${esc(GAME_FORMAT_LABEL[f])}`]),
@@ -67,8 +67,7 @@ const FILTER_KINDS = {
 };
 
 function genreFacet(all) {
-  return { key: 'genres', label: 'Genre (any of)', multi: true, options: () => all().map(g => [g, g]),
-    match: (x, v) => (x.genre || []).some(g => textKey(g) === textKey(v)) };
+  return { key: 'genres', label: 'Genre', options: () => all().map(g => [g, g]), match: (x, v) => hasGenre(x, v) };
 }
 
 function bookCollectionMatch(b, v) {
@@ -81,7 +80,7 @@ function bookCollectionMatch(b, v) {
 }
 
 // What render() asks: does this book pass the Collection facet?
-const passesCollection = b => !filters.collection || filters.collection === 'all' || bookCollectionMatch(b, filters.collection);
+const passesCollection = b => facetPasses(filters.collection, v => bookCollectionMatch(b, v));
 
 function seriesEntryCount(list) {
   const keys = new Set();
@@ -94,16 +93,10 @@ function seriesEntryCount(list) {
 }
 
 // ─── counting ─────────────────────────────────────────────────────────
-const facetValue = (state, f) => (f.multi ? state[f.key] || [] : state[f.key] || 'all');
-const facetActive = (state, f) => (f.multi ? facetValue(state, f).length > 0 : facetValue(state, f) !== 'all');
-function passesFacet(item, state, f) {
-  if (!facetActive(state, f)) return true;
-  const v = facetValue(state, f);
-  return f.multi ? v.some(x => f.match(item, x)) : f.match(item, v);
-}
+const passesFacet = (item, state, f) => facetPasses(state[f.key], v => f.match(item, v));
 function activeFilterCount(kind) {
   const spec = FILTER_KINDS[kind], state = spec.state();
-  return spec.facets().reduce((n, f) => n + (f.multi ? facetValue(state, f).length : facetActive(state, f) ? 1 : 0), 0);
+  return spec.facets().reduce((n, f) => n + facetCount(state[f.key]), 0);
 }
 
 // ─── the button ───────────────────────────────────────────────────────
@@ -122,10 +115,13 @@ function paintFiltersButton(kind) {
 // The Books tab's pills are static markup: keep their highlight in step
 // when the sheet changes a facet they show.
 function syncBookPills() {
-  [['formatPills', filters.format], ['statusPills', filters.status]].forEach(([id, v]) => {
+  [['formatPills', filters.format], ['statusPills', filters.status]].forEach(([id, f]) => {
     document.querySelectorAll(`#${id} .pill`).forEach(p => {
-      const m = (p.getAttribute('onclick') || '').match(/,'([^']+)',/);
-      p.classList.toggle('active', !!m && m[1] === v);
+      const v = p.dataset.facetValue;
+      const m = v === 'all' ? (facetOn(f) ? '' : 'in') : facetMark(f, v);
+      p.classList.toggle('active', m === 'in');
+      p.classList.toggle('excluded', m === 'out');
+      p.setAttribute('aria-pressed', m === 'in' ? 'true' : m === 'out' ? 'mixed' : 'false');
     });
   });
   paintFiltersButton('books');
@@ -144,13 +140,14 @@ function paintFilterSheet() {
     // Everything that passes the other facets; then count each option in it.
     const others = facets.filter(o => o !== f);
     const pool = items.filter(x => others.every(o => passesFacet(x, state, o)));
-    const chosen = facetValue(state, f);
     const buttons = opts.map(([v, label]) => {
-      const on = f.multi ? chosen.includes(v) : chosen === v;
+      const m = facetMark(state[f.key], v);
       const n = pool.filter(x => f.match(x, v)).length;
-      const off = !n && !on;
-      return `<button type="button" class="facet-opt${on ? ' on' : ''}" aria-pressed="${on}" ${off ? 'disabled' : ''}
-          data-facet="${esc(f.key)}" data-value="${esc(v)}">${on ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>' : ''}${f.html ? label : esc(label)}
+      const off = !n && !m;
+      const tick = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+      const cross = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      return `<button type="button" class="facet-opt${m === 'in' ? ' on' : m === 'out' ? ' out' : ''}" aria-pressed="${m === 'in' ? 'true' : m === 'out' ? 'mixed' : 'false'}" ${off ? 'disabled' : ''}
+          data-facet="${esc(f.key)}" data-value="${esc(v)}">${m === 'in' ? tick : m === 'out' ? cross : ''}${f.html ? label : esc(label)}${m === 'out' ? '<span class="sr-only"> (hidden)</span>' : ''}
           <span class="facet-n">${n.toLocaleString()}</span></button>`;
     }).join('');
     return `<div class="facet-group"><div class="facet-label" id="facet-${esc(f.key)}">${esc(f.label)}</div>
@@ -167,6 +164,7 @@ function paintFilterSheet() {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
+    <p class="hint filter-sheet-hint">Tap to show, again to hide, again to clear.</p>
     <div class="filter-sheet-body">${sections}</div>
     <div class="filter-sheet-foot">
       <button type="button" class="btn btn-primary filter-show" onclick="closeFilterSheet()">Show ${total.toLocaleString()} ${spec.noun(total)}</button>
@@ -198,13 +196,9 @@ function setFacet(key, value) {
   const spec = FILTER_KINDS[_filterKind], state = spec.state();
   const f = spec.facets().find(x => x.key === key);
   if (!f) return;
-  if (f.multi) {
-    const cur = state[key] || [];
-    state[key] = cur.includes(value) ? cur.filter(v => v !== value) : [...cur, value];
-  } else {
-    state[key] = state[key] === value ? 'all' : value;
-    if (_filterKind === 'games' && key === 'platform' && state.platform !== 'pc') state.store = 'all';
-  }
+  cycleFacet(state[key], value);
+  // The Store row belongs to PC: with PC no longer shown, its choices go.
+  if (_filterKind === 'games' && key === 'platform' && !state.platform.in.includes('pc')) clearFacet(state.store);
   spec.apply();
   paintFilterSheet();
   document.querySelector(`#filterBody .facet-opt[data-facet="${CSS.escape(key)}"][data-value="${CSS.escape(value)}"]`)?.focus();
@@ -212,7 +206,8 @@ function setFacet(key, value) {
 
 function clearFilterSheet() {
   const spec = FILTER_KINDS[_filterKind], state = spec.state();
-  spec.facets().forEach(f => { state[f.key] = f.multi ? [] : 'all'; });
+  spec.facets().forEach(f => clearFacet(state[f.key]));
+  if (_filterKind === 'games') clearFacet(state.store);
   spec.apply();
   paintFilterSheet();
   document.querySelector('#filterBody .series-sheet-close')?.focus();
