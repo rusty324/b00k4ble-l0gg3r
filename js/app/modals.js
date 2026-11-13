@@ -8,7 +8,7 @@ function openAddModal() {
   currentRating = 0;
   document.getElementById('modalTitle').textContent = 'Add a book';
 
-  ['f-title', 'f-author', 'f-narrator', 'f-series', 'f-seriesIndex', 'f-notes', 'f-coverUrl', 'f-isbn', 'f-asin', 'f-ol', 'f-finished']
+  ['f-title', 'f-author', 'f-series', 'f-seriesIndex', 'f-notes', 'f-coverUrl', 'f-ol', 'f-finished']
     .forEach(id => document.getElementById(id).value = '');
   paintCoverPreview('f-coverUrl');
   setGenreValues('f-genre', []);
@@ -37,21 +37,18 @@ function openEditModal(id) {
   document.getElementById('modalTitle').textContent = 'Edit book';
   document.getElementById('f-title').value  = b.title;
   document.getElementById('f-author').value = b.author || '';
-  document.getElementById('f-narrator').value = b.narrator || '';
   document.getElementById('f-finished').value = b.finished || '';
   setSeriesFields(b.series);
   setGenreValues('f-genre', b.genre);
   document.getElementById('f-notes').value  = b.notes || '';
   document.getElementById('f-coverUrl').value = b.coverUrl || '';
   paintCoverPreview('f-coverUrl');
-  document.getElementById('f-isbn').value = b.isbn || '';
-  document.getElementById('f-asin').value = b.asin || '';
   setLinksField('f', b.links);
   document.getElementById('f-ol').value = '';
   closeOlAC();
   olHint('');
 
-  setFormats(b.formats || ['physical']);
+  setBookCopies(b.copies && b.copies.length ? b.copies : (b.formats || ['physical']).map(format => ({ id: newCopyId(), format })));
   setRadio('status', b.status);
   updateStars(currentRating);
   document.getElementById('fmt-error').style.display = 'none';
@@ -81,7 +78,8 @@ function gotWishlistItem(id) {
   switchTab(kind);
   if (kind === 'books') {
     openAddModal();
-    set('f-title', w.title); set('f-author', w.creator); set('f-isbn', w.isbn); set('f-notes', w.notes);
+    set('f-title', w.title); set('f-author', w.creator); set('f-notes', w.notes);
+    if (w.isbn) fillBookCopy({ isbn: cleanIsbn(w.isbn) });
     setLinksField('f', w.links || []);
     document.getElementById('modalTitle').textContent = MOVE_TITLE;
   } else if (kind === 'media') {
@@ -178,18 +176,18 @@ function saveBook() {
   const seriesIdx  = document.getElementById('f-seriesIndex').value.trim();
   const series     = seriesName && seriesIdx ? `${seriesName} #${seriesIdx}` : seriesName;
   const coverUrl   = document.getElementById('f-coverUrl').value.trim();
-  const isbn       = document.getElementById('f-isbn').value.replace(/[^0-9Xx]/g, '');
-  // Amazon prints ASINs uppercase; accept any case and store one form so
-  // duplicate detection and search do not depend on how it was typed.
-  const asin       = document.getElementById('f-asin').value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
   const links      = readLinksField('f');
 
   const genre = getGenreValues('f-genre');
 
-  const formats = [...document.querySelectorAll('#f-format-group input[type="checkbox"]:checked')]
-    .map(cb => cb.value);
+  const copies = bookCopiesForSave();
+  // A scanned code not yet on any copy goes on the print copy (else the first).
+  if (pendingScanCode && !copies.some(c => cleanIsbn(c.isbn) === cleanIsbn(pendingScanCode))) {
+    const c = copies.find(x => x.format === 'physical' && !x.isbn) || copies.find(x => !x.isbn);
+    if (c) c.isbn = pendingScanCode;
+  }
 
-  if (!formats.length) {
+  if (!copies.length) {
     document.getElementById('fmt-error').style.display = 'block';
     return;
   }
@@ -198,8 +196,6 @@ function saveBook() {
 
   const status = document.querySelector('input[name="status"]:checked').value;
   const notes  = document.getElementById('f-notes').value.trim();
-  // Only an audiobook has one; normalizeBook enforces the same.
-  const narrator = formats.includes('audio') ? document.getElementById('f-narrator').value.trim() : '';
   // Only a Read book has one; normalizeBook enforces the same.
   const finished = status === 'read' ? document.getElementById('f-finished').value.trim() : '';
 
@@ -208,13 +204,11 @@ function saveBook() {
     if (i !== -1) {
       // Ignored gaps belong to a series: a book moved to another one leaves them behind.
       const sameSeries = seriesKey(splitSeries(series).name) === seriesKey(splitSeries(books[i].series).name);
-      books[i] = normalizeBook({ ...books[i], ...renamedBlurb(books[i], title), title, author, narrator, finished, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
-        isbn: isbn || pendingScanCode || books[i].isbn || '', asin, ...(sameSeries ? {} : { ignoredGaps: [] }) });
+      books[i] = normalizeBook({ ...books[i], ...renamedBlurb(books[i], title), title, author, finished, series, genre, copies, status, notes, rating: currentRating, coverUrl, links,
+        ...(sameSeries ? {} : { ignoredGaps: [] }) });
     }
   } else {
-    books.push(normalizeBook({ id: newId(), title, author, narrator, finished, series, genre, formats, status, notes, rating: currentRating, coverUrl, links,
-      ...(isbn || pendingScanCode ? { isbn: isbn || pendingScanCode } : {}),
-      ...(asin ? { asin } : {}) }));
+    books.push(normalizeBook({ id: newId(), title, author, finished, series, genre, copies, status, notes, rating: currentRating, coverUrl, links }));
   }
 
   save();
@@ -535,13 +529,13 @@ function deleteMediaItem(id) {
 // hardback and a signed copy, say) is legitimate. Edits are not checked.
 const DUP_FORMS = {
   books: {
-    note: 'f-dup', fields: ['f-title', 'f-author', 'f-isbn', 'f-asin'],
+    note: 'f-dup', fields: ['f-title', 'f-author'],
     adding: () => editingId === null,
     draft: () => ({
       title:  document.getElementById('f-title').value,
       author: document.getElementById('f-author').value,
-      isbn:   document.getElementById('f-isbn').value || pendingScanCode || '',
-      asin:   document.getElementById('f-asin').value,
+      copies: bookCopiesForSave(),
+      isbn:   pendingScanCode || '',
     }),
     describe: b => `“${b.title}”${b.author ? ` by ${b.author}` : ''}`,
     open: id => { closeModal(); openEditModal(id); },

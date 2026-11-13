@@ -97,9 +97,10 @@ const MEDIA = [
   await page.evaluate(() => openMediaModal(1700000000101)); await page.waitForTimeout(200);
   check('a copy in a set says how many titles share it', /In this set: 2 titles/.test(await page.innerText('#m-copies [data-copy="1"]')));
   await page.click('#m-copies [data-copy="1"] button:has-text("Show the set")'); await page.waitForTimeout(400);
-  const shown = await page.locator('#altContent .book-title').allInnerTexts();
-  check('"Show the set" closes the form and searches for the set', !(await page.evaluate(() => document.getElementById('mediaModal').classList.contains('open'))) &&
-    J(shown.sort()) === J(['Star Trek II: The Wrath of Khan', ST3].sort()), J(shown));
+  const shown = await page.locator('#setBody .vol-row-title').allInnerTexts();
+  check('"Show the set" closes the form and opens the set\'s sheet', !(await page.evaluate(() => document.getElementById('mediaModal').classList.contains('open'))) &&
+    J(shown) === J(['Star Trek II: The Wrath of Khan (1982)', `${ST3} (1984)`]), J(shown));
+  await page.evaluate(() => closeSetSheet());
   await page.fill('#mediaSearchInput', 'steelbook'); await page.waitForTimeout(400);
   check('search reaches editions', J(await page.locator('#altContent .book-title').allInnerTexts()) === J([ST3]));
   await page.fill('#mediaSearchInput', ''); await page.waitForTimeout(400);

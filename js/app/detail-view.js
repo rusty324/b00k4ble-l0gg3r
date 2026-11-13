@@ -45,15 +45,20 @@ function detailBook(b) {
         const s = seriesGaps().find(x => x.books.includes(b));
         return s ? `Missing ${esc(compressRanges(s.missing, '#'))}` : '';
       })()),
-      fact('Formats', (b.formats || []).map(f => f in BOOK_FORMAT_LABEL ? `${ico('books', f)} ${esc(BOOK_FORMAT_LABEL[f].replace(/^\S+\s/, ''))}` : esc(f)).join('<br>')),
+      // One line per copy: format, edition, narrator, ISBN / ASIN.
+      fact((b.copies || []).length === 1 ? 'Copy' : 'Copies', (b.copies || []).map(c => [
+        `${ico('books', c.format)} ${esc((BOOK_FORMAT_LABEL[c.format] || c.format).replace(/^\S+\s/, ''))}${c.edition ? ` — ${esc(c.edition)}` : ''}`,
+        c.narrator && `read by ${esc(c.narrator)}`, c.isbn && `ISBN ${esc(c.isbn)}`, c.asin && `ASIN ${esc(c.asin)}`,
+      ].filter(Boolean).join(' · ')).join('<br>')),
       fact('Finished', b.status === 'read' && b.finished ? esc(finishedLabel(b.finished)) : ''),
-      fact('ISBN', esc(b.isbn || '')),
-      fact('ASIN', esc(b.asin || '')),
       fact('Added', addedFact(b.id)),
     ].join(''),
     genre: b.genre, notes: b.notes, links: b.links,
   };
 }
+
+// A set's name, opening its sheet.
+const setLink = name => `<button type="button" class="set-link" data-set-open="${esc(name)}">${esc(name)}</button>`;
 
 function detailMedia(m) {
   const status = statusLabel('media', m.status);
@@ -61,7 +66,7 @@ function detailMedia(m) {
   const formats = (m.copies || []).map(c =>
     `${c.format in MEDIA_FORMAT_ICON ? ico('media', c.format) : ''} ${esc(MEDIA_FORMAT_LABEL[c.format] || c.format)}${
       c.seasons ? ` · ${esc(c.seasons.length === 1 ? `Season ${c.seasons[0]}` : `Seasons ${compressRanges(c.seasons)}`)}` : ''}${
-      c.edition ? ` — ${esc(c.edition)}` : ''}${c.set ? ` <span class="muted">· in ${esc(c.set)}</span>` : ''}`).join('<br>');
+      c.edition ? ` — ${esc(c.edition)}` : ''}${c.set ? ` <span class="muted">· in</span> ${setLink(c.set)}` : ''}`).join('<br>');
   return {
     cover: m.posterUrl, title: m.title,
     sub: [m.type === 'tv' ? 'TV show' : 'Movie', m.year].filter(Boolean).join(' · '),
@@ -88,11 +93,10 @@ function detailGame(g) {
     let t = bits.join(' · ');
     if (c.opensIn) t += `, opens in ${storeLabel(c.opensIn)}`;
     if (c.edition) t += ` — ${c.edition}`;
-    if (c.set) t += ` (in ${c.set})`;
     return t;
   };
   const fmtIcon = c => { const f = c.format === 'subscription' && PS_PLATFORMS.has(c.platform) ? 'ps-plus' : c.format; return f ? gameFormatIcon(f) + ' ' : ''; };
-  const platforms = copies.map(c => fmtIcon(c) + esc(copyText(c))).join('<br>');
+  const platforms = copies.map(c => fmtIcon(c) + esc(copyText(c)) + (c.set ? ` <span class="muted">· in</span> ${setLink(c.set)}` : '')).join('<br>');
   const dlc = (g.dlc || []).map(d => {
     const via = d.via && copies.find(c => c.id === d.via);
     return `<span class="${d.owned ? 'dlc-owned' : 'dlc-want'}">${esc(d.name)}${d.owned ? '' : ' (wishlist)'}${via ? ` — with ${esc(gameCopyLine({ ...via, edition: via.edition || '' }))}` : ''}</span>`;

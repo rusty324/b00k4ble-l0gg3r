@@ -513,8 +513,12 @@ function sameRecord(kind, a, b) {
   const sameTitle = !!tk && dupTitleKey(b.title) === tk;
   switch (kind) {
     case 'books':
-      return (!!dupIsbn(a) && dupIsbn(a) === dupIsbn(b)) || (!!dupAsin(a) && dupAsin(a) === dupAsin(b)) ||
+    {
+      // Any edition's ISBN or ASIN in common.
+      const ib = bookIsbns(b), ab = bookAsins(b);
+      return [...bookIsbns(a)].some(x => ib.has(x)) || [...bookAsins(a)].some(x => ab.has(x)) ||
              (sameTitle && namesAgree(a.author, b.author));
+    }
     case 'media': {
       if ((a.type || 'movie') !== (b.type || 'movie')) return false;
       const ya = String(a.year || '').trim(), yb = String(b.year || '').trim();
@@ -612,6 +616,67 @@ function finishedLabel(f) {
   return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
 }
 
+// ─── book copies ──────────────────────────────────────────────────────
+const BOOK_COPY_FORMATS = ['physical', 'ebook', 'audio'];
+const cleanIsbn = v => String(v == null ? '' : v).replace(/[^0-9Xx]/g, '').toUpperCase();
+const cleanAsin = v => String(v == null ? '' : v).replace(/[^0-9A-Za-z]/g, '').toUpperCase();
+const cleanNarrator = v => (Array.isArray(v) ? v.map(String).map(x => x.trim()).filter(Boolean).join(', ') : String(v == null ? '' : v).trim());
+
+// A record from before copies: one copy per format. Its single ISBN goes to
+// the print copy (else the e-book, else the first); its ASIN to the
+// audiobook (Audible), else the e-book (Kindle), else the first; its narrator
+// to the audiobook.
+function legacyBookCopies(b, formats) {
+  const copies = formats.filter(f => BOOK_COPY_FORMATS.includes(f)).map(format => ({ format }));
+  const pick = order => copies.find(c => c.format === order[0]) || copies.find(c => c.format === order[1]) || copies[0];
+  if (copies.length) {
+    if (b.isbn) pick(['physical', 'ebook']).isbn = b.isbn;
+    if (b.asin) pick(['audio', 'ebook']).asin = b.asin;
+    const audio = copies.find(c => c.format === 'audio');
+    if (audio && b.narrator) audio.narrator = b.narrator;
+  }
+  return copies;
+}
+
+function normalizeBookCopies(b, legacyFormats) {
+  const raw = Array.isArray(b.copies) ? b.copies : legacyBookCopies(b, legacyFormats);
+  const out = [], used = new Set(), n = {};
+  for (const c of raw) {
+    if (!c || typeof c !== 'object') continue;
+    const format = String(c.format || '').trim().toLowerCase();
+    if (!BOOK_COPY_FORMATS.includes(format)) continue;
+    n[format] = (n[format] || 0) + 1;
+    let id = copyText(c.id, 40) || `${format}-${n[format]}`;
+    while (used.has(id)) id += 'x';
+    used.add(id);
+    const copy = { id, format };
+    const isbn = cleanIsbn(c.isbn), asin = cleanAsin(c.asin);
+    if (isbn) copy.isbn = isbn;
+    if (asin) copy.asin = asin;
+    // Who reads it: an audiobook's alone.
+    const narrator = format === 'audio' ? cleanNarrator(c.narrator) : '';
+    if (narrator) copy.narrator = narrator;
+    for (const k of ['edition', 'set', 'note']) { const v = copyText(c[k]); if (v) copy[k] = v; }
+    out.push(copy);
+  }
+  return out;
+}
+
+// The title-level fields older code reads: formats in order, the print
+// ISBN first, the audiobook's ASIN first, and every audiobook narrator.
+function bookFieldsFromCopies(copies) {
+  const first = (k, pref) => (copies.find(c => c.format === pref && c[k]) || copies.find(c => c[k]) || {})[k] || '';
+  return {
+    formats: [...new Set(copies.map(c => c.format))],
+    isbn: first('isbn', 'physical'),
+    asin: first('asin', 'audio'),
+    narrator: [...new Set(copies.filter(c => c.narrator).flatMap(c => c.narrator.split(',').map(x => x.trim())))].join(', '),
+  };
+}
+// Every ISBN / ASIN a book holds, for duplicate detection and scan lookup.
+const bookIsbns = b => new Set([...(b.copies || []).map(c => cleanIsbn(c.isbn)), cleanIsbn(b.isbn)].filter(Boolean));
+const bookAsins = b => new Set([...(b.copies || []).map(c => cleanAsin(c.asin)), cleanAsin(b.asin)].filter(Boolean));
+
 function normalizeBook(b) {
   const author = Array.isArray(b.author)
     ? b.author.join(', ')
@@ -638,26 +703,27 @@ function normalizeBook(b) {
 
   const title  = b.title  != null ? String(b.title)  : '';
   const series = b.series ? String(b.series) : '';
-  // Who reads the audiobook. Kept only while the book is an audiobook: a
-  // narrator on a print-only copy describes nothing, so unticking Audiobook
-  // drops it. Accepted as a list too, the way Audible and Audiobookshelf
-  // send it.
-  const narrator = !formats.includes('audio') ? ''
-    : Array.isArray(b.narrator) ? b.narrator.map(String).map(s => s.trim()).filter(Boolean).join(', ')
-    : String(b.narrator || '').trim();
+  // What you hold: one copy per edition — its format, and the identifiers
+  // and narrator that belong to that edition rather than to the book.
+  // `formats`, `isbn`, `asin` and `narrator` are still written, derived from
+  // the copies, so every older reader keeps working.
+  const copies = normalizeBookCopies(b, formats);
+  const derived = bookFieldsFromCopies(copies);
   // Kept only while the book is Read, like a narrator only while it is an audiobook.
   const finished = status === 'read' ? normalizeFinished(b.finished) : '';
-  const _searchStr = searchFold([title, author, narrator, series, finished, b.isbn || '', b.asin || '', ...genre].join(' '));
+  const _searchStr = searchFold([title, author, series, finished, ...genre,
+    ...copies.flatMap(c => [c.isbn, c.asin, c.narrator, c.edition, c.set])].filter(Boolean).join(' '));
 
   // Clamp rating to 0–5; out-of-range values (e.g. from imported JSON) cause
   // '★'.repeat(5 - rating) to throw a RangeError with a negative count.
   const rating = Number.isFinite(+b.rating) ? Math.max(0, Math.min(5, Math.round(+b.rating))) : 0;
 
   const book = dropEmpty(applyLinks({
-    ...b, id: normalizeId(b.id), title, series, author, narrator, finished, status, formats, genre, rating, _searchStr,
-    ...(b.isbn != null ? { isbn: String(b.isbn) } : {}),
-    ...(b.asin != null ? { asin: String(b.asin).toUpperCase() } : {}),
+    ...b, id: normalizeId(b.id), title, series, author, finished, status, genre, rating, _searchStr,
+    ...derived,
   }, b.links));
+  if (copies.length) book.copies = copies; else delete book.copies;
+  for (const k of ['isbn', 'asin', 'narrator']) if (!derived[k]) delete book[k];
   delete book.tags;   // the spread carried the old name in; only `genre` is stored
   // Only a book in a series can carry its series's ignored gaps.
   const ignoredGaps = series ? normalizeIgnoredGaps(b.ignoredGaps) : [];

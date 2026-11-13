@@ -256,16 +256,14 @@ function olPick(i) {
   document.getElementById('f-title').value  = r.title;
   document.getElementById('f-author').value = r.author || '';
   if (r.coverUrl) document.getElementById('f-coverUrl').value = r.coverUrl;
-  if (r.isbn)     document.getElementById('f-isbn').value = r.isbn;
-  if (r.asin)     document.getElementById('f-asin').value = r.asin;
   if (r.series)   setSeriesFields(r.series);
+  if (r.source !== 'audible' && (r.isbn || r.asin)) fillBookCopy({ isbn: r.isbn, asin: r.asin });
 
   if (r.source === 'audible') {
     // An Audible result is an audiobook by definition, and its ASIN is
     // enough to build the ownership link — both land in visible fields the
     // user can undo before saving, rather than being applied at save time.
-    tickFormat('audio');
-    if (r.narrator) document.getElementById('f-narrator').value = r.narrator;
+    fillBookCopy({ format: 'audio', asin: r.asin, isbn: r.isbn, narrator: r.narrator });
     const links = document.getElementById('f-links');
     if (links && !links.value.trim() && r.asin) {
       links.value = `https://www.audible.com/pd/${r.asin}`;

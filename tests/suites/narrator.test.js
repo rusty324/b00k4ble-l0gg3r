@@ -65,25 +65,26 @@ const BOOKS = [
   await page.click('#viewToggle [data-view="card"]'); await page.waitForTimeout(300);
 
   // ── 3. The form ─────────────────────────────────────────────────────
-  const shown = () => page.evaluate(() => document.getElementById('f-narrator-group').style.display !== 'none');
+  // The narrator lives on the audiobook copy (js/app/book-copies.js).
+  const NARR = '#f-copies [data-field="narrator"]';
+  const shown = async () => (await page.locator(NARR).count()) > 0;
   await page.click('#addBtn'); await page.waitForSelector('#modal.open');
   check('a new book (Physical by default) has no Narrator field showing', !(await shown()));
   await page.click('label[for="fmt-audio"]');
-  check('ticking Audiobook shows it', await shown());
+  check('ticking Audiobook adds an audiobook copy with a Narrator field', await shown());
   const dl = await page.evaluate(() => [...document.querySelectorAll('#dl-narrators option')].map(o => o.value));
   check('it suggests narrators already in the library, one per name', J(dl) === J(['Jefferson Mays', 'Martin Jarvis', 'Stephen Fry']), J(dl));
   await page.fill('#f-title', 'Project Hail Mary'); await page.fill('#f-author', 'Andy Weir');
-  await page.fill('#f-narrator', 'Ray Porter');
-  await page.click('label[for="fmt-audio"]');
-  check('unticking hides it', !(await shown()));
-  await page.click('label[for="fmt-audio"]');
-  check('ticking again brings back what was typed', await shown() && (await page.inputValue('#f-narrator')) === 'Ray Porter');
+  await page.fill(NARR, 'Ray Porter');
+  await page.click('label[for="fmt-ebook"]');
+  check('adding another format keeps what was typed', await shown() && (await page.inputValue(NARR)) === 'Ray Porter');
+  await page.click('label[for="fmt-ebook"]');
   await page.click('button[onclick="saveBook()"]'); await page.waitForTimeout(400);
   check('saved with the narrator', await page.evaluate(() => books.find(b => b.title === 'Project Hail Mary').narrator) === 'Ray Porter');
 
   await viaDetail(page.locator('#booksGrid .book-card', { hasText: 'Project Hail Mary' }), 'Edit');
   await page.waitForSelector('#modal.open');
-  check('editing an audiobook shows its narrator', await shown() && (await page.inputValue('#f-narrator')) === 'Ray Porter');
+  check('editing an audiobook shows its narrator', await shown() && (await page.inputValue(NARR)) === 'Ray Porter');
   // It was saved as Physical + Audiobook (Physical is ticked by default), so
   // unticking Audiobook leaves it print-only.
   check('(it is Physical + Audiobook)', await page.evaluate(() => JSON.stringify(books.find(b => b.title === 'Project Hail Mary').formats)) === '["physical","audio"]');
@@ -94,7 +95,7 @@ const BOOKS = [
 
   await viaDetail(page.locator('#booksGrid .book-card', { hasText: 'Dune' }), 'Edit');
   await page.waitForSelector('#modal.open');
-  check('editing a print book shows no Narrator field, and nothing left over', !(await shown()) && (await page.inputValue('#f-narrator')) === '');
+  check('editing a print book shows no Narrator field', !(await shown()));
   await page.evaluate(() => closeModal());
 
   // ── 4. An Audible pick fills it ─────────────────────────────────────
@@ -102,7 +103,7 @@ const BOOKS = [
   await page.fill('#f-ol', 'B002UZMLXM'); await page.waitForSelector('#ol-ac .ac-item', { timeout: 5000 });
   await page.locator('#ol-ac .ac-item').first().click(); await page.waitForTimeout(300);
   check('picking an Audible result ticks Audiobook and fills the narrator',
-    await shown() && (await page.inputValue('#f-narrator')) === 'Andy Serkis');
+    await shown() && (await page.inputValue(NARR)) === 'Andy Serkis');
   await page.click('button[onclick="saveBook()"]'); await page.waitForTimeout(400);
   check('…and it is saved', await page.evaluate(() => books.find(b => b.title === 'The Hobbit').narrator) === 'Andy Serkis');
 

@@ -93,32 +93,7 @@ function setSeriesFields(series) {
   document.getElementById('f-seriesIndex').value = number;
 }
 
-// setFormats() replaces the whole selection; this adds one, keeping whatever
-// the user already ticked. The .active class is what actually looks checked.
-function tickFormat(value) {
-  const cb = document.querySelector(`#f-format-group input[value="${value}"]`);
-  if (!cb || cb.checked) return;
-  cb.checked = true;
-  cb.closest('.radio-btn').classList.add('active');
-  syncNarratorField();
-}
-
-function setFormats(vals) {
-  document.querySelectorAll('#f-format-group input[type="checkbox"]').forEach(cb => {
-    cb.checked = vals.includes(cb.value);
-    cb.closest('.radio-btn').classList.toggle('active', cb.checked);
-  });
-  syncNarratorField();
-}
-
-// The Narrator field is there only while Audiobook is ticked. Hidden, its
-// text is kept for the life of the form — so unticking by mistake and
-// ticking again loses nothing — and saveBook() simply does not store it.
-function syncNarratorField() {
-  const group = document.getElementById('f-narrator-group');
-  const audio = document.querySelector('#f-format-group input[value="audio"]');
-  if (group) group.style.display = audio && audio.checked ? '' : 'none';
-}
+// setFormats / tickFormat: js/app/book-copies.js (the format buttons drive the copies).
 
 function setRadio(name, val) {
   document.querySelectorAll(`input[name="${name}"]`).forEach(r => {
@@ -159,10 +134,7 @@ document.querySelectorAll('.radio-btn input[type="radio"]').forEach(r => {
 
 // Sync book format checkbox styling
 document.querySelectorAll('#f-format-group input[type="checkbox"]').forEach(cb => {
-  cb.addEventListener('change', function() {
-    this.closest('.radio-btn').classList.toggle('active', this.checked);
-    syncNarratorField();
-  });
+  cb.addEventListener('change', function() { toggleBookFormat(this.value, this.checked); });
 });
 
 

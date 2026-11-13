@@ -34,7 +34,7 @@ const WISH = [
   await got('Piranesi'); await page.waitForSelector('#modal.open');
   const form = await page.evaluate(() => ({ tab: activeTab, heading: document.getElementById('modalTitle').textContent,
     title: document.getElementById('f-title').value, author: document.getElementById('f-author').value,
-    isbn: document.getElementById('f-isbn').value, notes: document.getElementById('f-notes').value, links: document.getElementById('f-links').value }));
+    isbn: (bookCopiesForSave().map(c => c.isbn).filter(Boolean)[0] || ''), notes: document.getElementById('f-notes').value, links: document.getElementById('f-links').value }));
   check('"Got it" on a book opens the Books add form, filled in', form.tab === 'books' && form.heading === 'Add from your wishlist' &&
     form.title === 'Piranesi' && form.author === 'Susanna Clarke' && form.isbn === '9781635575637' && form.notes === 'signed copy if possible' &&
     form.links.includes('audible.com'), J(form));

@@ -87,7 +87,7 @@ const MEDIA = [
   check('editing a DVD title shows one copy, a DVD', J(await rows()) === '["dvd"]', J(await rows()));
   await page.fill('#m-copies [data-copy="0"] [data-field="edition"]', '“Don’t Call Me Shirley!” Edition');
   check('typing keeps focus in the box (it is not rebuilt per keystroke)', await page.evaluate(() => document.activeElement && document.activeElement.dataset.field === 'edition'));
-  await page.click('button:has-text("Add a copy")'); await page.waitForTimeout(100);
+  await page.click('#mediaModal button:has-text("Add a copy")'); await page.waitForTimeout(100);
   await page.selectOption('#m-copies [data-copy="1"] select', 'streaming'); await page.waitForTimeout(100);
   check('a Streaming copy takes no edition box', await page.locator('#m-copies [data-copy="1"] [data-field="edition"]').isHidden());
   check('…and the first copy keeps what was typed', await page.inputValue('#m-copies [data-copy="0"] [data-field="edition"]') === '“Don’t Call Me Shirley!” Edition');
@@ -135,7 +135,7 @@ const MEDIA = [
   // A second copy with other seasons; "All" on a copy
   await viaDetail(page.locator('#altContent .book-card', { hasText: 'Rick and Morty' }), 'Edit');
   await page.waitForSelector('#mediaModal.open'); await page.waitForTimeout(300);
-  await page.click('button:has-text("Add a copy")'); await page.selectOption('#m-copies [data-copy="1"] select', 'digital');
+  await page.click('#mediaModal button:has-text("Add a copy")'); await page.selectOption('#m-copies [data-copy="1"] select', 'digital');
   await page.click('#m-copies [aria-label="Copy 2, season 4"]'); await page.click('#m-copies [aria-label="Copy 2, season 5"]');
   await page.click('button[onclick="saveMediaItem()"]'); await page.waitForTimeout(400);
   rm = await page.evaluate(() => mediaLibrary.find(m => m.id === 1700000000002));
