@@ -39,7 +39,7 @@ function createRowEditor(o) {
                  data-row="${i}" data-chip="${esc(c.key)}">${c.html != null ? c.html : esc(c.text)}</button>`).join('');
       return `<div class="platform-entry">
         <span class="platform-entry-name${o.labelClass ? ' ' + o.labelClass : ''}">${esc(label)}</span>
-        <div class="platform-entry-formats">${chips}</div>
+        <div class="platform-entry-formats">${chips}${o.extra ? o.extra(row, i) : ''}</div>
         <button type="button" class="platform-entry-remove" aria-label="Remove ${esc(label)}"
                 data-row="${i}" data-remove="1">&times;</button>
       </div>`;
@@ -56,6 +56,13 @@ function createRowEditor(o) {
     if (btn.dataset.remove) o.onRemove(row, i);
     else o.onChip(row, btn.dataset.chip, i);
     render();
+  });
+
+  if (el && o.onExtra) el.addEventListener('change', e => {
+    const t = e.target.closest('[data-extra-row]');
+    if (!t || !el.contains(t)) return;
+    const row = o.rows()[Number(t.dataset.extraRow)];
+    if (row) o.onExtra(row, t.value);
   });
 
   return { render };

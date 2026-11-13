@@ -53,8 +53,11 @@ const FILTER_KINDS = {
     noun: n => (n === 1 ? 'game' : 'games'),
     total: list => list.length,
     facets: () => [
-      { key: 'platform', label: 'Platform', options: GAME_PLATFORMS.map(p => [p, platformLabel(p)]),
+      { key: 'platform', label: 'Platform', options: () => knownGamePlatforms().map(p => [p, platformLabel(p)]),
         match: (g, v) => (g.platforms || []).some(p => p.platform === v) },
+      // Only once PC is chosen: which store or launcher.
+      { key: 'store', label: 'Store', options: () => (gameFilters.platform === 'pc' ? pcStoresInUse().map(k => [k, storeLabel(k)]) : []),
+        match: (g, v) => gameHasPcStore(g, v) },
       { key: 'status', label: 'Status', options: statusPairs('games'), match: (g, v) => g.status === v },
       { key: 'format', label: 'Format', html: true, options: () => GAME_FORMATS.map(f => [f, `${gameFormatIcon(f)} ${esc(GAME_FORMAT_LABEL[f])}`]),
         match: (g, v) => (g.platforms || []).some(p => (p.formats || []).includes(v)) },
@@ -200,6 +203,7 @@ function setFacet(key, value) {
     state[key] = cur.includes(value) ? cur.filter(v => v !== value) : [...cur, value];
   } else {
     state[key] = state[key] === value ? 'all' : value;
+    if (_filterKind === 'games' && key === 'platform' && state.platform !== 'pc') state.store = 'all';
   }
   spec.apply();
   paintFilterSheet();

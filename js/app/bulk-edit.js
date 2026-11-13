@@ -38,6 +38,7 @@ function startBulk(kind, ids = []) {
   const sel = document.getElementById('bulkStatus');
   sel.innerHTML = `<option value="">Set status…</option>` +
     BULK_STATUS[kind].map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
+  document.querySelectorAll('#bulkBar .bulk-games').forEach(b => { b.hidden = kind !== 'games'; });
   document.body.classList.add('bulk-mode');
   document.getElementById('bulkBar').hidden = false;
   paintBulk();
@@ -180,6 +181,46 @@ function bulkRemoveGenre(name) {
     r.genre = (r.genre || []).filter(x => textKey(x) !== textKey(name));
     return r;
   }, n => `Removed “${name}” from ${n} ${bulkNoun(_bulk.kind, n)}.`);
+}
+
+// ── Games: the store (or launcher) of every PC copy of the selection, to
+// correct misfiled games — Epic or Ubisoft games recorded as Steam ──
+function openBulkStore(field) {
+  if (!_bulk || !_bulk.ids.size) return;
+  const sel = videoGames.filter(g => _bulk.ids.has(g.id));
+  const copies = sel.reduce((n, g) => n + (g.copies || []).filter(c => c.platform === 'pc').length, 0);
+  const what = field === 'store' ? 'store' : 'launcher it opens in';
+  const keys = [...GAME_STORES.map(s => s.key), ...knownGameStores()];
+  document.getElementById('bulkBody').innerHTML = `
+    <div class="modal-title">Set the ${what}</div>
+    ${copies ? `<p>For ${copies} PC cop${copies === 1 ? 'y' : 'ies'} in ${sel.length} ${bulkNoun('games', sel.length)}.</p>
+      <input type="text" class="plain" id="bulkStoreInput" list="bulkStoreList" autocomplete="off"
+             placeholder="${field === 'store' ? 'e.g. Epic Games Store' : 'e.g. Ubisoft Connect, or blank for the same as the store'}"
+             onkeydown="if (event.key === 'Enter') { event.preventDefault(); bulkSetStore('${field}'); }">
+      <datalist id="bulkStoreList">${keys.map(k => `<option value="${esc(storeLabel(k))}">`).join('')}</datalist>`
+      : `<p class="muted">None of the selected games has a PC copy.</p>`}
+    <div class="detail-actions"><span class="detail-spacer"></span>
+      <button type="button" class="btn" onclick="closeBulkSheet()">Cancel</button>
+      ${copies ? `<button type="button" class="btn btn-primary" onclick="bulkSetStore('${field}')">Set</button>` : ''}</div>`;
+  document.getElementById('bulkModal').classList.add('open');
+  document.getElementById('bulkStoreInput')?.focus();
+}
+
+function bulkSetStore(field) {
+  const v = normalizeStore(document.getElementById('bulkStoreInput')?.value || '');
+  if (!v && field === 'store') return;
+  closeBulkSheet();
+  let copies = 0;
+  bulkApply(r => {
+    r.copies = (r.copies || []).map(c => {
+      if (c.platform !== 'pc') return c;
+      copies++;
+      const next = { ...c };
+      if (v) next[field] = v; else delete next[field];
+      return next;
+    });
+    return r;
+  }, n => `Set the ${field === 'store' ? 'store' : 'launcher'} of ${copies} PC cop${copies === 1 ? 'y' : 'ies'} in ${n} ${bulkNoun('games', n)} to ${v ? storeLabel(v) : 'the same as the store'}.`);
 }
 
 function handleBulkBackdrop(e) {

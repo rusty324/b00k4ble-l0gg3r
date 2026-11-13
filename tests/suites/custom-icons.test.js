@@ -90,7 +90,7 @@ const isImg = s => /^img:blob:\d/.test(s);
     await page.click('#settingsBtn'); await page.click('#settingsIconsBtn'); await page.waitForTimeout(200);
     const sections = await page.locator('#iconsBody h3').allInnerTexts();
     check('⋯ → Icons lists Books, Movies & TV, Games and Wishlist', J(sections) === J(['Books', 'Movies & TV', 'Games', 'Wishlist']), J(sections));
-    check('…every icon on its built-in to start', await page.locator('.icon-row').count() === 16 &&
+    check('…every icon on its built-in to start', await page.locator('.icon-row').count() === 17 &&
       (await page.locator('.icon-name .muted').allInnerTexts()).every(t => t === 'Built-in'));
 
     await upload(page, 'games', 'physical', true);
@@ -109,14 +109,13 @@ const isImg = s => /^img:blob:\d/.test(s);
 
     // Games
     check('Games: a card badge shows your icon', isImg(await iconIn(page, '#altContent .book-card:has-text("Elden Ring") .badge-platform')));
-    check('…the built-in stays for a format you left alone', (await page.locator('#altContent .book-card:has-text("Elden Ring") .badge-platform').innerText()).includes('➕'));
+    check('…the built-in stays for a format you left alone', (await page.locator('#altContent .book-card:has-text("Elden Ring") .badge-platform').nth(1).innerText()).includes('➕'));
     check('…the filter pills use it', isImg(await iconIn(page, '#altContent .pill:has-text("Physical")')));
     await page.evaluate(() => openDetail('games', 1700000000201)); await page.waitForTimeout(250);
     check('…the detail sheet uses it', await page.locator('#detailBody img.fmt-icon').count() === 1);
     await page.keyboard.press('Escape'); await page.waitForTimeout(150);
     await page.evaluate(() => openGameModal(1700000000201)); await page.waitForTimeout(200);
-    check("…the form's format buttons use it", await page.locator('#g-platform-entries [data-chip="physical"] img.fmt-icon').count() === 1 &&
-      await page.locator('#g-platform-entries [data-chip="ps-plus"] img.fmt-icon').count() === 0);
+    check("…the form lists the game's two copies", await page.locator('#g-copies .copy-row').count() === 2);
     await page.evaluate(() => closeGameModal());
 
     // Books
@@ -158,7 +157,7 @@ const isImg = s => /^img:blob:\d/.test(s);
     check('another device finds your icons and shows them', isImg(await iconIn(page, '#altContent .book-card:has-text("Elden Ring") .badge-platform')));
     await page.click('#settingsBtn'); await page.click('#settingsIconsBtn'); await page.waitForTimeout(200);
     await page.click(`${row('games', 'physical')} button:has-text("Use the built-in")`); await page.waitForTimeout(300);
-    check('"Use the built-in" brings the emoji back', (await page.locator('#altContent .book-card:has-text("Elden Ring") .badge-platform').innerText()).includes('📀') &&
+    check('"Use the built-in" brings the emoji back', (await page.locator('#altContent .book-card:has-text("Elden Ring") .badge-platform').first().innerText()).includes('📀') &&
       await page.locator('#altContent .book-card:has-text("Elden Ring") img.fmt-icon').count() === 0);
     await page.waitForTimeout(1500);
     check('…and records that in the repo too', Object.keys(remote).some(k => /data\/icons\/games\/physical-[a-z0-9]+\.none$/.test(k)));

@@ -60,12 +60,17 @@ function gameStats() {
   const platforms = [...GAME_PLATFORMS.filter(p => onPlatform[p]),
                      ...Object.keys(onPlatform).filter(p => !GAME_PLATFORMS.includes(p)).sort()];
   const held = f => videoGames.filter(g => (g.platforms || []).some(p => (p.formats || []).includes(f))).length;
+  // PC games by store: a game held on two stores counts once on each.
+  const stores = pcStoresInUse();
+  const onStore = k => videoGames.filter(g => gameHasPcStore(g, k)).length;
+  const pcTotal = onPlatform.pc || 0;
   const dlc = videoGames.flatMap(g => g.dlc || []);
   const dlcOwned = dlc.filter(d => d.owned).length;
   return [
     statCard('Total', total, `${videoGames.filter(g => g.status === 'completed').length} completed · ${videoGames.filter(g => g.status === 'playing').length} playing`),
     ...platforms.map(p => statCard(platformLabel(p), onPlatform[p], statShare(onPlatform[p], total))),
-    ...GAME_FORMATS.filter(f => f !== 'ps-plus' || held(f)).map(f => statCard(GAME_FORMAT_LABEL[f], held(f), statShare(held(f), total))),
+    ...stores.map(k => statCard(`PC · ${storeBadge(k)}`, onStore(k), `${pcTotal ? Math.round(onStore(k) / pcTotal * 100) : 0}% of PC`)),
+    ...GAME_FORMATS.filter(f => (f !== 'ps-plus' && f !== 'subscription') || held(f)).map(f => statCard(GAME_FORMAT_LABEL[f], held(f), statShare(held(f), total))),
     ...(dlc.length ? [statCard('DLC owned', dlcOwned, `${dlc.length - dlcOwned} wishlisted`)] : []),
     statRating(videoGames),
   ];

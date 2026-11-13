@@ -143,7 +143,7 @@ const chips = page => page.locator('#g-dlc-entries .fmt-chip').allTextContents()
   // ── 6. Interaction with the platform editor, and the stamp ──────────
   await page.click('#addBtn'); await page.waitForSelector('#gameModal.open');
   await page.click('label[for="g-plat-ps4"]');
-  check('the platform rows still work beside it', (await page.locator('#g-platform-entries .platform-entry').count()) === 1 && (await rowNames(page)).length === 0);
+  check('the copies editor still works beside it', (await page.locator('#g-copies .copy-row').count()) === 1 && (await rowNames(page)).length === 0);
   await page.click('button[onclick="closeGameModal()"]');
   check('saving DLC moved the games tab date',
     await page.evaluate(() => (JSON.parse(localStorage.getItem('lastUpdated')) || {}).games > 0));

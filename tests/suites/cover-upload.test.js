@@ -138,7 +138,7 @@ const remoteCovers = () => Object.keys(remote).filter(p => p.startsWith('data/co
     check('…and uploaded', !!remote['data/' + poster.slice(5)], J(remoteCovers()));
     await page.evaluate(() => switchTab('games')); await page.waitForTimeout(200);
     await page.evaluate(() => openGameModal(null));
-    await page.fill('#g-title', 'A Game'); await page.evaluate(() => setGamePlatforms([{ platform: 'steam', formats: [] }]));
+    await page.fill('#g-title', 'A Game'); await page.evaluate(() => setGameCopies([{ id: 'c1', platform: 'pc', store: 'steam' }]));
     const gc = await upload(page, 'g-coverUrl', 'games');
     await page.evaluate(() => saveGameItem()); await page.waitForTimeout(1200);
     check('a game takes an uploaded cover, uploaded too', /^repo:covers\/games\//.test(gc) && !!remote['data/' + gc.slice(5)], gc);
@@ -146,7 +146,7 @@ const remoteCovers = () => Object.keys(remote).filter(p => p.startsWith('data/co
     check('…shown on its card', gi.src === 'blob:' && gi.w === 300, J(gi));
     // A link still saves as a link.
     await page.evaluate(() => openGameModal(null));
-    await page.fill('#g-title', 'Linked Game'); await page.evaluate(() => setGamePlatforms([{ platform: 'steam', formats: [] }])); await page.fill('#g-coverUrl', 'https://img.example/g.png');
+    await page.fill('#g-title', 'Linked Game'); await page.evaluate(() => setGameCopies([{ id: 'c1', platform: 'pc', store: 'steam' }])); await page.fill('#g-coverUrl', 'https://img.example/g.png');
     await page.evaluate(() => saveGameItem()); await page.waitForTimeout(300);
     check('a pasted link is still saved as a link', await page.evaluate(() => videoGames.find(g => g.title === 'Linked Game').coverUrl) === 'https://img.example/g.png');
     await ctx.close(); }

@@ -689,7 +689,7 @@ function parseGameStoreLink(raw) {
   // steam://store/<id>, steam://run/<id>
   if (scheme === 'steam') {
     const id = (segs[segs.length - 1] || u.host || '').match(/^\d+$/);
-    return { store: 'Steam', platform: 'steam', title: '',
+    return { store: 'Steam', storeKey: 'steam', platform: 'pc', title: '',
              coverUrl: id ? STEAM_HEADER(id[0]) : '' };
   }
 
@@ -697,16 +697,28 @@ function parseGameStoreLink(raw) {
   if (host === 'steampowered.com' || host.endsWith('.steampowered.com')) {
     const i = segs.indexOf('app');
     const id = i !== -1 ? segs[i + 1] : null;
-    return { store: 'Steam', platform: 'steam',
+    return { store: 'Steam', storeKey: 'steam', platform: 'pc',
              title: i !== -1 ? titleFromSlug(segs[i + 2]) : '',
              coverUrl: /^\d+$/.test(id || '') ? STEAM_HEADER(id) : '' };
   }
   // s.team/a/<id> is Valve's shortener for the same page.
   if (host === 's.team' || host === 'steamcommunity.com') {
     const id = segs.find(s => /^\d+$/.test(s));
-    return { store: 'Steam', platform: 'steam', title: '',
+    return { store: 'Steam', storeKey: 'steam', platform: 'pc', title: '',
              coverUrl: id ? STEAM_HEADER(id) : '' };
   }
+
+  // Other PC stores: the link names the store; the title is in the slug.
+  const pcStore = (key, label, slugAfter) => {
+    const i = slugAfter ? segs.indexOf(slugAfter) : -1;
+    return { store: label, storeKey: key, platform: 'pc', title: i !== -1 ? titleFromSlug(segs[i + 1]) : '', coverUrl: '' };
+  };
+  const on = d => host === d || host.endsWith('.' + d);
+  if (on('epicgames.com')) return pcStore('epic', 'Epic Games Store', 'p');
+  if (on('ea.com') || on('origin.com')) return pcStore('ea', 'EA app', 'games');
+  if (on('store.ubisoft.com') || on('ubisoft.com')) return pcStore('ubisoft', 'Ubisoft Connect', null);
+  if (on('battle.net') || on('blizzard.com')) return pcStore('battlenet', 'Battle.net', 'product');
+  if (on('robertsspaceindustries.com')) return pcStore('rsi', 'RSI', null);
 
   if (host === 'playstation.com' || host.endsWith('.playstation.com')
       || scheme === 'com.scee.psxandroid' || scheme === 'playstation') {
@@ -767,9 +779,14 @@ async function gameAutofillFromLinks() {
   }
   // Adds to the list rather than replacing it: a Steam link on a game already
   // marked Xbox means both, which is exactly the case the list exists for.
-  if (info.platform && !_gamePlatforms.some(p => p.platform === info.platform)) {
-    toggleGamePlatform(info.platform);
-    filled.push('platform');
+  // A store link adds a copy there, or names the store of a PC copy without one.
+  if (info.platform) {
+    const bare = _gameCopies.find(c => c.platform === info.platform && (!info.storeKey || !c.store));
+    if (info.storeKey && bare) { bare.store = info.storeKey; renderGameCopies(); filled.push('store'); }
+    else if (!_gameCopies.some(c => c.platform === info.platform && (!info.storeKey || c.store === info.storeKey))) {
+      addGameCopy({ platform: info.platform, ...(info.storeKey ? { store: info.storeKey } : {}) });
+      filled.push('platform');
+    }
   }
 
   if (info.coverUrl && coverEl && !coverEl.value.trim()) {
@@ -794,79 +811,12 @@ function gameAutofillSoon() {
 }
 
 
-// ─── GAME MODAL: PLATFORMS ───────────────────────────────────────────
-// The form's working copy of the record's `platforms` list. Held here rather
-// than read back out of the DOM at save time because a platform's formats
-// have to survive it being unticked and reticked within one editing session.
-let _gamePlatforms = [];   // [{ platform, formats }]
-
-const gamePlatformsBox = () => document.getElementById('g-platform-entries');
-
-// Known platforms in the order the buttons offer them; anything unknown that
-// came in on an existing record keeps its own place at the end.
-function sortGamePlatforms() {
-  _gamePlatforms.sort((a, b) => {
-    const ia = GAME_PLATFORMS.indexOf(a.platform), ib = GAME_PLATFORMS.indexOf(b.platform);
-    return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
-  });
-}
-
-function setGamePlatforms(list) {
-  _gamePlatforms = (Array.isArray(list) ? list : []).map(p => ({
-    platform: p.platform, formats: [...(p.formats || [])],
-  }));
-  sortGamePlatforms();
-  syncGamePlatformPicks();
-  platformEditor.render();
-}
-
-// The tick boxes follow the list, not the other way round — removing a row
-// with its × has to clear the button too.
-function syncGamePlatformPicks() {
-  document.querySelectorAll('input[name="g-plat-pick"]').forEach(cb => {
-    cb.checked = _gamePlatforms.some(p => p.platform === cb.value);
-    cb.closest('.radio-btn').classList.toggle('active', cb.checked);
-  });
-}
-
-// The rows under the platform buttons. PS Plus is a PlayStation subscription,
-// so it is only offered where it could be true — the normalizer drops it
-// elsewhere regardless.
-const platformEditor = createRowEditor({
-  box: 'g-platform-entries',
-  rows: () => _gamePlatforms,
-  label: p => platformLabel(p.platform),
-  chips: p => formatsFor(p.platform).map(f =>
-    ({ key: f, html: `${gameFormatIcon(f)} ${esc(GAME_FORMAT_LABEL[f])}`, on: p.formats.includes(f) })),
-  onChip: (p, f) => {
-    const i = p.formats.indexOf(f);
-    if (i === -1) p.formats.push(f); else p.formats.splice(i, 1);
-  },
-  // The × unticks the matching button too, so the two never disagree.
-  onRemove: p => {
-    _gamePlatforms = _gamePlatforms.filter(x => x !== p);
-    syncGamePlatformPicks();
-  },
-});
-
-// From a platform button. Unticking drops that platform's formats with it —
-// they describe a copy the user just said they do not have.
-function toggleGamePlatform(value) {
-  const i = _gamePlatforms.findIndex(p => p.platform === value);
-  if (i === -1) _gamePlatforms.push({ platform: value, formats: [] });
-  else _gamePlatforms.splice(i, 1);
-  sortGamePlatforms();
-  syncGamePlatformPicks();
-  platformEditor.render();
-  if (_gamePlatforms.length) hideGamePlatformError();
-}
-
 // ─── GAME MODAL: DLC ─────────────────────────────────────────────────
 // Working copy, like _gamePlatforms.
 let _gameDlc = [];   // [{ name, owned }]
 
 function setGameDlc(list) {
-  _gameDlc = (Array.isArray(list) ? list : []).map(d => ({ name: d.name, owned: d.owned !== false }));
+  _gameDlc = (Array.isArray(list) ? list : []).map(d => ({ name: d.name, owned: d.owned !== false, ...(d.via ? { via: d.via } : {}) }));
   const input = document.getElementById('g-dlc');
   if (input) input.value = '';
   dlcEditor.render();
@@ -881,6 +831,15 @@ const dlcEditor = createRowEditor({
   chips: d => [{ key: 'owned', text: d.owned ? '✓ Owned' : 'Wishlist', on: d.owned }],
   onChip: d => { d.owned = !d.owned; },
   onRemove: (d, i) => { _gameDlc.splice(i, 1); },
+  // "Included in": the copy this add-on came with (a Gold or Complete Edition).
+  extra: (d, i) => {
+    const copies = _gameCopies.filter(c => c.platform);
+    if (!copies.length) return '';
+    return `<select class="plain dlc-via" data-extra-row="${i}" aria-label="${esc(d.name)} included in">
+      <option value="">Bought separately</option>
+      ${copies.map(c => `<option value="${esc(c.id)}"${d.via === c.id ? ' selected' : ''}>Included in: ${esc(gameCopyLine(c))}</option>`).join('')}</select>`;
+  },
+  onExtra: (d, v) => { if (v) { d.via = v; d.owned = true; } else delete d.via; dlcEditor.render(); },
 });
 
 // Trimmed, non-empty and not already listed (case-insensitively, the same fold
@@ -934,8 +893,8 @@ function openGameModal(id) {
     document.getElementById('g-coverUrl').value = g.coverUrl || '';
     paintCoverPreview('g-coverUrl');
     setLinksField('g', g.links);
-    setGamePlatforms(g.platforms);
     setGameDlc(g.dlc);
+    setGameCopies(g.copies);
     setRadio('g-status',   g.status   || 'want');
     updateGameStars(gameRating);
   } else {
@@ -949,8 +908,8 @@ function openGameModal(id) {
     updateGameStars(0);
     // No default platform: picking one is the point of the field, and a
     // pre-selected PS5 quietly mislabels anything saved without touching it.
-    setGamePlatforms([]);
     setGameDlc([]);
+    setGameCopies([]);
     setRadio('g-status',   'want');
   }
   hideGamePlatformError();
@@ -980,7 +939,8 @@ function saveGameItem() {
   const notes    = document.getElementById('g-notes').value.trim();
   const coverUrl = document.getElementById('g-coverUrl').value.trim();
   const links    = readLinksField('g');
-  if (!_gamePlatforms.length) {
+  const copies = gameCopiesForSave();
+  if (!copies.length) {
     document.getElementById('g-plat-error').style.display = 'block';
     document.getElementById('g-platform-group').scrollIntoView({ block: 'center' });
     return;
@@ -988,8 +948,7 @@ function saveGameItem() {
   hideGamePlatformError();
   if (gameEditingId === null && dupBlocksSave('games')) return;
   commitGameDlc();            // a name typed but not yet Entered still counts
-  const dlc = _gameDlc.map(d => ({ name: d.name, owned: d.owned }));
-  const platforms = _gamePlatforms.map(p => ({ platform: p.platform, formats: [...p.formats] }));
+  const dlc = _gameDlc.map(d => ({ name: d.name, owned: d.owned, ...(d.via ? { via: d.via } : {}) }));
   const status    = document.querySelector('input[name="g-status"]:checked')?.value || 'want';
 
   if (gameEditingId !== null) {
@@ -997,10 +956,10 @@ function saveGameItem() {
     if (i !== -1) {
       // platform/formats are spread in from the stored record when it predates
       // the list; normalizeVideoGame drops them once `platforms` is present.
-      videoGames[i] = normalizeVideoGame({ ...videoGames[i], ...renamedBlurb(videoGames[i], title), title, platforms, dlc, year, genre, status, notes, coverUrl, rating: gameRating, links });
+      videoGames[i] = normalizeVideoGame({ ...videoGames[i], ...renamedBlurb(videoGames[i], title), title, copies, dlc, year, genre, status, notes, coverUrl, rating: gameRating, links });
     }
   } else {
-    videoGames.push(normalizeVideoGame({ id: newId(), title, platforms, dlc, year, genre, status, notes, coverUrl, rating: gameRating, links }));
+    videoGames.push(normalizeVideoGame({ id: newId(), title, copies, dlc, year, genre, status, notes, coverUrl, rating: gameRating, links }));
   }
 
   saveGames();
