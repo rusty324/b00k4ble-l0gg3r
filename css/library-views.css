@@ -72,6 +72,10 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
 .pill { font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 0.3rem 0.75rem; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
 .pill:hover { border-color: var(--amber-100); color: var(--amber-800); }
 .pill.active { background: var(--amber-900); border-color: var(--amber-900); color: var(--amber-50); }
+/* A hidden value (tap twice): struck through, in a dashed outline. */
+.pill.excluded { border-style: dashed; border-color: var(--coral-600, #b4533c); color: var(--coral-600, #b4533c); text-decoration: line-through; }
+.pill.excluded::before { content: '✕ '; display: inline-block; text-decoration: none; white-space: pre; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
 /* ─── MULTI-SELECT DROPDOWN (game genre filter) ─────────────────────── */
 /* A menu rather than pills, because the genre vocabulary is open-ended and
@@ -120,6 +124,14 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
   accent-color: var(--amber-900); cursor: pointer;
 }
 .dropdown-opt span { overflow-wrap: anywhere; }
+/* Genre options cycle show → hide → off: a box with ✓ or ✕. */
+.genre-opt { width: 100%; background: none; border: 0; text-align: left; font-family: inherit; min-height: 36px; }
+.genre-mark { width: 16px; height: 16px; flex: none; border: 1.5px solid var(--border-mid, #999); border-radius: 3px;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 11px; line-height: 1; }
+.genre-opt.on .genre-mark { background: var(--amber-900); border-color: var(--amber-900); color: var(--amber-50); }
+.genre-opt.out { color: var(--coral-600, #b4533c); }
+.genre-opt.out span:not(.genre-mark) { text-decoration: line-through; }
+.genre-opt.out .genre-mark { border-color: var(--coral-600, #b4533c); color: var(--coral-600, #b4533c); }
 
 /* ─── PAGINATION ─────────────────────────────────────────────────── */
 .pagination { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-top: 1.5rem; flex-wrap: wrap; }
@@ -391,6 +403,8 @@ select.sort-select { font-family: 'DM Sans', sans-serif; background: var(--surfa
 .facet-n { font-weight: 400; color: var(--text-muted); }
 .facet-opt.on { background: var(--amber-900); border-color: var(--amber-900); color: var(--amber-50); }
 .facet-opt.on .facet-n { color: var(--amber-50); }
+.facet-opt.out { border-style: dashed; border-color: var(--coral-600, #b4533c); color: var(--coral-600, #b4533c); text-decoration: line-through; }
+.filter-sheet-hint { margin: 0 0 0.5rem; }
 .facet-opt:disabled { border-style: dashed; background: var(--gray-50); color: var(--text-muted); cursor: default; }
 .facet-opt:focus-visible { outline: 2px solid var(--amber-200); outline-offset: 2px; }
 .filter-sheet-foot { padding: 12px 20px 20px; border-top: 1px solid var(--border); background: var(--surface); flex: none; }

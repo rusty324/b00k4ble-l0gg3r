@@ -65,11 +65,10 @@ function getCoverObserver() {
 
 
 // ─── FILTERS (books tab) ──────────────────────────────────────────────
-function setFilter(type, val, el) {
-  filters[type] = val;
-  const groupId = { format: 'formatPills', status: 'statusPills' }[type];
-  document.querySelectorAll('#' + groupId + ' .pill').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
+// A pill cycles its value show → hide → off; "All" clears the row.
+function setFilter(type, val) {
+  if (val === 'all') clearFacet(filters[type]); else cycleFacet(filters[type], val);
+  syncBookPills();
   currentPage = 1;
   render();
 }
@@ -117,15 +116,12 @@ function render() {
   const query = searchFold(document.getElementById('searchInput').value).trim();
   const sort  = document.getElementById('sortSelect').value;
 
-  const key = `${query}|${sort}|${filters.format}|${filters.status}|${filters.collection}|${filters.genres.join('\u0000')}|${_booksMutation}`;
+  const key = `${query}|${sort}|${facetKey(filters.format)}|${facetKey(filters.status)}|${facetKey(filters.collection)}|${facetKey(filters.genres)}|${_booksMutation}`;
   if (_filteredCacheKey !== key || _filteredCache === null) {
-    // Several genres widen rather than narrow — see GENRE_FILTERS.
-    const bookGenreFilter = filters.genres.length
-      ? new Set(filters.genres.map(textKey)) : null;
     const fresh = books.filter(b => {
-      if (filters.format !== 'all' && !formatsOf(b).includes(filters.format)) return false;
-      if (filters.status !== 'all' && b.status !== filters.status) return false;
-      if (bookGenreFilter && !(b.genre || []).some(g => bookGenreFilter.has(textKey(g)))) return false;
+      if (!facetPasses(filters.format, v => formatsOf(b).includes(v))) return false;
+      if (!facetPasses(filters.status, v => b.status === v)) return false;
+      if (!facetPasses(filters.genres, v => hasGenre(b, v))) return false;
       if (query && !matchesAll(b._searchStr, query)) return false;
       if (!passesCollection(b)) return false;
       return true;

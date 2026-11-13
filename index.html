@@ -120,10 +120,10 @@
     <div class="filter-row facet-row">
       <span class="filter-label">Format</span>
       <div id="formatPills" class="pill-group">
-        <button class="pill active" onclick="setFilter('format','all',this)">All</button>
-        <button class="pill" onclick="setFilter('format','physical',this)"><span data-icon="books:physical">📚</span> Physical</button>
-        <button class="pill" onclick="setFilter('format','ebook',this)"><span data-icon="books:ebook">📱</span> E-book</button>
-        <button class="pill" onclick="setFilter('format','audio',this)"><span data-icon="books:audio">🎧</span> Audio</button>
+        <button class="pill active" data-facet-value="all" onclick="setFilter('format','all')">All</button>
+        <button class="pill" onclick="setFilter('format','physical')" data-facet-value="physical"><span data-icon="books:physical">📚</span> Physical</button>
+        <button class="pill" onclick="setFilter('format','ebook')" data-facet-value="ebook"><span data-icon="books:ebook">📱</span> E-book</button>
+        <button class="pill" onclick="setFilter('format','audio')" data-facet-value="audio"><span data-icon="books:audio">🎧</span> Audio</button>
       </div>
     </div>
 
@@ -131,11 +131,11 @@
     <div class="filter-row facet-row">
       <span class="filter-label">Status</span>
       <div id="statusPills" class="pill-group">
-        <button class="pill active" onclick="setFilter('status','all',this)">All</button>
-        <button class="pill" onclick="setFilter('status','read',this)">Read</button>
-        <button class="pill" onclick="setFilter('status','reading',this)">Reading</button>
-        <button class="pill" onclick="setFilter('status','want',this)">Want to read</button>
-        <button class="pill" onclick="setFilter('status','not-interested',this)">Not Interested</button>
+        <button class="pill active" data-facet-value="all" onclick="setFilter('status','all')">All</button>
+        <button class="pill" onclick="setFilter('status','read')" data-facet-value="read">Read</button>
+        <button class="pill" onclick="setFilter('status','reading')" data-facet-value="reading">Reading</button>
+        <button class="pill" onclick="setFilter('status','want')" data-facet-value="want">Want to read</button>
+        <button class="pill" onclick="setFilter('status','not-interested')" data-facet-value="not-interested">Not Interested</button>
       </div>
     </div>
 

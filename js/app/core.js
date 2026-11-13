@@ -1126,3 +1126,42 @@ function esc(str) {
 }
 
 
+
+// ─── FILTER FACETS ────────────────────────────────────────────────────
+// Every filter row (format, status, platform, store, type, genre…) holds two
+// lists: values to show and values to hide. A tap cycles a value through
+// show → hide → off, and any number can be on at once. An item passes when it
+// matches one of the shown values (or none are chosen) and none of the hidden.
+const newFacet = () => ({ in: [], out: [] });
+const facetMark = (f, v) => (f.in.includes(v) ? 'in' : f.out.includes(v) ? 'out' : '');
+const facetOn = f => f.in.length + f.out.length > 0;
+const facetCount = f => f.in.length + f.out.length;
+const facetPasses = (f, match) => (!f.in.length || f.in.some(match)) && !f.out.some(match);
+const facetKey = f => `${f.in.join('\u0001')}\u0002${f.out.join('\u0001')}`;
+function cycleFacet(f, v) {
+  const m = facetMark(f, v);
+  f.in = f.in.filter(x => x !== v);
+  f.out = f.out.filter(x => x !== v);
+  if (m === '') f.in.push(v);
+  else if (m === 'in') f.out.push(v);
+}
+function clearFacet(f) { f.in = []; f.out = []; }
+const hasGenre = (r, g) => (r.genre || []).some(x => textKey(x) === textKey(g));
+
+// A pill for one value: highlighted while shown, struck through while hidden.
+// `onclick` is the handler's JS (it cycles the value).
+function facetPill(f, v, labelHtml, onclick) {
+  const m = facetMark(f, v);
+  const state = m === 'in' ? 'showing' : m === 'out' ? 'hiding' : 'off';
+  return `<button type="button" class="pill${m === 'in' ? ' active' : m === 'out' ? ' excluded' : ''}" data-facet-value="${esc(v)}"
+    aria-pressed="${m === 'in' ? 'true' : m === 'out' ? 'mixed' : 'false'}" title="Tap to show, again to hide, again to clear (${state})"
+    onclick="${onclick}">${labelHtml}${m === 'out' ? '<span class="sr-only"> (hidden)</span>' : ''}</button>`;
+}
+// A whole row: "All" then a pill per [value, labelHtml]. `call` is the start
+// of the tab's handler call up to the value, e.g. "setMediaFilter('format', ".
+const facetPills = (f, options, call) =>
+  facetAllPill(f, `${call}'all')`) + options.map(([v, l]) => facetPill(f, v, l, `${call}${jsArgCore(v)})`)).join('');
+const jsArgCore = v => esc(JSON.stringify(v));
+// The row's "All" pill: lit while nothing is chosen; a tap clears the row.
+const facetAllPill = (f, onclick) =>
+  `<button type="button" class="pill${facetOn(f) ? '' : ' active'}" data-facet-value="all" aria-pressed="${!facetOn(f)}" onclick="${onclick}">All</button>`;
