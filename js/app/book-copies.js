@@ -78,7 +78,7 @@ function setBookCopyField(i, el) {
     if (c.format !== 'audio') delete c.narrator;
     syncBookFormatButtons();
     renderBookCopies();
-    document.querySelector(`#f-copies [data-copy="${i}"] [data-field="format"]`)?.focus();
+    focusField(document.querySelector(`#f-copies [data-copy="${i}"] [data-field="format"]`));
   }
   if (el.dataset.field === 'isbn' || el.dataset.field === 'asin') paintDupSoon('books');
 }
@@ -88,7 +88,7 @@ function addBookCopy() {
   _bookCopies.push({ id: newCopyId(), format: last ? last.format : 'physical' });
   syncBookFormatButtons();
   renderBookCopies();
-  document.querySelector(`#f-copies [data-copy="${_bookCopies.length - 1}"] select`)?.focus();
+  focusField(document.querySelector(`#f-copies [data-copy="${_bookCopies.length - 1}"] select`));
 }
 
 function removeBookCopy(i) {

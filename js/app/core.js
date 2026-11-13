@@ -1016,6 +1016,17 @@ function seasonsText(seasons, count) {
 // truth; the old `formats` / `editions` are only read, to migrate.
 const MEDIA_COPY_FORMATS = ['bluray', 'dvd', 'digital', 'streaming'];
 const COPY_TEXT_MAX = 120;
+
+// Keeps the place after a copies editor repaints. On a touch screen, focusing
+// a <select> opens its picker again (iPhone and iPad Safari do), so the menu
+// just chosen from would pop straight back up: there, a select is left
+// unfocused. A keyboard or mouse user still lands back where they were.
+const touchScreen = () => typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+function focusField(el) {
+  if (!el) return;
+  if (el.tagName === 'SELECT' && touchScreen()) return;
+  el.focus();
+}
 const copyText = (v, max = COPY_TEXT_MAX) => (v == null ? '' : String(v).trim().slice(0, max));
 const newCopyId = () => Math.random().toString(36).slice(2, 8);
 

@@ -153,14 +153,14 @@ function addMediaCopy(prefill = {}) {
   _mediaCopies.push({ id: newCopyId(), format: prefill.format || (last ? last.format : 'bluray'),
     ...(prefill.edition ? { edition: prefill.edition } : {}), ...(prefill.set ? { set: prefill.set } : {}) });
   renderMediaCopies();
-  document.querySelector(`#m-copies [data-copy="${_mediaCopies.length - 1}"] select`)?.focus();
+  focusField(document.querySelector(`#m-copies [data-copy="${_mediaCopies.length - 1}"] select`));
 }
 
 function removeMediaCopy(i) {
   _mediaCopies.splice(i, 1);
   renderMediaCopies();
   const rows = document.querySelectorAll('#m-copies .copy-row');
-  (rows[Math.min(i, rows.length - 1)]?.querySelector('select') || document.querySelector('#m-copies + .links-row button'))?.focus();
+  focusField(rows[Math.min(i, rows.length - 1)]?.querySelector('select') || document.querySelector('#m-copies + .links-row button'));
 }
 
 // What saveMediaItem() stores; the normalizer trims, caps and drops empties.
@@ -195,5 +195,5 @@ function splitMediaCopy(i) {
   saveMedia();
   renderMediaCopies();
   renderPage();
-  document.querySelector('#m-copies .copy-row select')?.focus();
+  focusField(document.querySelector('#m-copies .copy-row select'));
 }
