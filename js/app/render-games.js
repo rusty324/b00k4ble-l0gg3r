@@ -11,25 +11,28 @@
 // GAME_FORMAT_LABEL all live in core.js, next to the normalizer that decides
 // which combinations are legal.
 
-// "PS4 · PS5" — the platforms alone, for the line under a title.
+// "PC · PS5" — the platforms alone, for the line under a title.
 const gamePlatformText = g =>
   (g.platforms || []).map(p => platformLabel(p.platform)).join(' · ');
 
-// One badge per platform, each carrying that platform's own format icons:
-// "PS4 📀" beside "PS5 ☁️" is the whole point of the list — a disc on one
-// console and a Plus copy on the other are two different facts.
+// Compact badges from the copies: "PC · Steam", "PS4 · Physical", with
+// "via <launcher>" when a PC copy opens elsewhere and "×2" for repeats.
+// At most three, then "+N".
 function gamePlatformBadges(g) {
-  // The form insists on at least one, so an empty list means an import that
-  // never said. Saying so beats a card that silently omits the field.
-  if (!(g.platforms || []).length)
-    return '<span class="badge badge-platform">Unknown platform</span>';
-  return g.platforms.map(p => {
-    const icons = (p.formats || []).map(f => gameFormatIcon(f)).join('');
-    const names = (p.formats || []).map(f => GAME_FORMAT_LABEL[f] || f).join(', ');
-    const label = platformLabel(p.platform);
-    return `<span class="badge badge-platform" title="${esc(names ? label + ' — ' + names : label)}">${
-      esc(label)}${icons ? ' ' + icons : ''}</span>`;
-  }).join('');
+  const copies = g.copies || [];
+  if (!copies.length) return '<span class="badge badge-platform">Unknown platform</span>';
+  const groups = new Map();
+  for (const c of copies) {
+    const key = gameCopyLine({ ...c, edition: '' });
+    if (!groups.has(key)) groups.set(key, { c, n: 0 });
+    groups.get(key).n++;
+  }
+  const list = [...groups].map(([label, { c, n }]) => {
+    const fmt = c.format === 'subscription' && PS_PLATFORMS.has(c.platform) ? 'ps-plus' : c.format;
+    const icon = fmt ? gameFormatIcon(fmt) : '';
+    return `<span class="badge badge-platform" title="${esc(label)}">${esc(label)}${n > 1 ? ` ×${n}` : ''}${icon ? ' ' + icon : ''}</span>`;
+  });
+  return list.slice(0, 3).join('') + (list.length > 3 ? `<span class="badge badge-platform">+${list.length - 3}</span>` : '');
 }
 
 // "DLC 2/3" when some are only wanted, plain "DLC 3" when every one is owned —
@@ -56,7 +59,9 @@ function hcardPoster(url, title, size) {
 }
 
 // What the search box matches against (shared with the filters sheet's counts).
-const gameSearchText = g => [g.title, gamePlatformText(g), ...(g.dlc || []).map(d => d.name), g.year, ...(g.genre || [])].join(' ');
+const gameSearchText = g => [g.title, gamePlatformText(g),
+  ...(g.copies || []).flatMap(c => [c.store && storeLabel(c.store), c.opensIn && storeLabel(c.opensIn), c.edition, c.set]).filter(Boolean),
+  ...(g.dlc || []).map(d => d.name), g.year, ...(g.genre || [])].join(' ');
 
 // listOnly: replace just the results container, leaving the toolbar (and
 // the focused search input inside it) intact — used by the search path.
@@ -69,6 +74,8 @@ function renderGames(listOnly = false) {
   // this", not "is this".
   if (gameFilters.platform !== 'all')
     items = items.filter(g => (g.platforms || []).some(p => p.platform === gameFilters.platform));
+  if (gameFilters.platform === 'pc' && gameFilters.store && gameFilters.store !== 'all')
+    items = items.filter(g => gameHasPcStore(g, gameFilters.store));
   if (gameFilters.status !== 'all') items = items.filter(g => g.status === gameFilters.status);
   if (gameFilters.format !== 'all')
     items = items.filter(g =>
@@ -96,9 +103,16 @@ function renderGames(listOnly = false) {
 
 
   // Filter toolbar
-  const platformPills = [['all', 'All'], ...GAME_PLATFORMS.map(p => [p, platformLabel(p)])].map(([v,l]) =>
-    `<button class="pill${gameFilters.platform===v?' active':''}" onclick="setGameFilter('platform','${v}')">${esc(l)}</button>`
+  const platformPills = [['all', 'All'], ...knownGamePlatforms().map(p => [p, platformLabel(p)])].map(([v,l]) =>
+    `<button class="pill${gameFilters.platform===v?' active':''}" onclick="setGameFilter('platform',${jsArg(v)})">${esc(l)}</button>`
   ).join('');
+  // PC only: which store or launcher. Built from the stores in use.
+  const pcStores = gameFilters.platform === 'pc' ? pcStoresInUse() : [];
+  const storeRow = pcStores.length ? `<div class="filter-row facet-row">
+      <span class="filter-label">Store</span>
+      <div class="pill-group">${[['all', 'All'], ...pcStores.map(k => [k, storeLabel(k)])].map(([v, l]) =>
+        `<button class="pill${(gameFilters.store || 'all') === v ? ' active' : ''}" onclick="setGameFilter('store',${jsArg(v)})">${esc(l)}</button>`).join('')}</div>
+    </div>` : '';
   const statusPills = [['all','All'], ...statusPairs('games')].map(([v,l]) =>
     `<button class="pill${gameFilters.status===v?' active':''}" onclick="setGameFilter('status','${v}')">${l}</button>`
   ).join('');
@@ -127,6 +141,7 @@ function renderGames(listOnly = false) {
       <span class="filter-label">Platform</span>
       <div class="pill-group">${platformPills}</div>
     </div>
+    ${storeRow}
     <div class="filter-row facet-row">
       <span class="filter-label">Status</span>
       <div class="pill-group">${statusPills}</div>
@@ -220,6 +235,7 @@ function renderGames(listOnly = false) {
 
 function setGameFilter(key, val) {
   gameFilters[key] = val;
+  if (key === 'platform' && val !== 'pc') gameFilters.store = 'all';
   renderGames();
 }
 

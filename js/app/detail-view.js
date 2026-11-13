@@ -79,17 +79,29 @@ function detailMedia(m) {
 
 function detailGame(g) {
   const status = statusLabel('games', g.status);
-  const platforms = (g.platforms || []).map(p => {
-    const f = (p.formats || []).map(x => `${gameFormatIcon(x)} ${esc(GAME_FORMAT_LABEL[x] || x)}`).join(', ');
-    return `${esc(platformLabel(p.platform))}${f ? ` — ${f}` : ''}`;
+  // One line per copy: platform, store or format, launcher, edition, set.
+  const copies = g.copies || [];
+  const copyText = c => {
+    const bits = [platformLabel(c.platform)];
+    if (c.format) bits.push(GAME_FORMAT_LABEL[c.format] || c.format);
+    if (c.store) bits.push(storeLabel(c.store));
+    let t = bits.join(' · ');
+    if (c.opensIn) t += `, opens in ${storeLabel(c.opensIn)}`;
+    if (c.edition) t += ` — ${c.edition}`;
+    if (c.set) t += ` (in ${c.set})`;
+    return t;
+  };
+  const fmtIcon = c => { const f = c.format === 'subscription' && PS_PLATFORMS.has(c.platform) ? 'ps-plus' : c.format; return f ? gameFormatIcon(f) + ' ' : ''; };
+  const platforms = copies.map(c => fmtIcon(c) + esc(copyText(c))).join('<br>');
+  const dlc = (g.dlc || []).map(d => {
+    const via = d.via && copies.find(c => c.id === d.via);
+    return `<span class="${d.owned ? 'dlc-owned' : 'dlc-want'}">${esc(d.name)}${d.owned ? '' : ' (wishlist)'}${via ? ` — with ${esc(gameCopyLine({ ...via, edition: via.edition || '' }))}` : ''}</span>`;
   }).join('<br>');
-  const dlc = (g.dlc || []).map(d =>
-    `<span class="${d.owned ? 'dlc-owned' : 'dlc-want'}">${esc(d.name)}${d.owned ? '' : ' (wishlist)'}</span>`).join('<br>');
   return {
     cover: g.coverUrl, title: g.title, sub: g.year ? String(g.year) : '',
     badges: `<span class="badge ${statusClass('games', g.status)}">${esc(status)}</span>${detailStars(g.rating)}`,
     facts: [
-      fact('Platforms', platforms),
+      fact(copies.length === 1 ? 'Copy' : 'Copies', platforms),
       fact('DLC', dlc),
       fact('Added', addedFact(g.id)),
     ].join(''),

@@ -272,23 +272,70 @@ hydrateCoversIn(document.documentElement);
 function pickCoverFile(inputId, kind) {
   const picker = document.getElementById('coverFilePicker');
   picker.value = '';
-  picker.onchange = async () => {
+  picker.onchange = () => {
     const file = picker.files && picker.files[0];
-    if (!file) return;
-    const msg = document.getElementById(inputId + '-msg');
-    if (msg) msg.textContent = 'Preparing…';
-    try {
-      const value = await storeCoverFile(kind, file);
-      const input = document.getElementById(inputId);
-      input.value = value;
-      paintCoverPreview(inputId);
-      if (msg) msg.textContent = window.ghCoverFiles?.canSync()
-        ? 'Uploaded image — it syncs when you save.' : 'Uploaded image — kept on this device until sync is set up.';
-    } catch (err) {
-      if (msg) msg.textContent = err.message || 'That image could not be used.';
-    }
+    if (file) useCoverImage(inputId, kind, file);
   };
   picker.click();
+}
+
+// An image from a file, the clipboard or a drop: resized, kept, and put in
+// the field as a "repo:" cover.
+async function useCoverImage(inputId, kind, file) {
+  const msg = document.getElementById(inputId + '-msg');
+  if (msg) msg.textContent = 'Preparing…';
+  try {
+    const value = await storeCoverFile(kind, file);
+    const input = document.getElementById(inputId);
+    input.value = value;
+    paintCoverPreview(inputId);
+    if (msg) msg.textContent = window.ghCoverFiles?.canSync()
+      ? 'Image added — it syncs when you save.' : 'Image added — kept on this device until sync is set up.';
+  } catch (err) {
+    if (msg) msg.textContent = err.message || 'That image could not be used.';
+  }
+}
+
+// ─── pasting an image ─────────────────────────────────────────────────
+// Each form's cover field, and the modal it lives in.
+const COVER_FIELDS = [
+  { modal: 'modal', input: 'f-coverUrl', kind: 'books' },
+  { modal: 'mediaModal', input: 'm-posterUrl', kind: 'media' },
+  { modal: 'gameModal', input: 'g-coverUrl', kind: 'games' },
+];
+const openCoverField = () => COVER_FIELDS.find(f => document.getElementById(f.modal)?.classList.contains('open'));
+const imageFrom = items => [...(items || [])].find(i => i.kind === 'file' && /^image\//.test(i.type))?.getAsFile() || null;
+
+// Ctrl/Cmd+V anywhere in an open form with a cover field: an image on the
+// clipboard becomes the cover. Text pastes are left alone.
+document.addEventListener('paste', e => {
+  const f = openCoverField();
+  if (!f) return;
+  const file = imageFrom(e.clipboardData && e.clipboardData.items);
+  if (!file) return;
+  e.preventDefault();
+  useCoverImage(f.input, f.kind, file);
+});
+
+// The "Paste image" button: the async clipboard API, which iPhone and iPad
+// Safari answer with a Paste prompt. Where a browser refuses, say how else.
+async function pasteCoverImage(inputId, kind) {
+  const msg = document.getElementById(inputId + '-msg');
+  if (!navigator.clipboard || !navigator.clipboard.read) {
+    if (msg) msg.textContent = 'This browser cannot read the clipboard from a button — press Ctrl+V (⌘V on a Mac) in the form instead.';
+    return;
+  }
+  try {
+    for (const item of await navigator.clipboard.read()) {
+      const type = item.types.find(t => /^image\//.test(t));
+      if (!type) continue;
+      const blob = await item.getType(type);
+      return useCoverImage(inputId, kind, new File([blob], 'pasted', { type }));
+    }
+    if (msg) msg.textContent = 'There is no image on the clipboard. Copy an image first.';
+  } catch {
+    if (msg) msg.textContent = 'The clipboard could not be read. Allow clipboard access, or press Ctrl+V (⌘V) in the form.';
+  }
 }
 
 function paintCoverPreview(inputId) {

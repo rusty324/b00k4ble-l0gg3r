@@ -62,7 +62,7 @@ const WISH = [
   // ── A game: the store link ticks the platform ───────────────────────
   await got('Hades II'); await page.waitForSelector('#gameModal.open'); await page.waitForTimeout(800);
   const g = await page.evaluate(() => ({ tab: activeTab, title: document.getElementById('g-title').value,
-    steam: document.getElementById('g-plat-steam').checked }));
+    steam: document.getElementById('g-plat-pc').checked }));
   check('a game opens the Games form, and its Steam link ticks Steam', g.tab === 'games' && g.title === 'Hades II' && g.steam, J(g));
   await page.click('button[onclick="saveGameItem()"]'); await page.waitForTimeout(400);
   check('saving moves it', await page.evaluate(() => videoGames.some(x => x.title === 'Hades II') && !bookWishlist.some(w => w.title === 'Hades II')));

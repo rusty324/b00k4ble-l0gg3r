@@ -52,7 +52,7 @@ let videoGames = JSON.parse(localStorage.getItem('videoGames') || '[]')
   .map(normalizeVideoGame);
 let gameEditingId = null;
 let gameRating = 0;
-let gameFilters = { platform: 'all', status: 'all', format: 'all', genres: [] };
+let gameFilters = { platform: 'all', store: 'all', status: 'all', format: 'all', genres: [] };
 let gameSort = 'added-desc';
 let gameSearch = '';
 let gameSearchTimer = null;

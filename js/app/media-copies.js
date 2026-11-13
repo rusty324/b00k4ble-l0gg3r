@@ -198,6 +198,9 @@ function mergeMediaRecords(target, sources) {
     }
     for (const k of ['year', 'posterUrl', 'tmdbId', 'blurb']) if ((out[k] == null || out[k] === '') && s[k] != null && s[k] !== '') out[k] = s[k];
     if ((s.seasonCount || 0) > (out.seasonCount || 0)) out.seasonCount = s.seasonCount;
+    // The status furthest along wins: watched over want, want over not-interested.
+    const rank = st => ({ watched: 2, want: 1 }[st] || 0);
+    if (rank(s.status) > rank(out.status)) out.status = s.status;
     if ((s.rating || 0) > (out.rating || 0) && !out.rating) out.rating = s.rating;
     const n = String(s.notes || '').trim();
     if (n && !notes.includes(n)) notes.push(n);

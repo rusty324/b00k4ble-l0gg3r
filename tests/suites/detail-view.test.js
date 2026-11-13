@@ -88,8 +88,8 @@ const GAMES = [{ id: 1700000000004, title: 'Horizon Zero Dawn', status: 'complet
   const hz = card('#gameListWrap', 'Horizon Zero Dawn');
   check('the game card holds no DLC names or notes', (await hz.locator('.dlc-owned, .dlc-want, .book-notes').count()) === 0);
   await viaDetail(hz);
-  const plat = await detailFact(page, 'Platforms'), dlc = await detailFact(page, 'DLC');
-  check('each platform with its formats in words', /PS4 — 📀 Physical/.test(plat) && /PS5 — .*PS Plus/.test(plat), plat);
+  const plat = await detailFact(page, 'Copies'), dlc = await detailFact(page, 'DLC');
+  check('one line per copy, its platform and format in words', /PS4 · Physical/.test(plat) && /PS5 · Subscription · PlayStation Plus/.test(plat), plat);
   check('the DLC, with the wishlisted one marked', /The Frozen Wilds/.test(dlc) && /Bonus Pack \(wishlist\)/.test(dlc), dlc);
   // a phone: the sheet rises from the bottom edge
   const geo = await page.evaluate(() => { const r = document.querySelector('#detailModal .detail-modal').getBoundingClientRect();

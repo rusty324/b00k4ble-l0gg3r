@@ -6,9 +6,9 @@ const { launch, BASE, reporter } = require('../lib');
 const { check, finish, crash } = reporter();
 const J = JSON.stringify;
 const MEDIA = [
-  { id: 1700000000201, title: 'Alien', type: 'movie', year: '1979', status: 'watched', genre: ['Horror'], notes: 'Theatrical cut',
+  { id: 1700000000201, title: 'Alien', type: 'movie', year: '1979', status: 'want', genre: ['Horror'], notes: 'Theatrical cut',
     copies: [{ id: 'a1', format: 'bluray' }] },
-  { id: 1700000000202, title: 'Alien', type: 'movie', year: '1979', status: 'want', genre: ['Sci-Fi'], notes: 'From the box',
+  { id: 1700000000202, title: 'Alien', type: 'movie', year: '1979', status: 'watched', genre: ['Sci-Fi'], notes: 'From the box',
     copies: [{ id: 'a1', format: 'dvd', set: 'Quadrilogy' }] },
   { id: 1700000000203, title: 'Heat', type: 'movie', year: '1995', status: 'want', copies: [{ id: 'h1', format: 'dvd' }] },
 ];
@@ -38,7 +38,7 @@ const WISH = [{ id: 1700000000301, title: 'Heat', type: 'movie', creator: '', no
   check('one Alien is left, the oldest', alien.length === 1 && alien[0].id === 1700000000201, J(alien.map(m => m.id)));
   check('…holding both copies, the clashing id renewed', alien[0].copies.length === 2 && new Set(alien[0].copies.map(c => c.id)).size === 2 &&
     J(alien[0].copies.map(c => c.format)) === '["bluray","dvd"]' && alien[0].copies[1].set === 'Quadrilogy', J(alien[0].copies));
-  check('…its fields kept, genres and notes joined', alien[0].status === 'watched' && J(alien[0].genre) === '["Horror","Sci-Fi"]' &&
+  check('…the more advanced status kept (Watched), genres and notes joined', alien[0].status === 'watched' && J(alien[0].genre) === '["Horror","Sci-Fi"]' &&
     alien[0].notes === 'Theatrical cut\n\nFrom the box', J(alien[0]));
   check('the sheet now finds no duplicates', /No duplicates found/.test(await page.innerText('#dupesBody')));
   await page.evaluate(() => closeDuplicates());

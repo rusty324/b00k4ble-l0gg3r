@@ -622,64 +622,165 @@ function normalizeWishlistItem(item) {
 // How a copy is held. PS Plus is not a kind of "digital": a purchased
 // download stays yours, a Plus copy is only there while the subscription is,
 // and telling those apart is the whole point of recording it.
-const GAME_FORMATS = ['physical', 'digital', 'ps-plus'];
-const GAME_FORMAT_ICON  = { physical: '\u{1F4C0}', digital: '\u{1F4BE}', 'ps-plus': '\u2795\uFE0F' };
-const GAME_FORMAT_LABEL = { physical: 'Physical', digital: 'Digital', 'ps-plus': 'PS Plus' };
+const GAME_FORMATS = ['physical', 'digital', 'ps-plus', 'subscription'];
+const GAME_FORMAT_ICON  = { physical: '\u{1F4C0}', digital: '\u{1F4BE}', 'ps-plus': '➕️', subscription: '\u{1F501}' };
+const GAME_FORMAT_LABEL = { physical: 'Physical', digital: 'Digital', 'ps-plus': 'PS Plus', subscription: 'Subscription' };
 const PS_PLATFORMS = new Set(['ps3', 'ps4', 'ps5']);
+// How a copy is held, in the copies editor. A PS Plus copy is a subscription
+// copy whose store is ps-plus; the derived `platforms` still says 'ps-plus'.
+const GAME_COPY_FORMATS = ['physical', 'digital', 'subscription'];
 
-// The platforms the form offers, in the order it offers them. Anything else
-// still stores and renders fine (see the note above); this list only decides
-// what has a button and how known platforms sort.
-const GAME_PLATFORMS = ['ps3', 'ps4', 'ps5', 'xbox', 'steam'];
-const GAME_PLATFORM_LABEL = { ps3: 'PS3', ps4: 'PS4', ps5: 'PS5', xbox: 'Xbox', steam: 'Steam' };
-const platformLabel = p => GAME_PLATFORM_LABEL[p] || p || '';
+// The platforms the form offers first. Any other value (a Switch, say) is
+// typed in once and then offered like these, from the data.
+const GAME_PLATFORMS = ['pc', 'ps3', 'ps4', 'ps5', 'xbox'];
+const GAME_PLATFORM_LABEL = { pc: 'PC', ps3: 'PS3', ps4: 'PS4', ps5: 'PS5', xbox: 'Xbox', steam: 'Steam' };
+// A typed platform is stored lowercased; shown with capitals ("switch" -> "Switch").
+const platformLabel = p => GAME_PLATFORM_LABEL[p] || String(p || '').replace(/(^|\s)\S/g, c => c.toUpperCase());
 
-// Which formats can describe a copy on this platform.
+// PC stores and launchers, and subscription services. A typed name matches a
+// key, label, badge or alias (by textKey); anything else is kept as typed.
+const GAME_STORES = [
+  { key: 'steam',     label: 'Steam',            badge: 'Steam',      aliases: [] },
+  { key: 'epic',      label: 'Epic Games Store', badge: 'Epic',       aliases: ['epic', 'egs', 'epic games'] },
+  { key: 'ea',        label: 'EA app',           badge: 'EA',         aliases: ['ea', 'ea games', 'origin', 'ea desktop'] },
+  { key: 'ubisoft',   label: 'Ubisoft Connect',  badge: 'Ubisoft',    aliases: ['uplay', 'ubisoft', 'ubisoft store'] },
+  { key: 'battlenet', label: 'Battle.net',       badge: 'Battle.net', aliases: ['battlenet', 'blizzard'] },
+  { key: 'rsi',       label: 'RSI',              badge: 'RSI',        aliases: ['roberts space industries', 'star citizen'] },
+];
+const GAME_SUBSCRIPTIONS = [
+  { key: 'ps-plus',      label: 'PlayStation Plus', badge: 'PS Plus',      aliases: ['ps plus', 'psplus', 'playstation plus'] },
+  { key: 'game-pass',    label: 'Game Pass',        badge: 'Game Pass',    aliases: ['gamepass', 'xbox game pass', 'pc game pass'] },
+  { key: 'ea-play',      label: 'EA Play',          badge: 'EA Play',      aliases: ['eaplay', 'ea access'] },
+  { key: 'ubisoft-plus', label: 'Ubisoft+',         badge: 'Ubisoft+',     aliases: ['ubisoft plus', 'uplay plus', 'uplay+'] },
+  { key: 'prime-gaming', label: 'Prime Gaming',     badge: 'Prime Gaming', aliases: ['prime', 'amazon prime gaming'] },
+];
+const ALL_GAME_STORES = [...GAME_STORES, ...GAME_SUBSCRIPTIONS];
+const STORE_BY_ALIAS = new Map();
+for (const s of ALL_GAME_STORES) for (const a of [s.key, s.label, s.badge, ...s.aliases]) STORE_BY_ALIAS.set(textKey(a), s.key);
+
+function normalizeStore(raw) {
+  const v = String(raw == null ? '' : raw).trim();
+  if (!v) return '';
+  return STORE_BY_ALIAS.get(textKey(v)) || v.slice(0, 40);
+}
+const gameStore = key => ALL_GAME_STORES.find(s => s.key === key);
+const storeLabel = key => (gameStore(key) || {}).label || key || '';
+const storeBadge = key => (gameStore(key) || {}).badge || key || '';
+
+// Which formats can describe a copy on this platform (the old per-platform chips).
 const formatsFor = platform => PS_PLATFORMS.has(platform)
-  ? GAME_FORMATS : GAME_FORMATS.filter(f => f !== 'ps-plus');
+  ? GAME_FORMATS.filter(f => f !== 'subscription') : GAME_FORMATS.filter(f => f !== 'ps-plus');
 
-// One platform, and how the game is held *on that platform*.
+// One platform, and how the game is held *on that platform* (the legacy
+// `platforms` shape, still read for migration and still written, derived).
 function normalizePlatformEntry(raw) {
   const platform = String((raw && raw.platform) || '').trim().toLowerCase();
   if (!platform) return null;
   const list = Array.isArray(raw.formats) ? raw.formats : raw.formats ? [raw.formats] : [];
   const formats = [...new Set(list.map(f => String(f).trim().toLowerCase()))]
     .filter(f => GAME_FORMATS.includes(f))
-    // PS Plus is a PlayStation subscription — it cannot describe a Steam or
-    // Xbox copy, so it is dropped rather than stored somewhere meaningless.
     .filter(f => f !== 'ps-plus' || PS_PLATFORMS.has(platform));
   return { platform, formats };
 }
 
-// A game is often owned on more than one platform, and *how* it is owned
-// differs between them — a PS4 disc alongside a PS5 copy that is only there
-// while a Plus subscription lasts. So this is a list, one entry per platform.
-function normalizeGamePlatforms(g) {
+function legacyGamePlatforms(g) {
   if (Array.isArray(g.platforms)) {
-    const out = [];
-    const seen = new Set();
+    const out = [], seen = new Set();
     for (const raw of g.platforms) {
       const entry = normalizePlatformEntry(raw);
-      if (!entry || seen.has(entry.platform)) continue;   // one entry per platform
+      if (!entry || seen.has(entry.platform)) continue;
       seen.add(entry.platform);
       out.push(entry);
     }
     return out;
   }
-  // Before this was a list a game had a single `platform` and one shared
-  // `formats`. Both are still read, permanently, so an export taken before
-  // this, a repo file written before it, and a device still running an older
-  // copy of this page all keep working. Only `platforms` is ever written.
   const legacy = normalizePlatformEntry({ platform: g.platform, formats: g.formats });
   return legacy ? [legacy] : [];
 }
+
+// One copy per platform × format for a record saved before copies; a platform
+// with no format is one copy with none. Legacy Steam is a PC copy from Steam,
+// legacy PS Plus a subscription copy from ps-plus.
+function legacyGameCopies(g) {
+  const out = [];
+  for (const p of legacyGamePlatforms(g)) {
+    const platform = p.platform === 'steam' ? 'pc' : p.platform;
+    const base = p.platform === 'steam' ? { store: 'steam' } : {};
+    if (!p.formats.length) out.push({ platform, ...base });
+    for (const f of p.formats) {
+      out.push(f === 'ps-plus' ? { platform, format: 'subscription', store: 'ps-plus' } : { platform, format: f, ...base });
+    }
+  }
+  return out;
+}
+
+function normalizeGameCopies(g) {
+  const raw = Array.isArray(g.copies) ? g.copies : legacyGameCopies(g);
+  const out = [], used = new Set(), n = {};
+  for (const c of raw) {
+    if (!c || typeof c !== 'object') continue;
+    let platform = String(c.platform || '').trim().toLowerCase().slice(0, 40);
+    let format = String(c.format || '').trim().toLowerCase();
+    let store = normalizeStore(c.store);
+    if (platform === 'steam') { platform = 'pc'; store = store || 'steam'; }
+    if (format === 'ps-plus') { format = 'subscription'; store = store || 'ps-plus'; }
+    if (!GAME_COPY_FORMATS.includes(format)) format = '';
+    if (!platform) continue;
+    const prefix = format || platform;
+    n[prefix] = (n[prefix] || 0) + 1;
+    let id = copyText(c.id, 40) || `${prefix}-${n[prefix]}`;
+    while (used.has(id)) id += 'x';
+    used.add(id);
+    const copy = { id, platform };
+    if (format) copy.format = format;
+    if (store && (platform === 'pc' || format === 'subscription')) copy.store = store;
+    const opensIn = platform === 'pc' ? normalizeStore(c.opensIn) : '';
+    if (opensIn && opensIn !== copy.store) copy.opensIn = opensIn;
+    for (const k of ['edition', 'set', 'note']) { const v = copyText(c[k]); if (v) copy[k] = v; }
+    out.push(copy);
+  }
+  return out;
+}
+
+// The `platforms` every other part of the app reads, from the copies: grouped
+// by platform, subscription written as ps-plus on PlayStation.
+function gamePlatformsFromCopies(copies) {
+  const by = new Map();
+  for (const c of copies) {
+    if (!by.has(c.platform)) by.set(c.platform, []);
+    const f = c.format === 'subscription' && PS_PLATFORMS.has(c.platform) ? 'ps-plus' : c.format;
+    if (f && !by.get(c.platform).includes(f)) by.get(c.platform).push(f);
+  }
+  return [...by].map(([platform, formats]) => ({ platform, formats }));
+}
+
+// Platforms and stores to offer: presets, then whatever the data holds.
+function knownGamePlatforms(list = videoGames) {
+  const extra = new Set();
+  for (const g of list) for (const c of g.copies || []) if (!GAME_PLATFORMS.includes(c.platform)) extra.add(c.platform);
+  return [...GAME_PLATFORMS, ...[...extra].sort()];
+}
+function knownGameStores(list = videoGames) {
+  const extra = new Map();
+  for (const g of list) for (const c of g.copies || []) for (const s of [c.store, c.opensIn]) {
+    if (s && !gameStore(s) && !extra.has(textKey(s))) extra.set(textKey(s), s);
+  }
+  return [...extra.values()].sort();
+}
+// Stores of PC copies, presets first: the Store filter and stats tiles.
+function pcStoresInUse(list = videoGames) {
+  const used = new Set();
+  for (const g of list) for (const c of g.copies || []) if (c.platform === 'pc' && c.store) used.add(c.store);
+  return [...GAME_STORES.map(s => s.key).filter(k => used.has(k)), ...[...used].filter(k => !gameStore(k)).sort()];
+}
+const gameHasPcStore = (g, store) => (g.copies || []).some(c => c.platform === 'pc' && c.store === store);
 
 // Add-ons for a game: expansions, season passes, DLC packs. Each is a name and
 // whether it is owned — a game you own with one pack bought and another
 // still on your list is the ordinary case, so a bare list of names would lose
 // the part that matters. Owned is the default: the usual reason to type one in
 // is that you have it, and a missing flag should not quietly downgrade it.
-function normalizeGameDlc(raw) {
+function normalizeGameDlc(raw, copyIds = null) {
   if (!Array.isArray(raw)) return [];
   const out = [];
   const seen = new Set();
@@ -689,7 +790,11 @@ function normalizeGameDlc(raw) {
     const key = textKey(name);
     if (!name || seen.has(key)) continue;
     seen.add(key);
-    out.push({ name, owned: !(d && typeof d === 'object' && d.owned === false) });
+    const entry = { name, owned: !(d && typeof d === 'object' && d.owned === false) };
+    // "Came with this copy": only while that copy is still on the record.
+    const via = d && typeof d === 'object' && d.via ? String(d.via) : '';
+    if (via && (!copyIds || copyIds.has(via))) entry.via = via;
+    out.push(entry);
   }
   return out;
 }
@@ -704,18 +809,21 @@ function normalizeVideoGame(g) {
     ...g,
     id: normalizeId(g.id),
     title: g.title != null ? String(g.title) : '',
-    platforms: normalizeGamePlatforms(g),
     status: g.status || 'want',
     genre,
     rating: Number.isFinite(+g.rating) ? Math.max(0, Math.min(5, Math.round(+g.rating))) : 0,
     ...(g.coverUrl != null ? { coverUrl: String(g.coverUrl) } : {}),
   }, g.links));
-  // The spread carried the pre-list shape in; only `platforms` is stored.
+  // `copies` is the source of truth; `platforms` is derived from it on every
+  // load so the rest of the app, and an older cached page, keep reading it.
+  const copies = normalizeGameCopies(g);
+  if (copies.length) game.copies = copies; else delete game.copies;
+  game.platforms = gamePlatformsFromCopies(copies);
   delete game.platform;
   delete game.formats;
   // Only stored when there is something to store: most games have none, and an
   // empty `dlc: []` on every record would be churn in the data repo.
-  const dlc = normalizeGameDlc(g.dlc);
+  const dlc = normalizeGameDlc(g.dlc, new Set(copies.map(c => c.id)));
   if (dlc.length) game.dlc = dlc; else delete game.dlc;
   return game;
 }

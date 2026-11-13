@@ -134,7 +134,7 @@ async function open(browser, viewport) {
   // ── Games ──────────────────────────────────────────────────────────
   await page.evaluate(() => switchTab('games')); await page.waitForTimeout(250);
   await page.click('#filtersBtn-games'); await page.waitForTimeout(200);
-  check('Games: Platform facet with counts', await count('platform', 'steam') === 1 && await count('platform', 'ps5') === 1);
+  check('Games: Platform facet with counts', await count('platform', 'pc') === 1 && await count('platform', 'ps5') === 1);
   await opt('platform', 'ps5').click(); await page.waitForTimeout(250);
   check('…that filters', J(await page.locator('#altContent .book-title').allInnerTexts()) === J(['PS5 Game']) && /Show 1 game\b/.test(await show()));
   await page.locator('#filterModal').click({ position: { x: 195, y: 20 } }); await page.waitForTimeout(200);

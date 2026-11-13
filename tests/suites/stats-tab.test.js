@@ -67,9 +67,9 @@ const GAMES = [
     'Blu-ray': ['2', '67% of library'], DVD: ['1', '33% of library'], Digital: ['0', '0% of library'],
     Streaming: ['1', '33% of library'], 'Avg rating': ['4.0', '1 rated'] }), J(m));
   const g = await cards('games');
-  check('Games: totals, each platform owned on, formats, DLC, rating', J(g) === J({
-    Total: ['2', '1 completed · 1 playing'], PS4: ['1', '50% of library'], PS5: ['1', '50% of library'],
-    Steam: ['1', '50% of library'], Physical: ['1', '50% of library'], Digital: ['1', '50% of library'],
+  check('Games: totals, each platform owned on, PC stores, formats, DLC, rating', J(g) === J({
+    Total: ['2', '1 completed · 1 playing'], PC: ['1', '50% of library'], PS4: ['1', '50% of library'], PS5: ['1', '50% of library'],
+    'PC · Steam': ['1', '100% of PC'], Physical: ['1', '50% of library'], Digital: ['1', '50% of library'],
     'PS Plus': ['1', '50% of library'], 'DLC owned': ['1', '1 wishlisted'], 'Avg rating': ['5.0', '1 rated'] }), J(g));
   check('nothing to add, scan, export or import here', !(await shown('addBtn')) && !(await shown('scanBtn')) &&
     await page.evaluate(() => ['settingsExportBtn', 'settingsImportBtn'].every(id => document.getElementById(id).style.display === 'none')));
