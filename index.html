@@ -57,6 +57,7 @@
           <button class="settings-item" id="settingsImportBtn" onclick="document.getElementById('importFile').click(); closeSettingsMenu()">⬆ Import library</button>
           <button class="settings-item" id="settingsTmdbBtn" onclick="openTmdbKeyModal(); closeSettingsMenu()">🎬 TMDb API key…</button>
           <button class="settings-item" id="settingsGeminiBtn" onclick="openGeminiKeyModal(); closeSettingsMenu()">🔍 Image recognition key…</button>
+          <button class="settings-item" id="settingsCollectionBtn" onclick="switchTab('media'); openCollectionModal(); closeSettingsMenu()">📦 Add a collection…</button>
           <button class="settings-item" id="settingsDupesBtn" onclick="openDuplicates(); closeSettingsMenu()">🧹 Find duplicates…</button>
           <button class="settings-item" id="settingsCoverDlBtn" onclick="openCoverDownload(); closeSettingsMenu()">🖼 Save copies of linked covers…</button>
           <button class="settings-item" id="settingsIconsBtn" onclick="openIconSheet(); closeSettingsMenu()">🎨 Icons…</button>
@@ -416,7 +417,8 @@
       <div class="copies-head"><span class="copies-title" id="m-copies-title">Copies</span><span class="copies-sum" id="m-copies-sum"></span></div>
       <div class="hint">One row per disc, file or license you hold. Two Blu-ray editions are fine, and a copy can belong to a set.</div>
       <div class="copy-rows" id="m-copies" role="group" aria-labelledby="m-copies-title"></div>
-      <div class="links-row"><button type="button" class="btn btn-sm" onclick="addMediaCopy()">＋ Add a copy</button></div>
+      <div class="links-row"><button type="button" class="btn btn-sm" onclick="addMediaCopy()">＋ Add a copy</button>
+        <button type="button" class="btn btn-sm" onclick="openCollectionModal(true)">Add from a collection…</button></div>
       <datalist id="m-edition-list"></datalist>
       <datalist id="m-set-list"></datalist>
     </div>
@@ -796,6 +798,32 @@
   <div class="modal detail-modal" id="resolveBody"></div>
 </div>
 
+<!-- ⋯ → Add a collection — js/app/collection-modal.js -->
+<div class="modal-backdrop" id="collectionModal" onclick="handleCollectionBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="collTitle">
+  <div class="modal">
+    <div class="modal-title" id="collTitle">Add a collection</div>
+    <p class="hint">A box set or bundle: each title you already have gets a copy in the set; the rest are added.</p>
+    <div class="form-group"><label for="coll-set">Set name</label>
+      <input type="text" class="plain" id="coll-set" maxlength="120" autocomplete="off" list="m-set-list" placeholder="e.g. Star Trek: Original Motion Picture Collection"></div>
+    <div class="form-group"><span class="label">Type</span>
+      <div class="radio-group">
+        <label class="radio-btn" for="coll-type-movie">Movies<input type="radio" name="coll-type" id="coll-type-movie" value="movie" checked></label>
+        <label class="radio-btn" for="coll-type-tv">TV Shows<input type="radio" name="coll-type" id="coll-type-tv" value="tv"></label>
+      </div></div>
+    <div class="form-group"><label for="coll-format">Format</label>
+        <select id="coll-format" class="plain"><option value="bluray">Blu-ray</option><option value="dvd">DVD</option><option value="digital">Digital</option></select></div>
+      <div class="form-group"><label for="coll-edition">Edition <span class="opt">(optional)</span></label>
+        <input type="text" class="plain" id="coll-edition" maxlength="120" autocomplete="off" list="m-edition-list"></div>
+    <div class="form-group"><label for="coll-titles">Titles in it <span class="opt">(one per line; "Title (1984)" for a year)</span></label>
+      <textarea class="plain" id="coll-titles" rows="6"></textarea></div>
+    <div id="coll-preview" role="status"></div>
+    <div class="modal-footer">
+      <button type="button" class="btn" onclick="closeCollectionModal()">Cancel</button>
+      <button type="button" class="btn btn-primary" id="coll-add" onclick="saveCollection()" disabled>Add</button>
+    </div>
+  </div>
+</div>
+
 <!-- ⋯ → Find duplicates — filled by openDuplicates() (js/app/duplicates-view.js) -->
 <div class="modal-backdrop" id="dupesModal" onclick="handleDupesBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="dupesTitle">
   <div class="modal detail-modal" id="dupesBody"></div>
@@ -893,6 +921,7 @@
 <script src="js/app/row-editor.js"></script>
 <script src="js/app/modals.js"></script>
 <script src="js/app/media-copies.js"></script>
+<script src="js/app/collection-modal.js"></script>
 <script src="js/app/detail-view.js"></script>
 <script src="js/app/blurbs.js"></script>
 <script src="js/app/missing-view.js"></script>
