@@ -55,13 +55,16 @@ function detailBook(b) {
   };
 }
 
+// A set's name, opening its sheet.
+const setLink = name => `<button type="button" class="set-link" data-set-open="${esc(name)}">${esc(name)}</button>`;
+
 function detailMedia(m) {
   const status = statusLabel('media', m.status);
   // One line per copy: format, edition, and the set it came in.
   const formats = (m.copies || []).map(c =>
     `${c.format in MEDIA_FORMAT_ICON ? ico('media', c.format) : ''} ${esc(MEDIA_FORMAT_LABEL[c.format] || c.format)}${
       c.seasons ? ` · ${esc(c.seasons.length === 1 ? `Season ${c.seasons[0]}` : `Seasons ${compressRanges(c.seasons)}`)}` : ''}${
-      c.edition ? ` — ${esc(c.edition)}` : ''}${c.set ? ` <span class="muted">· in ${esc(c.set)}</span>` : ''}`).join('<br>');
+      c.edition ? ` — ${esc(c.edition)}` : ''}${c.set ? ` <span class="muted">· in</span> ${setLink(c.set)}` : ''}`).join('<br>');
   return {
     cover: m.posterUrl, title: m.title,
     sub: [m.type === 'tv' ? 'TV show' : 'Movie', m.year].filter(Boolean).join(' · '),
@@ -88,11 +91,10 @@ function detailGame(g) {
     let t = bits.join(' · ');
     if (c.opensIn) t += `, opens in ${storeLabel(c.opensIn)}`;
     if (c.edition) t += ` — ${c.edition}`;
-    if (c.set) t += ` (in ${c.set})`;
     return t;
   };
   const fmtIcon = c => { const f = c.format === 'subscription' && PS_PLATFORMS.has(c.platform) ? 'ps-plus' : c.format; return f ? gameFormatIcon(f) + ' ' : ''; };
-  const platforms = copies.map(c => fmtIcon(c) + esc(copyText(c))).join('<br>');
+  const platforms = copies.map(c => fmtIcon(c) + esc(copyText(c)) + (c.set ? ` <span class="muted">· in</span> ${setLink(c.set)}` : '')).join('<br>');
   const dlc = (g.dlc || []).map(d => {
     const via = d.via && copies.find(c => c.id === d.via);
     return `<span class="${d.owned ? 'dlc-owned' : 'dlc-want'}">${esc(d.name)}${d.owned ? '' : ' (wishlist)'}${via ? ` — with ${esc(gameCopyLine({ ...via, edition: via.edition || '' }))}` : ''}</span>`;

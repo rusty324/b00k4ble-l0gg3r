@@ -339,7 +339,7 @@ label:has(> input[type="checkbox"]:focus):not(:hover) { outline: 2px solid var(-
 
 /* ─── WHAT TO READ NEXT ────────────────────────────────────────────── */
 /* Below every other sheet: a book's details and its edit form open from it. */
-#nextModal, #seriesModal { z-index: 190; }
+#nextModal, #seriesModal, #setModal { z-index: 190; }
 #nextModal .filter-row { margin-top: 0.6rem; }
 .next-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.9rem; }
 .next-item { display: flex; align-items: center; gap: 0.75rem; width: 100%; text-align: left; padding: 0.6rem 0.7rem; border-radius: 10px;
@@ -476,3 +476,9 @@ img.fmt-icon { width: 1.15em; height: 1.15em; object-fit: contain; vertical-alig
 .coll-have { color: var(--accent, inherit); }
 .coll-new { opacity: 0.75; }
 #coll-titles { width: 100%; min-height: 110px; resize: vertical; }
+
+/* A set's sheet (js/app/set-view.js) */
+.set-list .vol-row-tile { object-fit: cover; }
+.set-tile { font-size: 20px; background: var(--surface-2, transparent); }
+.set-all-btn { width: 100%; margin-top: 10px; min-height: 44px; }
+.set-link { background: none; border: 0; padding: 0; color: var(--accent, inherit); text-decoration: underline; cursor: pointer; font: inherit; }

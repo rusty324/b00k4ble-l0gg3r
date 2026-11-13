@@ -57,6 +57,7 @@
           <button class="settings-item" id="settingsImportBtn" onclick="document.getElementById('importFile').click(); closeSettingsMenu()">⬆ Import library</button>
           <button class="settings-item" id="settingsTmdbBtn" onclick="openTmdbKeyModal(); closeSettingsMenu()">🎬 TMDb API key…</button>
           <button class="settings-item" id="settingsGeminiBtn" onclick="openGeminiKeyModal(); closeSettingsMenu()">🔍 Image recognition key…</button>
+          <button class="settings-item" id="settingsSetsBtn" onclick="openSetList(); closeSettingsMenu()">🗂 Sets…</button>
           <button class="settings-item" id="settingsCollectionBtn" onclick="switchTab('media'); openCollectionModal(); closeSettingsMenu()">📦 Add a collection…</button>
           <button class="settings-item" id="settingsDupesBtn" onclick="openDuplicates(); closeSettingsMenu()">🧹 Find duplicates…</button>
           <button class="settings-item" id="settingsCoverDlBtn" onclick="openCoverDownload(); closeSettingsMenu()">🖼 Save copies of linked covers…</button>
@@ -837,6 +838,11 @@
   <div class="modal detail-modal series-sheet" id="seriesBody"></div>
 </div>
 
+<!-- A set (box set, collection, bundle) — filled by openSetSheet() (js/app/set-view.js) -->
+<div class="modal-backdrop" id="setModal" onclick="handleSetBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="setSheetTitle">
+  <div class="modal detail-modal series-sheet" id="setBody"></div>
+</div>
+
 <!-- Save copies of linked covers — filled by openCoverDownload() (js/app/cover-download.js) -->
 <div class="modal-backdrop" id="coverDlModal" onclick="handleCoverDlBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="coverDlTitle">
   <div class="modal" id="coverDlBody"></div>
@@ -931,6 +937,7 @@
 <script src="js/app/sync-resolver.js"></script>
 <script src="js/app/bulk-edit.js"></script>
 <script src="js/app/series-view.js"></script>
+<script src="js/app/set-view.js"></script>
 <script src="js/app/cover-files.js"></script>
 <script src="js/app/cover-download.js"></script>
 <script src="js/app/custom-icons.js"></script>

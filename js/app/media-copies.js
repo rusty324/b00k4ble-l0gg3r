@@ -166,15 +166,12 @@ function removeMediaCopy(i) {
 // What saveMediaItem() stores; the normalizer trims, caps and drops empties.
 const mediaCopiesForSave = () => _mediaCopies.filter(c => c.format).map(({ _shown, ...c }) => c);
 
-// "Show the set": the set's name in the search box, the form closed.
+// "Show the set": the form closes and the set's sheet opens.
 function showMediaSet(i) {
   const set = _mediaCopies[i] && _mediaCopies[i].set;
   if (!set) return;
   closeMediaModal();
-  mediaSearch = set;
-  renderMedia();
-  const input = document.getElementById('mediaSearchInput');
-  if (input) { input.value = set; input.focus(); }
+  openSetSheet(set);
 }
 
 // ─── splitting ────────────────────────────────────────────────────────
