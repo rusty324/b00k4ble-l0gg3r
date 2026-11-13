@@ -1,6 +1,6 @@
 // A game whose title starts with an article ("A Little To The Left") is listed
 // like any other: added through the form, after a reload, in either view, in
-// every sort, and after a search is cleared.
+// every sort, and after a search is cleared. A–Z skips only a leading "The".
 const { launch, BASE, reporter } = require('../lib');
 const { check, finish, crash } = reporter();
 const J = JSON.stringify;
@@ -34,7 +34,11 @@ const T = 'A Little To The Left';
     check(`listed when sorted ${s}`, (await shown()).includes(T), J(await shown()));
   }
   await page.selectOption('#altContent .sort-select', 'title-asc'); await page.waitForTimeout(150);
-  check('A–Z files it under "Little", as libraries do (a leading A/An/The is skipped)', J(await shown()) === J(['Celeste', T, 'Zelda']), J(await shown()));
+  check('A–Z files it under A (only a leading "The" is skipped)', J(await shown()) === J([T, 'Celeste', 'Zelda']), J(await shown()));
+  await page.evaluate(() => { videoGames.push(normalizeVideoGame({ id: 1700000000003, title: 'The Witcher 3', status: 'want', copies: [{ platform: 'pc' }] })); renderGames(); });
+  check('…while "The Witcher 3" still files under W', J(await shown()) === J([T, 'Celeste', 'The Witcher 3', 'Zelda']), J(await shown()));
+  await page.selectOption('#altContent .sort-select', 'title-desc'); await page.waitForTimeout(150);
+  check('Z–A is the same order reversed', J(await shown()) === J(['Zelda', 'The Witcher 3', 'Celeste', T]), J(await shown()));
   await page.fill('#gameSearchInput', 'little'); await page.waitForTimeout(400);
   await page.fill('#gameSearchInput', ''); await page.waitForTimeout(400);
   check('listed after a search is cleared', (await shown()).includes(T), J(await shown()));

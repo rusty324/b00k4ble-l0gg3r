@@ -288,6 +288,11 @@ function setLinksField(prefix, links) {
 // helps. \b is not enough — "An" must not match "Animal Farm" — so the
 // article has to be followed by whitespace.
 const LEADING_ARTICLE = /^(?:the|a|an)\s+/i;
+// Sorting skips only "The": "A Little To The Left" stays under A, where a
+// reader looks for it, while "The Witcher" still files under W. (Duplicate
+// matching ignores all three — "A Little To The Left" and "Little To The
+// Left" are one title.)
+const SORT_ARTICLE = /^the\s+/i;
 
 // ─── STATUSES ─────────────────────────────────────────────────────────
 // Every status each library offers, in the order the form, the filter and
@@ -414,7 +419,8 @@ function normalizeIgnoredGaps(raw) {
 // does not match "Dune Messiah".
 function dupTitleKey(title) {
   const plain = String(title || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '');
-  return titleSortKey(plain).replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '');
+  const t = plain.trim();
+  return (t.replace(LEADING_ARTICLE, '') || t).toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '');
 }
 
 // ─── game editions ────────────────────────────────────────────────────
@@ -526,7 +532,7 @@ function sameRecord(kind, a, b) {
 function titleSortKey(title) {
   const t = String(title || '').trim();
   // A title that is nothing but an article still has to sort somewhere.
-  return (t.replace(LEADING_ARTICLE, '') || t).toLowerCase();
+  return (t.replace(SORT_ARTICLE, '') || t).toLowerCase();
 }
 
 // Conventionally part of the surname rather than a middle name, and the
