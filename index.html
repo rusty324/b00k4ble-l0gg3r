@@ -287,6 +287,7 @@
           <input type="text" class="plain" id="f-coverUrl" placeholder="https://covers.openlibrary.org/…">
           <div class="links-row">
             <button type="button" class="btn btn-sm" onclick="pickCoverFile('f-coverUrl', 'books')">Upload image…</button>
+            <button type="button" class="btn btn-sm" onclick="pasteCoverImage('f-coverUrl', 'books')" title="Use an image you copied">Paste image</button>
             <button type="button" class="btn btn-sm" onclick="saveCoverCopy('f-coverUrl', 'books')" title="Download the linked image and keep a copy in your data repo">Save a copy</button>
             <button type="button" class="btn btn-sm" onclick="clearCoverField('f-coverUrl')">Clear</button>
             <span class="paste-msg" id="f-coverUrl-msg" role="status"></span>
@@ -469,6 +470,7 @@
           <input type="text" class="plain" id="m-posterUrl" placeholder="https://image.tmdb.org/…">
           <div class="links-row">
             <button type="button" class="btn btn-sm" onclick="pickCoverFile('m-posterUrl', 'media')">Upload image…</button>
+            <button type="button" class="btn btn-sm" onclick="pasteCoverImage('m-posterUrl', 'media')" title="Use an image you copied">Paste image</button>
             <button type="button" class="btn btn-sm" onclick="saveCoverCopy('m-posterUrl', 'media')" title="Download the linked image and keep a copy in your data repo">Save a copy</button>
             <button type="button" class="btn btn-sm" onclick="clearCoverField('m-posterUrl')">Clear</button>
             <span class="paste-msg" id="m-posterUrl-msg" role="status"></span>
@@ -604,6 +606,7 @@
           <input type="text" class="plain" id="g-coverUrl" placeholder="https://…">
           <div class="links-row">
             <button type="button" class="btn btn-sm" onclick="pickCoverFile('g-coverUrl', 'games')">Upload image…</button>
+            <button type="button" class="btn btn-sm" onclick="pasteCoverImage('g-coverUrl', 'games')" title="Use an image you copied">Paste image</button>
             <button type="button" class="btn btn-sm" onclick="saveCoverCopy('g-coverUrl', 'games')" title="Download the linked image and keep a copy in your data repo">Save a copy</button>
             <button type="button" class="btn btn-sm" onclick="clearCoverField('g-coverUrl')">Clear</button>
             <span class="paste-msg" id="g-coverUrl-msg" role="status"></span>
