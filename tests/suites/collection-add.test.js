@@ -35,12 +35,14 @@ const MEDIA = [
   check('the preview says which are held and which are new',
     (preview.match(/adds a copy/g) || []).length === 2 && (preview.match(/new title/g) || []).length === 1, preview);
   check('the button counts them', (await page.innerText('#coll-add')) === 'Add 3 titles');
+  const before = await page.evaluate(() => ({ dis: document.getElementById('coll-add').disabled, open: document.getElementById('collectionModal').classList.contains('open') }));
   await page.click('#coll-add'); await page.waitForTimeout(300);
+  const diag = J({ before, errors, open: await page.locator('#collectionModal').evaluate(e => e.classList.contains('open')) });
   const lib = await page.evaluate(() => mediaLibrary);
   const by = t => lib.find(m => m.title === t);
   check('a held title gains a Blu-ray copy in the set beside its DVD',
-    J(by('Star Trek II: The Wrath of Khan').copies.map(c => [c.format, c.set || ''])) === J([['dvd', ''], ['bluray', SET]]));
-  check('a held title with no copies gets one', by('Star Trek III: The Search for Spock').copies.length === 1);
+    J((by('Star Trek II: The Wrath of Khan').copies || []).map(c => [c.format, c.set || ''])) === J([['dvd', ''], ['bluray', SET]]), diag);
+  check('a held title with no copies gets one', (by('Star Trek III: The Search for Spock').copies || []).length === 1);
   const tmp = by('Star Trek: The Motion Picture');
   check('a new title is added with its year and the copy', tmp && tmp.year === '1979' && tmp.type === 'movie' && tmp.copies[0].set === SET, J(tmp));
   check('the sheet closed', !(await page.locator('#collectionModal').evaluate(e => e.classList.contains('open'))));
