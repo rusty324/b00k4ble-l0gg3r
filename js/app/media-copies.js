@@ -76,6 +76,8 @@ function renderMediaCopies() {
       ${tv ? copySeasonChips(c, i) : ''}
       ${inSet && editing ? `<div class="copy-setinfo">In this set: ${inSet} title${inSet === 1 ? '' : 's'}.
         <button type="button" class="btn btn-sm" onclick="showMediaSet(${i})">Show the set</button></div>` : ''}
+      ${editing && _mediaCopies.length > 1 && mediaLibrary.some(m => m.id === mediaEditingId && (m.copies || []).some(x => x.id === c.id))
+        ? `<div class="copy-split"><button type="button" class="btn btn-sm" onclick="splitMediaCopy(${i})">Move to its own title</button></div>` : ''}
     </fieldset>`;
   }).join('') : '<p class="hint copy-none">No copies yet — add one for each disc, file or licence you hold.</p>';
   const sum = document.getElementById('m-copies-sum');
@@ -173,4 +175,62 @@ function showMediaSet(i) {
   renderMedia();
   const input = document.getElementById('mediaSearchInput');
   if (input) { input.value = set; input.focus(); }
+}
+
+// ─── merging, splitting ───────────────────────────────────────────────
+// One title from several records of the same thing: every copy of each, the
+// first record's fields, and blanks filled from the others. Copy ids that
+// would collide are renewed. Used by the add form's "Add as another copy"
+// and by Find duplicates → Merge.
+function mergeMediaRecords(target, sources) {
+  const out = { ...target };
+  const copies = [...(target.copies || [])];
+  const ids = new Set(copies.map(c => c.id));
+  const notes = [String(target.notes || '').trim()].filter(Boolean);
+  const genre = [...(target.genre || [])], links = [...(target.links || [])];
+  const merged = new Set(sources.map(s => s.id));
+  const notDup = new Set((target.notDuplicateOf || []).map(Number));
+  for (const s of sources) {
+    for (const c of s.copies || []) {
+      const id = !c.id || ids.has(c.id) ? newCopyId() : c.id;
+      ids.add(id);
+      copies.push({ ...c, id });
+    }
+    for (const k of ['year', 'posterUrl', 'tmdbId', 'blurb']) if ((out[k] == null || out[k] === '') && s[k] != null && s[k] !== '') out[k] = s[k];
+    if ((s.seasonCount || 0) > (out.seasonCount || 0)) out.seasonCount = s.seasonCount;
+    if ((s.rating || 0) > (out.rating || 0) && !out.rating) out.rating = s.rating;
+    const n = String(s.notes || '').trim();
+    if (n && !notes.includes(n)) notes.push(n);
+    for (const g of s.genre || []) if (!genre.some(x => textKey(x) === textKey(g))) genre.push(g);
+    for (const l of s.links || []) if (!links.some(x => (x.url || x) === (l.url || l))) links.push(l);
+    (s.notDuplicateOf || []).forEach(id => notDup.add(Number(id)));
+  }
+  merged.forEach(id => notDup.delete(id));
+  notDup.delete(target.id);
+  out.copies = copies;
+  out.notes = notes.join('\n\n');
+  out.genre = genre;
+  out.links = links;
+  if (notDup.size) out.notDuplicateOf = [...notDup].sort((a, b) => a - b); else delete out.notDuplicateOf;
+  return normalizeMediaItem(out);
+}
+
+// "Move to its own title": the copy becomes a record of its own, marked as
+// not a duplicate of this one so Find duplicates leaves the pair alone.
+function splitMediaCopy(i) {
+  const c = _mediaCopies[i];
+  const idx = mediaLibrary.findIndex(m => m.id === mediaEditingId);
+  if (!c || idx === -1 || _mediaCopies.length < 2) return;
+  if (!confirm('Move this copy to a title of its own? It keeps the same title, which you can then change.')) return;
+  const orig = mediaLibrary[idx];
+  const { _shown, ...copy } = c;
+  const id = newId();
+  const notDup = ids => [...new Set([...(ids || []).map(Number)])].sort((a, b) => a - b);
+  mediaLibrary.push(normalizeMediaItem({ ...orig, id, copies: [copy], seasons: [], notDuplicateOf: notDup([...(orig.notDuplicateOf || []), orig.id]) }));
+  _mediaCopies.splice(i, 1);
+  mediaLibrary[idx] = normalizeMediaItem({ ...orig, copies: (orig.copies || []).filter(x => x.id !== c.id), seasons: [], notDuplicateOf: notDup([...(orig.notDuplicateOf || []), id]) });
+  saveMedia();
+  renderMediaCopies();
+  renderPage();
+  document.querySelector('#m-copies .copy-row select')?.focus();
 }

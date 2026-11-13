@@ -465,10 +465,18 @@ function handleMediaBackdrop(e) {
   if (e.target === document.getElementById('mediaModal')) closeMediaModal();
 }
 
+// "Add as another copy": the next save folds this form into that record.
+let _mediaMergeInto = null;
+function addAsAnotherCopy(id) {
+  _mediaMergeInto = id;
+  saveMediaItem();
+  _mediaMergeInto = null;
+}
+
 function saveMediaItem() {
   const title = document.getElementById('m-title').value.trim();
   if (!title) { document.getElementById('m-title').focus(); return; }
-  if (mediaEditingId === null && dupBlocksSave('media')) return;
+  if (mediaEditingId === null && _mediaMergeInto === null && dupBlocksSave('media')) return;
 
   const year    = document.getElementById('m-year').value.trim();
   const genre   = getGenreValues('m-genre');
@@ -490,9 +498,13 @@ function saveMediaItem() {
         seasons, seasonCount: _mediaSeasonCount, ...tmdb });
     }
   } else {
-    mediaLibrary.push(normalizeMediaItem({ id: newId(), title, type, year, genre, copies, status, notes, rating: mediaRating, links,
-      seasons, seasonCount: _mediaSeasonCount, ...tmdb }));
+    const draft = normalizeMediaItem({ id: newId(), title, type, year, genre, copies, status, notes, rating: mediaRating, links,
+      seasons, seasonCount: _mediaSeasonCount, ...tmdb });
+    const into = _mediaMergeInto === null ? -1 : mediaLibrary.findIndex(x => x.id === _mediaMergeInto);
+    if (into !== -1) mediaLibrary[into] = mergeMediaRecords(mediaLibrary[into], [draft]);
+    else mediaLibrary.push(draft);
   }
+  _mediaMergeInto = null;
 
   saveMedia();
   if (mediaEditingId === null) completeWishlistMove('media');
@@ -579,7 +591,8 @@ function paintDup(kind) {
   box.innerHTML = `<div><strong>Already in your library:</strong> ${esc(f.describe(dup))}${esc(when)}.</div>
     ${f.extra ? `<div class="dup-extra">${esc(f.extra)}</div>` : ''}
     ${armed ? '<div class="dup-armed">Tap Save again to add another copy anyway.</div>' : ''}
-    <button type="button" class="btn btn-sm" onclick="openDuplicate('${kind}', ${dup.id})">Open it</button>`;
+    <button type="button" class="btn btn-sm" onclick="openDuplicate('${kind}', ${dup.id})">Open it</button>
+    ${kind === 'media' ? `<button type="button" class="btn btn-sm btn-primary" onclick="addAsAnotherCopy(${dup.id})">Add as another copy</button>` : ''}`;
   return dup;
 }
 

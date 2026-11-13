@@ -67,7 +67,7 @@ function dupSummary(kind, r) {
   const added = idAsTime(r.id);
   const bits = {
     books:    () => [r.author, r.series, (r.formats || []).map(f => BOOK_FORMAT_LABEL[f] || f).join(', '), r.isbn && `ISBN ${r.isbn}`],
-    media:    () => [r.year, (r.formats || []).map(f => MEDIA_FORMAT_LABEL[f] || f).join(', ')],
+    media:    () => [r.year, (r.copies || []).length ? mediaCopiesSummary(r.copies) : ''],
     games:    () => [gamePlatformText(r)],
     wishlist: () => [r.creator, r.type],
   }[kind]();
@@ -101,6 +101,7 @@ function openDuplicates() {
         <div class="missing-item dup-group">
           ${g.map(r => dupRow(d.kind, r)).join('')}
           <div class="missing-actions">
+            ${d.kind === 'media' ? `<button type="button" class="btn btn-sm btn-primary" onclick="mergeDuplicates(${jsArg(g.map(r => r.id))})">Merge</button>` : ''}
             <button type="button" class="btn btn-sm" onclick="markNotDuplicates('${d.kind}', ${jsArg(g.map(r => r.id))})">Not duplicates</button>
           </div>
         </div>`).join('')}</div>`).join('')
@@ -127,6 +128,19 @@ function openDupItem(kind, id) {
 function deleteDupItem(kind, id) {
   DUP_KINDS.find(d => d.kind === kind).del(id);
   if (!collectionArray(kind).some(r => r.id === id)) { renderPage(); openDuplicates(); }
+}
+
+// Movies & TV: one title holding every copy, kept on the oldest record.
+function mergeDuplicates(ids) {
+  const recs = ids.map(id => mediaLibrary.find(m => m.id === id)).filter(Boolean);
+  if (recs.length < 2) return;
+  if (!confirm(`Merge ${recs.length} entries for "${recs[0].title}" into one title with all their copies?`)) return;
+  const merged = mergeMediaRecords(recs[0], recs.slice(1));
+  const drop = new Set(recs.slice(1).map(r => r.id));
+  mediaLibrary = mediaLibrary.filter(m => !drop.has(m.id)).map(m => (m.id === merged.id ? merged : m));
+  saveMedia();
+  renderPage();
+  openDuplicates();
 }
 
 // Every record in the group is marked distinct from every other, so the
