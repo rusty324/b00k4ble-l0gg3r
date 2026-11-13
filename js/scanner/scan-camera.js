@@ -172,7 +172,7 @@ function updateScanCount() {
 }
 
 function findExistingByCode(code) {
-  const b = books.find(x => x.isbn && String(x.isbn) === code);
+  const b = books.find(x => bookIsbns(x).has(cleanIsbn(code)));
   if (b) return { kind: 'book', item: b };
   const w = bookWishlist.find(x => x.isbn && String(x.isbn) === code);
   if (w) return { kind: 'wishlist', item: w };
@@ -215,7 +215,7 @@ function openPrefilledForm(code, info, isBookPath) {
     // The scanned code IS the ISBN-13, so it goes in the field where it can be
     // seen and corrected — not only into pendingScanCode, where Save read it
     // but the form never showed it.
-    document.getElementById('f-isbn').value = code;
+    fillBookCopy({ format: 'physical', isbn: code });
     if (info) {
       document.getElementById('f-title').value  = info.title  || '';
       document.getElementById('f-author').value = info.author || '';

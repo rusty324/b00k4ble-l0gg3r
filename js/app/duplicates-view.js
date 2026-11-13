@@ -24,7 +24,7 @@ const notDupOf = r => new Set(Array.isArray(r.notDuplicateOf) ? r.notDuplicateOf
 function dupBuckets(kind, r) {
   const tk = dupTitleKey(r.title);
   switch (kind) {
-    case 'books':    return [dupIsbn(r) && `i:${dupIsbn(r)}`, dupAsin(r) && `a:${dupAsin(r)}`, tk && `t:${tk}`];
+    case 'books':    return [...[...bookIsbns(r)].map(x => `i:${x}`), ...[...bookAsins(r)].map(x => `a:${x}`), tk && `t:${tk}`];
     case 'media':    return [r.tmdbId != null && `m:${r.type}:${r.tmdbId}`, tk && `t:${r.type}:${tk}`];
     case 'games':    { const bk = dupTitleKey(splitEdition(r.title).base); return [bk && `t:${bk}`]; }
     case 'wishlist': return [tk && `t:${r.type}:${tk}`];

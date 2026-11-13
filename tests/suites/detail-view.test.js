@@ -47,11 +47,11 @@ const GAMES = [{ id: 1700000000004, title: 'Horizon Zero Dawn', status: 'complet
   // ── 2. Tap → sheet, with everything ─────────────────────────────────
   await lw.locator('.book-title').click(); await page.waitForTimeout(200);
   check('tapping the card opens its detail sheet', await open());
-  const facts = { narr: await detailFact(page, 'Narrated by'), series: await detailFact(page, 'Series'), formats: await detailFact(page, 'Formats'),
-    finished: await detailFact(page, 'Finished'), isbn: await detailFact(page, 'ISBN'), added: await detailFact(page, 'Added') };
+  const facts = { narr: await detailFact(page, 'Narrated by'), series: await detailFact(page, 'Series'), formats: await detailFact(page, 'Copies'),
+    finished: await detailFact(page, 'Finished'), added: await detailFact(page, 'Added') };
   check('the sheet has the facts the card leaves out', facts.narr === 'Jefferson Mays' && facts.series === 'The Expanse #1' &&
-    facts.formats === '🎧 Audiobook\n📱 E-book' && facts.finished === 'Jun 2025' &&
-    facts.isbn === '9780316129084' && /2023/.test(facts.added), J(facts));
+    facts.formats === '🎧 Audiobook · read by Jefferson Mays\n📱 E-book · ISBN 9780316129084' && facts.finished === 'Jun 2025' &&
+    /2023/.test(facts.added), J(facts));
   check('…its genres, notes and links', await page.evaluate(() => {
     const m = document.getElementById('detailModal');
     return m.querySelectorAll('.badge-tag').length === 2 && /Best audiobook/.test(m.querySelector('.detail-notes').textContent) && !!m.querySelector('.detail-links a');

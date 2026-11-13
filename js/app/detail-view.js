@@ -45,10 +45,12 @@ function detailBook(b) {
         const s = seriesGaps().find(x => x.books.includes(b));
         return s ? `Missing ${esc(compressRanges(s.missing, '#'))}` : '';
       })()),
-      fact('Formats', (b.formats || []).map(f => f in BOOK_FORMAT_LABEL ? `${ico('books', f)} ${esc(BOOK_FORMAT_LABEL[f].replace(/^\S+\s/, ''))}` : esc(f)).join('<br>')),
+      // One line per copy: format, edition, narrator, ISBN / ASIN.
+      fact((b.copies || []).length === 1 ? 'Copy' : 'Copies', (b.copies || []).map(c => [
+        `${ico('books', c.format)} ${esc((BOOK_FORMAT_LABEL[c.format] || c.format).replace(/^\S+\s/, ''))}${c.edition ? ` — ${esc(c.edition)}` : ''}`,
+        c.narrator && `read by ${esc(c.narrator)}`, c.isbn && `ISBN ${esc(c.isbn)}`, c.asin && `ASIN ${esc(c.asin)}`,
+      ].filter(Boolean).join(' · ')).join('<br>')),
       fact('Finished', b.status === 'read' && b.finished ? esc(finishedLabel(b.finished)) : ''),
-      fact('ISBN', esc(b.isbn || '')),
-      fact('ASIN', esc(b.asin || '')),
       fact('Added', addedFact(b.id)),
     ].join(''),
     genre: b.genre, notes: b.notes, links: b.links,

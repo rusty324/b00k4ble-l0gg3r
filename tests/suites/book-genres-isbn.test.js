@@ -76,7 +76,7 @@ const olIsbnBody = (isbn, title, subjects) => ({ [`ISBN:${isbn}`]: {
   await page.evaluate(() => { scanKeepGoing = false; });
   await page.evaluate(code => acceptScannedCode(code), HP_ISBN); await page.waitForTimeout(600);
   const form = await page.evaluate(() => ({ open: document.getElementById('modal').classList.contains('open'),
-    isbn: document.getElementById('f-isbn').value, title: document.getElementById('f-title').value, genre: getGenreValues('f-genre') }));
+    isbn: (bookCopiesForSave().map(c => c.isbn).filter(Boolean)[0] || ''), title: document.getElementById('f-title').value, genre: getGenreValues('f-genre') }));
   check('after a scan the ISBN field shows the scanned code', form.open && form.isbn === '9780439708180', J(form));
   check('and the genre pills are filled from the lookup', J(form.genre) === '["Fantasy","Children\'s"]', J(form.genre));
   await page.click('button[onclick="saveBook()"]'); await page.waitForTimeout(400);
@@ -114,7 +114,7 @@ const olIsbnBody = (isbn, title, subjects) => ({ [`ISBN:${isbn}`]: {
   await page.click('#addBtn'); await page.waitForSelector('#modal.open');
   await page.fill('#f-ol', '9780441013593'); await page.waitForSelector('#ol-ac .ac-item', { timeout: 5000 });
   await page.locator('#ol-ac .ac-item').first().click(); await page.waitForTimeout(300);
-  const isr = await page.evaluate(() => ({ isbn: document.getElementById('f-isbn').value, g: getGenreValues('f-genre') }));
+  const isr = await page.evaluate(() => ({ isbn: (bookCopiesForSave().map(c => c.isbn).filter(Boolean)[0] || ''), g: getGenreValues('f-genre') }));
   check('an ISBN search fills ISBN and genres', isr.isbn === '9780441013593' && JSON.stringify(isr.g) === '["Sci-Fi"]', JSON.stringify(isr));
   await page.evaluate(() => closeModal());
 
@@ -129,7 +129,7 @@ const olIsbnBody = (isbn, title, subjects) => ({ [`ISBN:${isbn}`]: {
   // ── 8. Cover identification fills the ISBN field too ────────────────
   await page.evaluate(() => { _identifyTarget = 'books'; _identifyResults = [{ title: 'Dune', author: 'Frank Herbert', isbn: '9780441172719' }]; pickIdentifyResult(0); });
   await page.waitForTimeout(200);
-  check('picking an identified book shows its ISBN', await page.evaluate(() => document.getElementById('f-isbn').value) === '9780441172719');
+  check('picking an identified book shows its ISBN', await page.evaluate(() => (bookCopiesForSave().map(c => c.isbn).filter(Boolean)[0] || '')) === '9780441172719');
   await page.evaluate(() => closeModal());
 
   check('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));

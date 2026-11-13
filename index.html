@@ -219,10 +219,12 @@
       <div id="fmt-error" style="display:none;font-size:12px;color:var(--coral-600);margin-top:0.35rem">Select at least one format.</div>
     </div>
 
-    <!-- Audiobooks only: shown while Audiobook is ticked (syncNarratorField) -->
-    <div class="form-group" id="f-narrator-group" style="display:none">
-      <label for="f-narrator">Narrator <span class="opt">(optional)</span></label>
-      <input type="text" class="plain" id="f-narrator" placeholder="e.g. Scott Brick" autocomplete="off" list="dl-narrators">
+    <!-- One fieldset per edition you hold — js/app/book-copies.js -->
+    <div class="form-group copies-group">
+      <div class="copies-head"><span class="copies-title" id="f-copies-title">Copies</span></div>
+      <div class="hint">One per edition you hold: its ISBN or ASIN, and an audiobook's narrator, belong to that copy.</div>
+      <div class="copy-rows" id="f-copies" role="group" aria-labelledby="f-copies-title"></div>
+      <div class="links-row"><button type="button" class="btn btn-sm" onclick="addBookCopy()">＋ Add a copy</button></div>
       <datalist id="dl-narrators"></datalist>
     </div>
 
@@ -251,17 +253,6 @@
         <button class="star-btn" type="button" data-val="4" aria-label="Rate 4 stars" onclick="setRating(4)">★</button>
         <button class="star-btn" type="button" data-val="5" aria-label="Rate 5 stars" onclick="setRating(5)">★</button>
       </div>
-    </div>
-
-    <div class="form-group">
-      <label>ISBN <span class="opt">(optional — enables duplicate detection when scanning)</span></label>
-      <input type="text" class="plain" id="f-isbn" placeholder="9780441013593" inputmode="numeric" autocomplete="off">
-    </div>
-
-    <div class="form-group">
-      <label for="f-asin">ASIN <span class="opt">(optional — Amazon / Audible id)</span></label>
-      <input type="text" class="plain" id="f-asin" placeholder="B0036I54I6" autocomplete="off" spellcheck="false">
-      <div class="hint">Audiobooks and Kindle editions have no ISBN, so this is how Amazon identifies them. Usually starts with B, but a ten-digit ISBN is also used.</div>
     </div>
 
     <div class="form-group">
@@ -926,6 +917,7 @@
 <script src="js/app/row-editor.js"></script>
 <script src="js/app/modals.js"></script>
 <script src="js/app/media-copies.js"></script>
+<script src="js/app/book-copies.js"></script>
 <script src="js/app/collection-modal.js"></script>
 <script src="js/app/game-copies.js"></script>
 <script src="js/app/detail-view.js"></script>
