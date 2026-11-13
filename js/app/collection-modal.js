@@ -31,8 +31,11 @@ function paintCollectionPreview() {
   const plan = collectionPlan();
   const box = document.getElementById('coll-preview');
   const name = document.getElementById('coll-set').value.trim();
-  box.innerHTML = plan.length ? `<ul class="coll-plan">${plan.map(p => `<li>${esc(p.title)}${p.year ? ` (${esc(p.year)})` : ''} —
+  const html = plan.length ? `<ul class="coll-plan">${plan.map(p => `<li>${esc(p.title)}${p.year ? ` (${esc(p.year)})` : ''} —
       <span class="${p.match ? 'coll-have' : 'coll-new'}">${p.match ? 'adds a copy to the title you have' : 'new title'}</span></li>`).join('')}</ul>` : '';
+  // Repaint only on a real change: a text box's blur fires "change" as a
+  // button is pressed, and moving the button under the pointer loses the click.
+  if (box.dataset.html !== html) { box.innerHTML = html; box.dataset.html = html; }
   const btn = document.getElementById('coll-add');
   btn.disabled = !plan.length || !name;
   btn.textContent = plan.length ? `Add ${plan.length} title${plan.length === 1 ? '' : 's'}` : 'Add';
@@ -51,6 +54,7 @@ function openCollectionModal(fromForm = false) {
   }
   document.querySelectorAll('input[name="coll-type"]').forEach(r => { r.checked = r.value === type; });
   document.getElementById('coll-titles').value = lines;
+  delete document.getElementById('coll-preview').dataset.html;
   paintCollectionPreview();
   document.getElementById('collectionModal').classList.add('open');
   document.getElementById('coll-set').focus();
@@ -95,7 +99,7 @@ document.addEventListener('input', e => {
   if (e.target.closest && e.target.closest('#collectionModal')) paintCollectionPreview();
 });
 document.addEventListener('change', e => {
-  if (e.target.closest && e.target.closest('#collectionModal')) paintCollectionPreview();
+  if (e.target.closest && e.target.closest('#collectionModal') && /^(SELECT|INPUT)$/.test(e.target.tagName) && e.target.type !== 'text') paintCollectionPreview();
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && document.getElementById('collectionModal')?.classList.contains('open')) { e.stopImmediatePropagation(); closeCollectionModal(); }
