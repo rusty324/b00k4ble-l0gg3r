@@ -66,7 +66,7 @@ function duplicateGroups(kind) {
 function dupSummary(kind, r) {
   const added = idAsTime(r.id);
   const bits = {
-    books:    () => [r.author, r.series, (r.formats || []).map(f => BOOK_FORMAT_LABEL[f] || f).join(', '), r.isbn && `ISBN ${r.isbn}`],
+    books:    () => [r.author, r.series, formatsOf(r).map(f => BOOK_FORMAT_LABEL[f] || f).join(', '), bookIsbns(r).size && `ISBN ${[...bookIsbns(r)][0]}`],
     media:    () => [r.year, (r.copies || []).length ? mediaCopiesSummary(r.copies) : ''],
     games:    () => [gamePlatformText(r)],
     wishlist: () => [r.creator, r.type],

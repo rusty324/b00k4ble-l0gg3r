@@ -80,13 +80,13 @@ const olIsbnBody = (isbn, title, subjects) => ({ [`ISBN:${isbn}`]: {
   check('after a scan the ISBN field shows the scanned code', form.open && form.isbn === '9780439708180', J(form));
   check('and the genre pills are filled from the lookup', J(form.genre) === '["Fantasy","Children\'s"]', J(form.genre));
   await page.click('button[onclick="saveBook()"]'); await page.waitForTimeout(400);
-  const savedHP = await page.evaluate(code => books.find(b => b.isbn === code), HP_ISBN);
-  check('saving keeps both', !!savedHP && J(savedHP.genre) === '["Fantasy","Children\'s"]', J(savedHP && { isbn: savedHP.isbn, genre: savedHP.genre }));
+  const savedHP = await page.evaluate(code => books.find(b => bookIsbns(b).has(code)), HP_ISBN);
+  check('saving keeps both', !!savedHP && J(savedHP.genre) === '["Fantasy","Children\'s"]', J(savedHP && { isbn: savedHP.copies.map(c => c.isbn), genre: savedHP.genre }));
 
   // ── 3. Bulk ("keep going") scanning adds straight to the library ────
   await page.evaluate(() => { scanKeepGoing = true; });
   await page.evaluate(() => acceptScannedCode('9780441013593')); await page.waitForTimeout(600);
-  const dune = await page.evaluate(() => books.find(b => b.isbn === '9780441013593'));
+  const dune = await page.evaluate(() => books.find(b => bookIsbns(b).has('9780441013593')));
   check('a quick-added scan gets its genres too', !!dune && J(dune.genre) === '["Sci-Fi"]', J(dune && dune.genre));
   await page.evaluate(() => { scanKeepGoing = false; });
 

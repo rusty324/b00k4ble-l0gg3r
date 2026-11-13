@@ -21,7 +21,7 @@ function statRating(items) {
 
 function bookStats() {
   const total = books.length;
-  const has   = f => books.filter(b => b.formats.includes(f)).length;
+  const has   = f => books.filter(b => formatsOf(b).includes(f)).length;
   // Read this calendar year, from the finished month; and last year for scale.
   const year   = new Date().getFullYear();
   const readIn = y => books.filter(b => b.status === 'read' && (b.finished || '').startsWith(`${y}-`)).length;
@@ -39,7 +39,7 @@ function mediaStats() {
   const total  = mediaLibrary.length;
   const shows  = mediaLibrary.filter(m => m.type === 'tv');
   const seasons = shows.reduce((n, m) => n + (m.seasons || []).length, 0);
-  const has    = f => mediaLibrary.filter(m => (m.formats || []).includes(f)).length;
+  const has    = f => mediaLibrary.filter(m => formatsOf(m).includes(f)).length;
   return [
     statCard('Total', total, `${mediaLibrary.filter(m => m.status === 'watched').length} watched · ${mediaLibrary.filter(m => m.status === 'want').length} to watch`),
     statCard('Movies', total - shows.length, statShare(total - shows.length, total)),
@@ -54,12 +54,12 @@ function gameStats() {
   // A game on two platforms counts once on each; the known platforms come
   // first, in the form's order, then anything else that was stored.
   const onPlatform = {};
-  videoGames.forEach(g => new Set((g.platforms || []).map(p => p.platform)).forEach(p => {
+  videoGames.forEach(g => new Set(platformsOf(g).map(p => p.platform)).forEach(p => {
     if (p) onPlatform[p] = (onPlatform[p] || 0) + 1;
   }));
   const platforms = [...GAME_PLATFORMS.filter(p => onPlatform[p]),
                      ...Object.keys(onPlatform).filter(p => !GAME_PLATFORMS.includes(p)).sort()];
-  const held = f => videoGames.filter(g => (g.platforms || []).some(p => (p.formats || []).includes(f))).length;
+  const held = f => videoGames.filter(g => platformsOf(g).some(p => p.formats.includes(f))).length;
   // PC games by store: a game held on two stores counts once on each.
   const stores = pcStoresInUse();
   const onStore = k => videoGames.filter(g => gameHasPcStore(g, k)).length;

@@ -34,12 +34,13 @@ const MEDIA = [
     const legacy = N({ formats: ['bluray', 'dvd'], editions: { bluray: 'Steelbook' } });
     const two = N({ copies: [{ id: 'a', format: 'bluray', edition: '' }, { id: 'b', format: 'bluray', edition: 'Steelbook', set: 'Box' }] });
     // An older page's normalizer, as it was: spread, then its own formats/editions.
-    const older = m => ({ ...m, formats: Array.isArray(m.formats) ? m.formats.map(String) : [], editions: normalizeEditions(m.editions, m.formats || []) });
-    const roundTrip = normalizeMediaItem(older({ ...two, formats: ['dvd'] }));
+    const older = m => ({ ...m, formats: ['dvd'], editions: normalizeEditions(m.editions, ['dvd']) });
+    const roundTrip = normalizeMediaItem(older(two));
+    const twoEditions = copyEditions(two.copies);
     return {
       legacy, legacyAgain: J(normalizeMediaItem(legacy)) === J(legacy),
       legacyTwiceFresh: J(N({ formats: ['bluray', 'dvd'], editions: { bluray: 'Steelbook' } })) === J(legacy),
-      two, roundTrip,
+      two, roundTrip, twoEditions, twoFormats: formatsOf(two), roundFormats: formatsOf(roundTrip),
       streaming: N({ copies: [{ format: 'streaming', edition: 'Nope' }] }).copies,
       long: N({ copies: [{ format: 'dvd', edition: 'x'.repeat(200) }] }).copies[0].edition.length,
       dupIds: N({ copies: [{ id: 'a', format: 'dvd' }, { id: 'a', format: 'dvd' }] }).copies.map(c => c.id),
@@ -53,10 +54,10 @@ const MEDIA = [
   check('legacy {formats:[bluray,dvd], editions:{bluray}} loads as two copies, ids bluray-1 and dvd-1',
     J(n.legacy.copies) === J([{ id: 'bluray-1', format: 'bluray', edition: 'Steelbook' }, { id: 'dvd-1', format: 'dvd' }]), J(n.legacy.copies));
   check('…and loading it again, or afresh, gives identical JSON', n.legacyAgain && n.legacyTwiceFresh);
-  check('two Blu-ray copies are both kept; formats derives to [bluray]', n.two.copies.length === 2 && J(n.two.formats) === '["bluray"]', J(n.two));
-  check('editions derives the first non-empty edition per format', J(n.two.editions) === '{"bluray":"Steelbook"}', J(n.two.editions));
+  check('two Blu-ray copies are both kept; formats (derived, not stored) is [bluray]', n.two.copies.length === 2 && J(n.twoFormats) === '["bluray"]' && !('formats' in n.two) && !('editions' in n.two), J(n.two));
+  check('copyEditions gives the first non-empty edition per format', J(n.twoEditions) === '{"bluray":"Steelbook"}', J(n.twoEditions));
   check('an older normalizer carries copies through, and copies win over its edited formats',
-    n.roundTrip.copies.length === 2 && J(n.roundTrip.formats) === '["bluray"]', J(n.roundTrip));
+    n.roundTrip.copies.length === 2 && J(n.roundFormats) === '["bluray"]', J(n.roundTrip));
   check('a streaming copy keeps no edition', J(n.streaming) === J([{ id: 'streaming-1', format: 'streaming' }]), J(n.streaming));
   check('edition text is capped at 120 characters', n.long === 120);
   check('copy ids stay unique within a record', new Set(n.dupIds).size === 2, J(n.dupIds));
@@ -84,7 +85,7 @@ const MEDIA = [
   await page.click('button[onclick="saveMediaItem()"]'); await page.waitForTimeout(300);
   const st3 = await page.evaluate(() => mediaLibrary.find(m => m.id === 1700000000101));
   check('saved: two Blu-ray copies, one in the set', J(st3.copies.map(c => [c.format, c.edition || '', c.set || ''])) ===
-    J([['bluray', '40th Anniversary Steelbook Edition', ''], ['bluray', '', SET]]) && J(st3.formats) === '["bluray"]', J(st3.copies));
+    J([['bluray', '40th Anniversary Steelbook Edition', ''], ['bluray', '', SET]]) , J(st3.copies));
   check('…the migrated copy keeps its id, the new one gets a short random one', st3.copies[0].id === 'bluray-1' && /^[a-z0-9]{4,8}$/.test(st3.copies[1].id), J(st3.copies.map(c => c.id)));
   check('the card groups them into one badge, "×2"', (await card(ST3).locator('.badge-media').innerText()).includes('×2') &&
     await card(ST3).locator('.badge-media').count() === 1);

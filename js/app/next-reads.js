@@ -108,7 +108,7 @@ function seriesReason(n) {
 // ─── ranking ──────────────────────────────────────────────────────────
 // -> [{ b, reason }] for the sheet's current order and format.
 function nextReads(sort = _next.sort, format = _next.format) {
-  const pool = unreadBooks().filter(b => format === 'all' || (b.formats || []).includes(format));
+  const pool = unreadBooks().filter(b => format === 'all' || formatsOf(b).includes(format));
   const idx = seriesIndex();
   const spellings = seriesSpellings();
   const added = b => { const m = addedMonth(b.id); return m ? `Added ${m}` : 'Added before dates were kept'; };
@@ -174,7 +174,7 @@ function nextRow({ b, reason }) {
         ${b.author ? `<span class="next-author">${esc(b.author)}${b.series ? ` · ${esc(b.series)}` : ''}</span>` : ''}
         <span class="next-reason">${esc(reason)}</span>
       </span>
-      <span class="next-formats" aria-hidden="true">${(b.formats || []).map(f => f in ICON_SETS.books.items ? ico('books', f) : '').join('')}</span>
+      <span class="next-formats" aria-hidden="true">${formatsOf(b).map(f => f in ICON_SETS.books.items ? ico('books', f) : '').join('')}</span>
     </button>`;
 }
 

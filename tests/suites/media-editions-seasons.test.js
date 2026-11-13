@@ -58,7 +58,7 @@ const MEDIA = [
   const n = await page.evaluate(() => {
     const N = x => normalizeMediaItem({ id: 1, title: 'X', ...x });
     return {
-      kept:       N({ formats: ['dvd'], editions: { dvd: '  Shirley Edition ' } }).editions,
+      kept:       copyEditions(N({ formats: ['dvd'], editions: { dvd: '  Shirley Edition ' } }).copies),
       orphan:     'editions' in N({ formats: ['bluray'], editions: { dvd: 'Gone' } }),
       streaming:  'editions' in N({ formats: ['streaming'], editions: { streaming: 'Nope' } }),
       blank:      'editions' in N({ formats: ['dvd'], editions: { dvd: '   ' } }),
@@ -96,7 +96,7 @@ const MEDIA = [
   check('the Seasons group stays hidden for a movie', await page.evaluate(() => document.getElementById('m-seasons-group').style.display === 'none'));
   await page.click('button[onclick="saveMediaItem()"]'); await page.waitForTimeout(400);
   const air = await page.evaluate(() => mediaLibrary.find(m => m.id === 1700000000001));
-  check('saved: the DVD edition, and no streaming copy', J(air.editions) === J({ dvd: '“Don’t Call Me Shirley!” Edition' }) && J(air.formats) === '["dvd"]', J(air.editions));
+  check('saved: the DVD edition, and no streaming copy', J(air.copies.map(c => [c.format, c.edition])) === J([['dvd', '“Don’t Call Me Shirley!” Edition']]), J(air.copies));
   const card = page.locator('#altContent .book-card', { hasText: 'Airplane!' });
   await viaDetail(card);
   check('the detail sheet spells the edition out', (await detailFact(page, 'Copy')) === '💿 DVD — “Don’t Call Me Shirley!” Edition', await detailFact(page, 'Copy'));

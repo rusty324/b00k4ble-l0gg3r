@@ -102,14 +102,14 @@ async function olWorkDescription(workKey) {
 }
 
 async function bookBlurb(b) {
-  if (b.asin) {
+  if (bookAsin(b)) {
     try {
-      const a = await audnexusFetch(b.asin, audnexusRegion());
+      const a = await audnexusFetch(bookAsin(b), audnexusRegion());
       const hit = a && blurbFound(a.summary || a.description, 'Audible');
       if (hit) return hit;
     } catch { /* rate limited or down: try the next source */ }
   }
-  const isbn = dupIsbn(b);
+  const isbn = [...bookIsbns(b)][0] || '';
   if (isbn) {
     const ed = await getJson(`https://openlibrary.org/isbn/${isbn}.json`);
     const hit = ed && ed.works && ed.works[0] && await olWorkDescription(ed.works[0].key);

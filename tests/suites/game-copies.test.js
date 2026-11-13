@@ -42,7 +42,7 @@ const GAMES = [
     const legacy = N({ platforms: [{ platform: 'ps4', formats: ['physical', 'digital'] }, { platform: 'ps5', formats: ['ps-plus'] }, { platform: 'xbox', formats: [] }] });
     const older = g => ({ ...g, platforms: (g.platforms || []).map(p => ({ ...p })) });
     return {
-      legacy, again: JSON.stringify(normalizeVideoGame(legacy)) === JSON.stringify(legacy),
+      legacy, legacyPlatforms: platformsOf(legacy), again: JSON.stringify(normalizeVideoGame(legacy)) === JSON.stringify(legacy),
       steam: N({ platform: 'steam', formats: ['digital'] }),
       aliases: ['EGS', 'Epic Games', 'Origin', 'uplay', 'blizzard', 'Star Citizen', 'steam'].map(normalizeStore),
       custom: [normalizeStore('  GOG  '), normalizeStore('x'.repeat(60)).length],
@@ -56,11 +56,11 @@ const GAMES = [
   check('legacy platforms become one copy per platform × format, with derived ids',
     J(n.legacy.copies) === J([{ id: 'physical-1', platform: 'ps4', format: 'physical' }, { id: 'digital-1', platform: 'ps4', format: 'digital' },
       { id: 'subscription-1', platform: 'ps5', format: 'subscription', store: 'ps-plus' }, { id: 'xbox-1', platform: 'xbox' }]), J(n.legacy.copies));
-  check('…`platforms` is derived back, PS Plus and all', J(n.legacy.platforms) === J([{ platform: 'ps4', formats: ['physical', 'digital'] },
-    { platform: 'ps5', formats: ['ps-plus'] }, { platform: 'xbox', formats: [] }]), J(n.legacy.platforms));
+  check('…platformsOf() derives the old shape back, PS Plus and all; it is not stored', J(n.legacyPlatforms) === J([{ platform: 'ps4', formats: ['physical', 'digital'] },
+    { platform: 'ps5', formats: ['ps-plus'] }, { platform: 'xbox', formats: [] }]) && !('platforms' in n.legacy), J(n.legacyPlatforms));
   check('…and loading it again gives identical JSON', n.again);
   check('legacy Steam is a PC copy from Steam', J(n.steam.copies) === J([{ id: 'digital-1', platform: 'pc', format: 'digital', store: 'steam' }]) &&
-    !('platform' in n.steam) && J(n.steam.platforms) === '[{"platform":"pc","formats":["digital"]}]', J(n.steam));
+    !('platform' in n.steam) && !('platforms' in n.steam), J(n.steam));
   check('store aliases normalize to their keys', J(n.aliases) === J(['epic', 'epic', 'ea', 'ubisoft', 'battlenet', 'rsi', 'steam']), J(n.aliases));
   check('a custom store is kept, trimmed and capped at 40', n.custom[0] === 'GOG' && n.custom[1] === 40, J(n.custom));
   check('store and opens-in are dropped from a PS5 physical copy', !('store' in n.dropped[0]) && !('opensIn' in n.dropped[0]), J(n.dropped));

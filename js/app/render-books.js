@@ -123,7 +123,7 @@ function render() {
     const bookGenreFilter = filters.genres.length
       ? new Set(filters.genres.map(textKey)) : null;
     const fresh = books.filter(b => {
-      if (filters.format !== 'all' && !b.formats.includes(filters.format)) return false;
+      if (filters.format !== 'all' && !formatsOf(b).includes(filters.format)) return false;
       if (filters.status !== 'all' && b.status !== filters.status) return false;
       if (bookGenreFilter && !(b.genre || []).some(g => bookGenreFilter.has(textKey(g)))) return false;
       if (query && !matchesAll(b._searchStr, query)) return false;
@@ -190,7 +190,7 @@ function render() {
       const thumbHtml = hasValidCover
         ? `<img class="book-row-thumb" src="${esc(cachedCover)}" alt="" loading="lazy">`
         : `<div class="book-row-initial" data-book-id="${b.id}">${firstLetter}</div>`;
-      const fmtBadges = b.formats.map(f =>
+      const fmtBadges = formatsOf(b).map(f =>
         `<span class="badge ${fmtCls[f] || ''}" title="${esc(f)}">${f in fmtLabels ? ico('books', f) : esc(f)}</span>`
       ).join('');
       return `<div class="book-row" data-detail="books:${b.id}">
@@ -198,7 +198,7 @@ function render() {
         <div class="book-row-content">
           <div class="book-row-title">${esc(b.title)}</div>
           <div class="book-row-meta">
-            <div class="book-row-author">${esc(b.author || '')}${b.narrator ? ` <span class="book-row-narrator">· 🎙 ${esc(b.narrator)}</span>` : ''}</div>
+            <div class="book-row-author">${esc(b.author || '')}${bookNarrator(b) ? ` <span class="book-row-narrator">· 🎙 ${esc(bookNarrator(b))}</span>` : ''}</div>
             <div class="book-row-badges">${fmtBadges}<span class="badge ${statusClass('books', b.status)}">${esc(statusText(b))}</span></div>
             <div class="book-row-actions">
               ${renderLinkButtons(b.links, true)}
@@ -211,7 +211,7 @@ function render() {
     });
   } else {
     html = page.map(b => {
-      const fmtBadges = b.formats.map(f =>
+      const fmtBadges = formatsOf(b).map(f =>
         `<span class="badge ${fmtCls[f] || ''}">${f in fmtLabels ? `${ico('books', f)} ${fmtLabels[f]}` : esc(f)}</span>`).join('');
       const r = Math.max(0, Math.min(5, b.rating || 0));
       const stars = r > 0
