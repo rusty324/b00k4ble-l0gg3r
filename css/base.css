@@ -172,6 +172,12 @@ header {
   border-top: 1px solid var(--border);
 }
 .tab-bar::-webkit-scrollbar { display: none; }
+/* The strip scrolls sideways with its scrollbar hidden, so on a phone the
+   last tab was simply cut off mid-word. Fade the edge that has more behind
+   it (shell.js sets the classes as it scrolls). */
+.tab-bar.more-right { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); }
+.tab-bar.more-left { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 36px), transparent); }
+.tab-bar.more-left.more-right { -webkit-mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, transparent, #000 36px, #000 calc(100% - 36px), transparent); }
 
 .tab {
   font-family: 'DM Sans', sans-serif;

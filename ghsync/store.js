@@ -206,10 +206,47 @@ export function createStore(opts) {
 
   // ---------- writes ----------
 
+  // Which record ids differ between two versions of a collection: added,
+  // changed or removed. null when a record has no id to track it by.
+  function changedIds(before, after) {
+    const key = (list) => {
+      const m = new Map();
+      for (const r of Array.isArray(list) ? list : []) {
+        if (!r || typeof r !== 'object' || r.id == null || r.id === '') return null;
+        m.set(r.id, JSON.stringify(r));
+      }
+      return m;
+    };
+    const a = key(before);
+    const b = key(after);
+    if (!a || !b) return null;
+    const out = [];
+    for (const [id, json] of b) if (a.get(id) !== json) out.push(id);
+    for (const id of a.keys()) if (!b.has(id)) out.push(id);
+    return out;
+  }
+
   async function save(collection, records) {
     const path = files[collection];
-    cache.setData(path, records);
+    // Remember which records this save touched, so a conflict merge lets
+    // only those win (mergeRemote). A path already queued without a list —
+    // seeded, moved to another folder, resolved — stays untracked.
+    const wasDirty = cache.isDirty(path);
+    const tracked = wasDirty ? cache.getDirtyIds(path) : [];
+    const changed = tracked ? changedIds(cache.getData(path), records) : null;
+    try {
+      cache.setData(path, records);
+    } catch (e) {
+      // localStorage is full: the sync copy was NOT updated. Say so — the
+      // caller swallows rejections, and a green badge here would be a lie.
+      if (e?.name !== 'QuotaExceededError' && e?.name !== 'NS_ERROR_DOM_QUOTA_REACHED' && e?.code !== 22) throw e;
+      const err = new Error(`Browser storage is full — couldn't keep ${path} for syncing. Free some space (large cover images are the usual cause), then edit again.`);
+      err.name = 'StorageFullError';
+      setStatus('error', err);
+      throw err;
+    }
     cache.markDirty(path);
+    cache.setDirtyIds(path, tracked && changed ? [...new Set([...tracked, ...changed])] : null);
     emit({ type: 'changed', collection });
     await push(path, collection);
   }
@@ -264,7 +301,7 @@ export function createStore(opts) {
       // A remote file that will not parse (past the Contents API's 1 MB read
       // limit, or damaged) surfaces here when a push has to merge with it —
       // the same unretryable failure refresh() reports, so the same status.
-      if (e instanceof AuthError || e instanceof NotFoundError || e instanceof SyntaxError) setStatus('error', e);
+      if (e instanceof AuthError || e instanceof NotFoundError || e instanceof SyntaxError || e?.name === 'ShapeError') setStatus('error', e);
       else setStatus('pending', e); // network or transient: stays queued
     }
   }
@@ -311,8 +348,18 @@ export function createStore(opts) {
     else if (!held.size) setStatus(cache.getQueue().length ? 'pending' : 'ok');
   }
 
+  // A push was refused because the repo's file moved on (another device or
+  // tab). Combine the two by record id:
+  //   - a record this device edited since its last push (cache.getDirtyIds)
+  //     wins — except over a tombstone, as ever — and one it removed goes;
+  //   - every other record is the repo's.
+  // Every local record used to win, so a device holding a stale copy quietly
+  // reverted whatever had been changed elsewhere since it last synced.
+  // When the edited ids aren't known (seeded, moved, resolved, or queued by
+  // an older version) or the repo has no such file, it falls back to that
+  // union — nothing local is ever dropped on a guess.
   async function mergeRemote(path, collection) {
-    let remote = [];
+    let remote = null;
     let sha = null;
     try {
       const f = await client.getFile(path);
@@ -320,24 +367,43 @@ export function createStore(opts) {
       // Locked remote = encrypted under a password we don't have; merging is
       // impossible and overwriting would destroy data. Stay dirty and queued.
       if (res.locked) throw new Error(`Cannot merge ${path}: encrypted with an unknown password`);
-      // A remote that is not a list (a `null` an older version wrote, or
-      // anything hand-edited) has no records to merge; local simply wins.
-      remote = Array.isArray(res.data) ? res.data : [];
+      // A bare `null` (an older version wrote it for an unused collection)
+      // counts as no file. Anything else that is not a list is NOT ours to
+      // replace: this app's file names are generic and its folder is
+      // configurable, so it may well be another tool's file. Refuse; the
+      // edit stays queued and uploads once the file is moved or the folder
+      // changed.
+      if (res.data != null && !Array.isArray(res.data)) {
+        const err = new Error(`${path} in the data repo isn't a list of records, so it won't be overwritten. `
+          + 'Your library is safe on this device. Move or delete that file in the repo, or choose a folder that belongs only to this app.');
+        err.name = 'ShapeError';
+        throw err;
+      }
+      remote = res.data ?? null;
       sha = f.sha;
     } catch (e) {
       if (!(e instanceof NotFoundError)) throw e;
     }
     const local = cache.getData(path) ?? [];
+    const edited = remote ? cache.getDirtyIds(path) : null;
     const byId = new Map();
-    for (const r of remote) byId.set(r.id, r);
-    for (const r of local) {
-      // Local dirty records win — except over a deletion. A record with
-      // `deleted: true` is a tombstone; letting a live copy beat it is how a
-      // deleted record came back (a stale device, or a delete racing an edit).
-      // Ids are never reused, so a deletion is always final.
+    for (const r of remote ?? []) byId.set(r.id, r);
+    // A record with `deleted: true` is a tombstone; letting a live copy beat
+    // it is how a deleted record came back (a stale device, or a delete
+    // racing an edit). Ids are never reused, so a deletion is always final.
+    const put = (r) => {
       const other = byId.get(r.id);
-      if (other && other.deleted && !r.deleted) continue;
+      if (other && other.deleted && !r.deleted) return;
       byId.set(r.id, r);
+    };
+    if (edited) {
+      const mine = new Map(local.map((r) => [r.id, r]));
+      for (const id of edited) {
+        if (mine.has(id)) put(mine.get(id));
+        else byId.delete(id);
+      }
+    } else {
+      for (const r of local) put(r);
     }
     cache.setData(path, [...byId.values()]);
     cache.setSha(path, sha);

@@ -8,6 +8,7 @@ export function createCache(namespace) {
   const DATA = `${namespace}.data.`;
   const SHA = `${namespace}.sha.`;
   const QUEUE = `${namespace}.queue`;
+  const IDS = `${namespace}.dirtyids`; // { path: [record ids edited since the last push] }
 
   // Plain closures rather than methods, so callers can destructure them
   // without losing `this`.
@@ -16,6 +17,29 @@ export function createCache(namespace) {
       return JSON.parse(localStorage.getItem(QUEUE)) ?? [];
     } catch {
       return [];
+    }
+  }
+
+  function allDirtyIds() {
+    try {
+      return JSON.parse(localStorage.getItem(IDS)) ?? {};
+    } catch {
+      return {};
+    }
+  }
+
+  // ids: an array, or null to forget what is tracked for the path.
+  function setDirtyIds(path, ids) {
+    const all = allDirtyIds();
+    if (ids) all[path] = ids;
+    else delete all[path];
+    try {
+      localStorage.setItem(IDS, JSON.stringify(all));
+    } catch {
+      // Storage is full: stop tracking rather than track wrongly. Untracked
+      // means "every local record counts as edited".
+      delete all[path];
+      try { localStorage.setItem(IDS, JSON.stringify(all)); } catch { localStorage.removeItem(IDS); }
     }
   }
 
@@ -56,7 +80,17 @@ export function createCache(namespace) {
 
     clearDirty(path) {
       localStorage.setItem(QUEUE, JSON.stringify(getQueue().filter((p) => p !== path)));
+      setDirtyIds(path, null);
     },
+
+    // Which records of a dirty file were edited (added, changed or removed)
+    // since its last push: an array of ids, or null when that isn't known.
+    // The conflict merge reads this; see store.js mergeRemote().
+    getDirtyIds(path) {
+      const ids = allDirtyIds()[path];
+      return Array.isArray(ids) ? ids : null;
+    },
+    setDirtyIds,
 
     // Every key this cache owns — cached files, shas and the queue — and
     // nothing else in localStorage.
@@ -64,7 +98,7 @@ export function createCache(namespace) {
       const own = [];
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
-        if (k && (k.startsWith(DATA) || k.startsWith(SHA) || k === QUEUE)) own.push(k);
+        if (k && (k.startsWith(DATA) || k.startsWith(SHA) || k === QUEUE || k === IDS)) own.push(k);
       }
       own.forEach((k) => localStorage.removeItem(k));
     },

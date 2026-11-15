@@ -533,3 +533,27 @@ store.onChange(e => {
   if (e.type === 'sync-status' && e.status === 'ok') { window.flushCoverUploads?.(); window.refreshCustomIcons?.(); }
 });
 paintBadge();
+
+// ─── coming back to the app ───────────────────────────────────────────
+// A Home Screen app is resumed, not reloaded, so "refresh at startup" could
+// be days old — and a device editing a stale copy is the one that causes
+// conflicts. Pull again (and retry anything queued) when the app returns to
+// the front, at most once a minute.
+let lastForegroundSync = Date.now();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || Date.now() - lastForegroundSync < 60000) return;
+  lastForegroundSync = Date.now();
+  store.flushQueue().then(() => store.refresh()).catch(() => {});
+});
+
+// ─── offline start ────────────────────────────────────────────────────
+// sw.js keeps the app's own files as they are fetched (network first, so a
+// deploy is never stale) and serves them when there is no connection. It
+// never touches api.github.com.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => { /* http or private mode */ });
+  navigator.serviceWorker.ready.then((reg) => reg.active?.postMessage({
+    type: 'precache',
+    urls: [location.href.split('#')[0], ...performance.getEntriesByType('resource').map((e) => e.name)],
+  })).catch(() => {});
+}
