@@ -168,3 +168,20 @@ function renderPage() {
 }
 
 
+
+
+// ─── tab strip: show that it scrolls ─────────────────────────────────
+// See .tab-bar.more-left / .more-right in base.css.
+(function tabBarEdges() {
+  const bar = document.querySelector('.tab-bar');
+  if (!bar) return;
+  const update = () => {
+    bar.classList.toggle('more-left', bar.scrollLeft > 4);
+    bar.classList.toggle('more-right', bar.scrollLeft + bar.clientWidth < bar.scrollWidth - 4);
+  };
+  bar.addEventListener('scroll', update, { passive: true });
+  window.addEventListener('resize', update);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(update);
+  update();
+  setTimeout(update, 300);
+}());

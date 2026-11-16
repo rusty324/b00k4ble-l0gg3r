@@ -197,10 +197,32 @@ function tombRecords(collection) {
   return Object.entries(tombsFor(collection)).map(([id, at]) => ({ id: Number(id), deleted: true, deletedAt: at }));
 }
 
+// Every write of a collection to this browser goes through here. A full
+// localStorage used to throw out of save() halfway — the edit stayed on
+// screen, was never stored, and was gone after a reload with no word said.
+// Now it says so, and the save carries on to the sync push, which still has
+// the records in memory to send.
+function storeLocal(key, json) {
+  try {
+    localStorage.setItem(key, json);
+    return true;
+  } catch (e) {
+    const b = document.getElementById('statusBanner');
+    if (b) {
+      b.textContent = 'Browser storage is full — this change is NOT saved on this device. Remove some large cover images, or export your library, then try again.';
+      b.classList.add('banner-error', 'visible');
+      clearTimeout(storeLocal._t);
+      storeLocal._t = setTimeout(() => b.classList.remove('visible'), 12000);
+    }
+    console.error('[storage] could not save', key, e);
+    return false;
+  }
+}
+
 // The local half of a save, without the trip out to the data repo.
 function saveLocal() {
   _booksMutation++;
-  localStorage.setItem('myLibrary', JSON.stringify(books, stripSearchStr));
+  storeLocal('myLibrary', JSON.stringify(books, stripSearchStr));
 }
 
 function save() {
@@ -225,21 +247,21 @@ function saveSoon() {
 }
 
 function saveWishlist() {
-  localStorage.setItem('bookWishlist', JSON.stringify(bookWishlist));
+  storeLocal('bookWishlist', JSON.stringify(bookWishlist));
   noteDeletions('wishlist');
   touchTab('wishlist');
   syncPush('wishlist');
 }
 
 function saveMedia() {
-  localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary));
+  storeLocal('mediaLibrary', JSON.stringify(mediaLibrary));
   noteDeletions('media');
   touchTab('media');
   syncPush('media');
 }
 
 function saveGames() {
-  localStorage.setItem('videoGames', JSON.stringify(videoGames));
+  storeLocal('videoGames', JSON.stringify(videoGames));
   noteDeletions('games');
   touchTab('games');
   syncPush('games');
@@ -316,7 +338,7 @@ function applySyncedData(collection, records) {
   const current = { books, media: mediaLibrary, wishlist: bookWishlist, games: videoGames }[collection];
   const reallyChanged = JSON.stringify(current, spec.replacer) !== json;
 
-  localStorage.setItem(spec.key, json);
+  storeLocal(spec.key, json);
 
   switch (collection) {
     case 'books':

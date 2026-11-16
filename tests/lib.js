@@ -14,12 +14,23 @@ fs.mkdirSync(SHOT_DIR, { recursive: true });
 
 // Locally, Claude Code's container ships its own Chromium; CI installs the
 // browsers Playwright expects, so the override applies only where it exists.
-function launch(opts = {}) {
+async function launch(opts = {}) {
   const type = playwright[BROWSER];
   if (!type) throw new Error(`Unknown BROWSER "${BROWSER}"`);
   const local = BROWSER === 'chromium' && fs.existsSync('/opt/pw-browsers/chromium')
     ? { executablePath: '/opt/pw-browsers/chromium' } : {};
-  return type.launch({ ...local, ...opts });
+  const browser = await type.launch({ ...local, ...opts });
+  // The app registers a service worker (sw.js, offline start). In WebKit a
+  // page under a service worker no longer goes through Playwright's routing,
+  // so every suite's fake GitHub was bypassed and the requests went to the
+  // real api.github.com. Suites therefore run without one; the one check that
+  // is about the worker asks for it with { serviceWorkers: 'allow' } and uses
+  // no sync.
+  const newContext = browser.newContext.bind(browser);
+  browser.newContext = (o = {}) => newContext({ serviceWorkers: 'block', ...o });
+  const newPage = browser.newPage.bind(browser);
+  browser.newPage = async (o = {}) => (await browser.newContext(o)).newPage();
+  return browser;
 }
 
 const tmp = prefix => fs.mkdtempSync(path.join(os.tmpdir(), prefix));

@@ -33,3 +33,9 @@ this app has. A new suite uses `launch`, `BASE` and `reporter` from
 `tests/lib.js`, prints the `N/M checks passed` line, and exits non-zero on any
 failure.
 
+The app registers a service worker (`sw.js`). Test contexts run without it
+(`launch()` in `tests/lib.js` blocks service workers by default): in WebKit a
+page under a service worker bypasses Playwright's request routing, so a
+suite's fake GitHub would be skipped and requests would reach the real API. A
+check that is about the worker passes `{ serviceWorkers: 'allow' }` to
+`newContext` and must not use sync.

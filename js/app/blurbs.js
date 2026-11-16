@@ -134,8 +134,8 @@ const BLURB_FIND = {
 // ─── storing ──────────────────────────────────────────────────────────
 const BLURB_SAVE_LOCAL = {
   books: () => saveLocal(),
-  media: () => localStorage.setItem('mediaLibrary', JSON.stringify(mediaLibrary)),
-  games: () => localStorage.setItem('videoGames', JSON.stringify(videoGames)),
+  media: () => storeLocal('mediaLibrary', JSON.stringify(mediaLibrary)),
+  games: () => storeLocal('videoGames', JSON.stringify(videoGames)),
 };
 const BLURB_SAVE = { books: () => save(), media: () => saveMedia(), games: () => saveGames() };
 const BLURB_NORMALIZE = { books: normalizeBook, media: normalizeMediaItem, games: normalizeVideoGame };
@@ -167,8 +167,11 @@ const _blurbAsking = new Set();
 
 function blurbSectionHtml(kind, rec) {
   if (rec.blurb) {
-    const src = rec.blurbUrl
-      ? `<a href="${esc(rec.blurbUrl)}" target="_blank" rel="noopener">${esc(rec.blurbSource || 'source')}</a>`
+    // Through safeUrl like every other link: the field arrives from imports
+    // and the data repo too, and escaping alone lets "javascript:" through.
+    const url = safeUrl(rec.blurbUrl);
+    const src = url && isWebLink(url)
+      ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(rec.blurbSource || 'source')}</a>`
       : esc(rec.blurbSource || '');
     return `<div class="detail-blurb-text" id="blurbText">${esc(rec.blurb)}</div>
       <div class="detail-blurb-meta">
