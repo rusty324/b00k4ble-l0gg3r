@@ -11,6 +11,19 @@
 
 /* ─── RESPONSIVE: LARGE PHONE ────────────────────────────────────── */
 @media (max-width: 480px) {
+  /* One view button, not three: the current view shows, the others open from
+     it (js/app/shell.js setView). */
+  .view-toggle { position: relative; overflow: visible; }
+  .view-toggle:not(.open) .view-btn[aria-pressed="false"] { display: none; }
+  /* Open: the other views drop down under it, without moving the row. */
+  .view-toggle.open .view-btn[aria-pressed="false"] {
+    position: absolute; left: -1px; top: calc(100% + 4px); z-index: 30;
+    background: var(--surface); border: 1px solid var(--ctl-border); border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.25);
+  }
+  .view-toggle.open .view-btn[aria-pressed="false"] ~ .view-btn[aria-pressed="false"] { top: calc(200% + 8px); }
+  .view-toggle .view-btn[aria-pressed="true"]::after { content: '▾'; font-size: 9px; margin-left: 2px; opacity: .7; }
+
   .header-top { padding: 0.75rem 1rem; flex-wrap: wrap; gap: 0.5rem; }
   .tab-bar { padding: 0 1rem; }
   /* On mobile the ⋯ button is near the left edge; open the dropdown rightward */

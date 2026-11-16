@@ -38,7 +38,11 @@ function fakeGitHub(initial) {
 
 async function device(browser, gh, local) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-  await ctx.route('**/fonts.g**', r => r.abort()); await ctx.route('**/data/*.json', r => r.abort());
+  // Nothing but this page and the fake GitHub: background cover lookups
+  // (Open Library) reached the network in CI and filled in a cover on this
+  // device's copy, adding "cover" to what the resolver says differs.
+  await ctx.route(/^https?:\/\/(?!127\.0\.0\.1|localhost|api\.github\.com)/, r => r.abort());
+  await ctx.route('**/data/*.json', r => r.abort());
   await ctx.route('https://api.github.com/**', gh.handler);
   const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(e.message));
   await page.addInitScript(s => {

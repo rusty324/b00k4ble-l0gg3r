@@ -2,7 +2,7 @@
 // and import. Broad and shallow on purpose — a tripwire for "something basic
 // broke", with the feature suites covering each area in depth.
 const fs = require('fs');
-const { launch, BASE, reporter, viaDetail } = require('../lib');
+const { launch, BASE, reporter, viaDetail, pickView } = require('../lib');
 const { check, finish, crash } = reporter();
 const J = JSON.stringify;
 
@@ -57,9 +57,9 @@ const BOOKS = [
   await page.waitForTimeout(400);
   check('deleting a book removes it', !(await bookTitles()).includes('A Wizard of Earthsea'));
 
-  await page.click('#viewToggle [data-view="list"]'); await page.waitForTimeout(300);
+  await pickView(page, 'list'); await page.waitForTimeout(300);
   check('list view renders rows', (await page.locator('#booksGrid .book-row').count()) === 3);
-  await page.click('#viewToggle [data-view="card"]'); await page.waitForTimeout(300);
+  await pickView(page, 'card'); await page.waitForTimeout(300);
 
   // export → wipe → import
   const [dl] = await Promise.all([page.waitForEvent('download'), page.evaluate(() => exportData())]);

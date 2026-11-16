@@ -70,4 +70,13 @@ const detailFact = (page, label) => page.evaluate(label => {
 }, label);
 const closeDetailSheet = page => page.evaluate(() => closeDetail());
 
-module.exports = { launch, BASE, REPO, BROWSER, isWebKit: BROWSER === 'webkit', tmp, shot, reporter, viaDetail, detailFact, closeDetailSheet };
+// Switch the library view. On a phone the view buttons collapse to the
+// current one (js/app/shell.js), so open them first when the one wanted
+// is hidden.
+async function pickView(page, mode) {
+  const btn = page.locator(`#viewToggle [data-view="${mode}"]`);
+  if (!(await btn.isVisible())) await page.click('#viewToggle .view-btn[aria-pressed="true"]');
+  await btn.click();
+}
+
+module.exports = { launch, pickView, BASE, REPO, BROWSER, isWebKit: BROWSER === 'webkit', tmp, shot, reporter, viaDetail, detailFact, closeDetailSheet };

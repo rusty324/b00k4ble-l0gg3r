@@ -2,7 +2,7 @@
 // give way to one button; the sheet's counts follow the other facets and the
 // search; zero-count options are disabled; Collection (books) works; Esc
 // closes and focus goes back to the button; Movies & TV and Games too.
-const { launch, BASE, reporter } = require('../lib');
+const { launch, BASE, reporter, pickView } = require('../lib');
 const { check, finish, crash } = reporter();
 const J = JSON.stringify;
 const B = (id, title, series, formats, status, genre) => ({ id: 1700000000000 + id, title, author: 'A', series, formats, status, genre });
@@ -115,13 +115,13 @@ async function open(browser, viewport) {
   await page.fill('#searchInput', ''); await page.waitForTimeout(500);
 
   // In the Series view the footer counts entries.
-  await page.click('#viewToggle [data-view="series"]'); await page.waitForTimeout(250);
+  await pickView(page, 'series'); await page.waitForTimeout(250);
   await page.click('#filtersBtn-books'); await page.waitForTimeout(200);
   check('in the Series view the footer counts entries', /Show 3 entries/.test(await show()), await show());
   await opt('collection', 'series').click(); await page.waitForTimeout(250);
   check('…and follows the facets', /Show 2 entries/.test(await show()) && await page.locator('#booksGrid .series-block').count() === 2);
   await page.click('#filterBody .filter-clear'); await page.keyboard.press('Escape'); await page.waitForTimeout(150);
-  await page.click('#viewToggle [data-view="card"]'); await page.waitForTimeout(200);
+  await pickView(page, 'card'); await page.waitForTimeout(200);
 
   // ── Movies & TV ────────────────────────────────────────────────────
   await page.evaluate(() => switchTab('media')); await page.waitForTimeout(250);
