@@ -37,9 +37,21 @@ function paintViewToggle() {
   });
 }
 
+// On a phone the three view buttons collapse to the current one (CSS:
+// .view-toggle:not(.open)), which frees two of the header's six slots.
+// Tapping it opens the other views; picking one closes it again.
+const narrowHeader = () => window.matchMedia('(max-width: 480px)').matches;
+function closeViewToggle() { document.getElementById('viewToggle')?.classList.remove('open'); }
+document.addEventListener('click', (e) => { if (!e.target.closest?.('#viewToggle')) closeViewToggle(); });
+
 function setView(mode) {
   if (mode === 'series' && activeTab !== 'books') return;
-  if (mode === effectiveView()) return;
+  const group = document.getElementById('viewToggle');
+  if (mode === effectiveView()) {
+    if (narrowHeader() && group) group.classList.toggle('open');
+    return;
+  }
+  closeViewToggle();
   viewMode = mode;
   localStorage.setItem('viewMode', viewMode);
   paintViewToggle();
