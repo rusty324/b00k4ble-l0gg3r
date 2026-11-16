@@ -31,8 +31,8 @@ async function github(r) {
   return r.fulfill({ status: 201, contentType: 'application/json', body: J({ content: { sha } }) });
 }
 
-async function device(browser, seed) {
-  const ctx = await browser.newContext({ acceptDownloads: true });
+async function device(browser, seed, ctxOpts = {}) {
+  const ctx = await browser.newContext({ acceptDownloads: true, ...ctxOpts });
   await ctx.route('**/fonts.g**', r => r.abort()); await ctx.route('**/data/*.json', r => r.abort());
   await ctx.route('https://api.github.com/**', github);
   const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(e.message));
@@ -140,19 +140,22 @@ const st = page => page.evaluate(() => ({ s: ghStore.syncStatus().status, q: ghS
   const b1 = await bar();
   check('scrolled to the end, it fades on the left instead', !b1.over || (b1.l && !b1.r), J(b1));
 
-  await d3.page.reload(); await d3.page.waitForTimeout(1500);
-  const sw = await d3.page.evaluate(() => new Promise((resolve) => {
+  // The offline check needs the service worker, which the other devices run
+  // without (tests/lib.js); this one has no sync, so nothing to intercept.
+  const d4 = await device(browser, { books: [A], repo: false }, { serviceWorkers: 'allow' });
+  await d4.page.reload(); await d4.page.waitForTimeout(1500);
+  const sw = await d4.page.evaluate(() => new Promise((resolve) => {
     if (!('serviceWorker' in navigator)) return resolve(false);
     navigator.serviceWorker.addEventListener('message', (e) => { if (e.data && e.data.type === 'precached') resolve(true); });
     navigator.serviceWorker.ready.then((reg) => reg.active.postMessage({ type: 'precache', urls: [location.href.split('#')[0], ...performance.getEntriesByType('resource').map((r) => r.name)] }));
     setTimeout(() => resolve(false), 15000);
   }));
   check('the service worker has the app', sw === true);
-  await d3.ctx.setOffline(true);
-  await d3.page.reload(); await d3.page.waitForTimeout(2500);
-  check('the app opens with no connection, library and all', await d3.page.evaluate(() => typeof books !== 'undefined' && books.length === 1 && !!document.querySelector('.tab-bar .tab')));
-  await d3.ctx.setOffline(false);
+  await d4.ctx.setOffline(true);
+  await d4.page.reload(); await d4.page.waitForTimeout(2500);
+  check('the app opens with no connection, library and all', await d4.page.evaluate(() => typeof books !== 'undefined' && books.length === 1 && !!document.querySelector('.tab-bar .tab')));
+  await d4.ctx.setOffline(false);
 
-  check('no page errors', d1.errors.length + d2.errors.length + d3.errors.length === 0, [...d1.errors, ...d2.errors, ...d3.errors].slice(0, 3).join(' | '));
+  check('no page errors', d1.errors.length + d2.errors.length + d3.errors.length + d4.errors.length === 0, [...d1.errors, ...d2.errors, ...d3.errors, ...d4.errors].slice(0, 3).join(' | '));
   const failed = finish(); await browser.close(); process.exit(failed ? 1 : 0);
 })().catch(crash);
