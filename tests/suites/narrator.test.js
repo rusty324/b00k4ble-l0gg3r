@@ -1,5 +1,5 @@
 // The narrator field on audiobooks.
-const { launch, BASE, REPO, tmp, shot, viaDetail, detailFact, closeDetailSheet } = require('../lib');
+const { launch, BASE, REPO, tmp, shot, viaDetail, detailFact, closeDetailSheet, pickView } = require('../lib');
 const fs = require('fs'), path = require('path'), { spawnSync } = require('child_process');
 const results = []; const check = (n, ok, d='') => results.push(`${ok?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);
 const J = JSON.stringify;
@@ -60,9 +60,9 @@ const BOOKS = [
   const found = await page.evaluate(() => [...document.querySelectorAll('#booksGrid .book-title')].map(e => e.textContent));
   check('searching a narrator finds the book', J(found) === '["Good Omens"]', J(found));
   await page.fill('#searchInput', ''); await page.waitForTimeout(400);
-  await page.click('#viewToggle [data-view="list"]'); await page.waitForTimeout(300);
+  await pickView(page, 'list'); await page.waitForTimeout(300);
   check('the list row shows it beside the author', (await page.locator('#booksGrid .book-row', { hasText: 'Leviathan Wakes' }).locator('.book-row-narrator').textContent()).includes('Jefferson Mays'));
-  await page.click('#viewToggle [data-view="card"]'); await page.waitForTimeout(300);
+  await pickView(page, 'card'); await page.waitForTimeout(300);
 
   // ── 3. The form ─────────────────────────────────────────────────────
   // The narrator lives on the audiobook copy (js/app/book-copies.js).

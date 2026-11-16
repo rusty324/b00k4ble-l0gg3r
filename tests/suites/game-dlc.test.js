@@ -1,5 +1,5 @@
 // DLC & expansions on the Games tab.
-const { launch, BASE, REPO, tmp, shot, viaDetail, closeDetailSheet } = require('../lib');
+const { launch, BASE, REPO, tmp, shot, viaDetail, closeDetailSheet, pickView } = require('../lib');
 const results = [];
 const check = (n, ok, d='') => results.push(`${ok?'PASS':'FAIL'}  ${n}${d?'  — '+d:''}`);
 const J = JSON.stringify;
@@ -69,10 +69,10 @@ const chips = page => page.locator('#g-dlc-entries .fmt-chip').allTextContents()
     J(await page.locator('#detailModal .dlc-owned').allTextContents()) === '["Lair of the Shadow Broker","Arrival"]' &&
     J(await page.locator('#detailModal .dlc-want').allTextContents()) === '["Overlord (wishlist)"]');
   await closeDetailSheet(page);
-  await page.click('#viewToggle [data-view="list"]'); await page.waitForTimeout(300);
+  await pickView(page, 'list'); await page.waitForTimeout(300);
   check('list view carries the badge too',
     (await page.locator('#gameListWrap .book-row', { hasText: 'Mass Effect 2' }).locator('.badge-dlc').textContent()) === 'DLC 2/3');
-  await page.click('#viewToggle [data-view="card"]'); await page.waitForTimeout(300);
+  await pickView(page, 'card'); await page.waitForTimeout(300);
 
   // ── 3. Search reaches into DLC names ────────────────────────────────
   await page.fill('#gameSearchInput', 'shadow broker'); await page.waitForTimeout(400);

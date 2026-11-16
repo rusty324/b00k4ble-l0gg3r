@@ -1,7 +1,7 @@
 // The Books tab's Series view: one row per series, the completeness strip,
 // gaps in words, volumes inline (desktop) or in a bottom sheet (phone),
 // "Select these N books", entry sorts and the summary line.
-const { launch, BASE, reporter } = require('../lib');
+const { launch, BASE, reporter, pickView } = require('../lib');
 const { check, finish, crash } = reporter();
 const J = JSON.stringify;
 let nextId = 1700000000001;
@@ -42,7 +42,7 @@ const rowText = (page, name) => page.locator('.series-block', { hasText: name })
   { const { ctx, page, errors: e } = await open(browser, { width: 1280, height: 900 }); errors.push(...e);
     check('the view toggle has card, list and series buttons on Books', await page.locator('#viewToggle [data-view]').count() === 3 &&
       await page.locator('#viewToggle [data-view="series"]').isVisible());
-    await page.click('#viewToggle [data-view="series"]'); await page.waitForTimeout(200);
+    await pickView(page, 'series'); await page.waitForTimeout(200);
     check('Series is pressed and remembered', await page.getAttribute('#viewToggle [data-view="series"]', 'aria-pressed') === 'true' &&
       await page.evaluate(() => localStorage.getItem('viewMode')) === 'series');
     check('the summary line counts entries and books', (await page.innerText('#booksSummary')).trim() === '5 entries · 11 books', await page.innerText('#booksSummary'));
@@ -103,11 +103,11 @@ const rowText = (page, name) => page.locator('.series-block', { hasText: name })
     await page.fill('#searchInput', ''); await page.waitForTimeout(500);
 
     // Back to card view: book sorts return, summary hides
-    await page.click('#viewToggle [data-view="card"]'); await page.waitForTimeout(200);
+    await pickView(page, 'card'); await page.waitForTimeout(200);
     check('card view brings back the book sorts and cards', await page.locator('#sortSelect option[value="title-asc"]').count() === 1 &&
       await page.locator('#booksGrid .book-card').count() === 11 && await page.locator('#booksSummary').isHidden());
     // Off Books, the series button hides
-    await page.click('#viewToggle [data-view="series"]'); await page.waitForTimeout(150);
+    await pickView(page, 'series'); await page.waitForTimeout(150);
     await page.evaluate(() => switchTab('media')); await page.waitForTimeout(200);
     check('off Books the series button hides and cards show', await page.locator('#viewToggle [data-view="series"]').isHidden() &&
       await page.getAttribute('#viewToggle [data-view="card"]', 'aria-pressed') === 'true');
@@ -118,7 +118,7 @@ const rowText = (page, name) => page.locator('.series-block', { hasText: name })
 
   // ── Phone ──────────────────────────────────────────────────────────
   { const { ctx, page, errors: e } = await open(browser, { width: 390, height: 844 }, true); errors.push(...e);
-    await page.click('#viewToggle [data-view="series"]'); await page.waitForTimeout(200);
+    await pickView(page, 'series'); await page.waitForTimeout(200);
     const card = (await page.locator('.series-block', { hasText: 'Gappy' }).innerText()).replace(/\s+/g, ' ');
     check('a phone card: "4 books" and "2 gaps in #1–5"', /4 books/.test(card) && /2 gaps in #1–5/.test(card), card);
     const noWide = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
