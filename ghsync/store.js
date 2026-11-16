@@ -70,11 +70,12 @@ export function createStore(opts) {
     onRefresh = async () => false,
     retryMs = 30000,
     holdFirstMerge = null,
+    cacheSource = () => null,
   } = opts;
 
   const REPO_KEY = `${appId}.datarepo`;
   const PW_KEY = `${appId}.enc.pw`;
-  const cache = createCache(appId);
+  const cache = createCache(appId, { source: cacheSource });
   const tokens = createTokenStore(`${appId}.pat`);
 
   // ---------- data repository ----------
@@ -226,6 +227,18 @@ export function createStore(opts) {
     return out;
   }
 
+  function changedFromShadow(shadow, after) {
+    const out = [];
+    const seen = new Set();
+    for (const r of Array.isArray(after) ? after : []) {
+      if (!r || r.id == null || r.id === '') return null;
+      seen.add(String(r.id));
+      if (shadow[r.id] !== cache.hash(JSON.stringify(r))) out.push(r.id);
+    }
+    for (const id of Object.keys(shadow)) if (!seen.has(id)) out.push(Number.isFinite(+id) && String(+id) === id ? +id : id);
+    return out;
+  }
+
   async function save(collection, records) {
     const path = files[collection];
     // Remember which records this save touched, so a conflict merge lets
@@ -233,7 +246,16 @@ export function createStore(opts) {
     // seeded, moved to another folder, resolved — stays untracked.
     const wasDirty = cache.isDirty(path);
     const tracked = wasDirty ? cache.getDirtyIds(path) : [];
-    const changed = tracked ? changedIds(cache.getData(path), records) : null;
+    let changed = null;
+    if (tracked && cache.isSourced(path)) {
+      // The app already changed its own records, so get() would read the
+      // new state as "before". Compare against the shadow of what was
+      // last stored instead; no shadow means it isn't known.
+      const shadow = cache.getShadow(path);
+      if (shadow) changed = changedFromShadow(shadow, records);
+    } else if (tracked) {
+      changed = changedIds(cache.getData(path), records);
+    }
     try {
       cache.setData(path, records);
     } catch (e) {

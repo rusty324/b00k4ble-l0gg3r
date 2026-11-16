@@ -35,7 +35,7 @@ this package against a stubbed GitHub — see Testing below before changing
 | `store.js` | Always. `createStore()` is the whole core: reads, writes, push, merge, refresh, encryption. ~400 lines, worth reading end to end. |
 | `settings-ui.js` | Wiring the repo/token/password UI, or changing its copy. |
 | `github-api.js` | Touching auth, error types, or adding an API call. |
-| `cache.js` | Rarely. Namespaced localStorage, no logic. |
+| `cache.js` | Namespaced localStorage. With `createStore({ cacheSource })` a path's content is read from and written through the app instead of copied (this app's four collections, see `../sync.js`); its key then holds only `"1"`, plus a per-record hash shadow (`<ns>.shadow.<path>`) for edit tracking. |
 | `crypto.js` | Never edit casually — see invariant 5. |
 | `example/` | Copy this as the starting point for a new app. Runs standalone from any static server. |
 | `../sync.js` | Wiring this app to the store: the bridge, and which collections map to which repo paths. |

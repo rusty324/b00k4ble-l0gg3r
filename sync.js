@@ -53,6 +53,28 @@ const filesFor = folder => Object.fromEntries(
 // The folder the store's paths currently point at.
 let currentFolder = storedFolder();
 
+// Which collection a repo path holds, whatever folder it is in.
+const collectionOf = path => COLLECTIONS.find(c => path === FILE_NAMES[c] || path.endsWith(`/${FILE_NAMES[c]}`)) || null;
+
+let applying = false;   // suppresses the echo of our own write
+
+// The four collections are already stored by the app (myLibrary,
+// mediaLibrary, …). ghsync used to keep a second full copy of each, so the
+// library counted twice against the ~5 MB localStorage quota. It now reads
+// them from the app and writes them back through it; its own key holds only
+// a marker and a list of per-record hashes (ghsync/cache.js, `source`).
+function cacheSource(path) {
+  const collection = collectionOf(path);
+  if (!collection) return null;
+  return {
+    get: () => window.syncSnapshot?.(collection) ?? null,
+    set: (records) => {
+      if (applying || !Array.isArray(records)) return;   // the app's own write, already in place
+      if (window.applySyncedData?.(collection, records)) queueMicrotask(() => window.renderPage?.());
+    },
+  };
+}
+
 export const store = createStore({
   appId: 'booklogger',
   files: filesFor(storedFolder()),
@@ -62,7 +84,12 @@ export const store = createStore({
   // The first sync with a repo that already has a library asks rather than
   // merging with this device winning (js/app/sync-resolver.js).
   holdFirstMerge: (collection, local, remote) => !!window.syncNeedsDecision?.(collection, local, remote),
+  cacheSource,
 });
+
+// Shrink copies an older version left behind (the whole library, per file)
+// to the marker, keeping what they recorded as the last synced state.
+for (const collection of COLLECTIONS) store.cache.compact(store.files[collection]);
 
 // Retarget the store at a different folder, carrying the cached records
 // across with it.
@@ -91,6 +118,7 @@ function retargetFolder(folder) {
     if (records != null) {
       store.cache.setData(newPath, records);
       localStorage.removeItem(store.cache.dataPrefix + oldPath);
+      localStorage.removeItem(store.cache.dataPrefix.replace(/data\.$/, 'shadow.') + oldPath);
       moved.push(collection);
     }
     store.cache.setSha(oldPath, null);
@@ -131,7 +159,6 @@ function seedFromApp() {
 }
 
 // ─── app -> repo ──────────────────────────────────────────────────────
-let applying = false;   // suppresses the echo of our own write
 
 window.ghPush = (collection, records) => {
   if (applying || !Array.isArray(records)) return;
