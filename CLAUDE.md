@@ -10,6 +10,12 @@ Write the issue so it can be picked up cold: what to build, and any facts
 already established while investigating — with the file and line references
 that back them — so the next session does not re-derive them.
 
+## Merging
+
+Once a pull request's CI has passed on GitHub — both the Chromium and the
+WebKit test jobs, on the PR's current head commit — merge it without asking.
+If either job fails, fix it and wait for a clean run first.
+
 ## Tests
 
 Playwright suites live in `tests/suites/*.test.js`; `tests/run.js` starts its
