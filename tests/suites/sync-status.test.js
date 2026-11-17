@@ -50,6 +50,11 @@ async function open(browser, { gh, seed = {} }) {
     for (const [k, v] of Object.entries(s.ls || {})) d(k, v);
   }, seed);
   await page.goto(BASE + '/index.html'); await page.waitForTimeout(900);
+  // The first sync has to settle before a test edits anything: an edit that
+  // lands while it is still comparing this device with the repo makes them
+  // differ, and the app (rightly) stops to ask how to combine them. On a busy
+  // CI runner, 900ms was not always enough.
+  await page.waitForFunction(() => window.ghStore && ghStore.syncStatus().status === 'ok', null, { timeout: 15000 }).catch(() => {});
   return { ctx, page, errors };
 }
 const status = page => page.evaluate(() => { const s = ghStore.syncStatus(); return { status: s.status, err: s.error ? s.error.name + ': ' + s.error.message : null, queue: ghStore.cache.getQueue().length }; });
