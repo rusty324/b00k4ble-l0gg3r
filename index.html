@@ -50,8 +50,8 @@
       <div class="settings-wrap">
         <button class="btn btn-sm" id="settingsBtn" onclick="toggleSettingsMenu()" title="Settings">⋯</button>
         <div id="settingsMenu" class="settings-menu" style="display:none">
-          <button class="settings-item" onclick="toggleTheme(); closeSettingsMenu()">
-            <span id="settingsThemeIcon">🌙</span> <span id="settingsThemeLabel">Dark mode</span>
+          <button class="settings-item" id="settingsThemeBtn" onclick="openThemeSheet(); closeSettingsMenu()">
+            <span aria-hidden="true">🌗</span> <span id="settingsThemeLabel">Theme</span>…
           </button>
           <button class="settings-item" id="settingsExportBtn" onclick="exportData(); closeSettingsMenu()">⬇ Export library</button>
           <button class="settings-item" id="settingsImportBtn" onclick="document.getElementById('importFile').click(); closeSettingsMenu()">⬆ Import library</button>
@@ -827,6 +827,11 @@
 <!-- A series' volumes on a phone — filled by openSeriesSheet() (js/app/series-view.js) -->
 <div class="modal-backdrop" id="seriesModal" onclick="handleSeriesBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="seriesSheetTitle">
   <div class="modal detail-modal series-sheet" id="seriesBody"></div>
+</div>
+
+<!-- ⋯ → Theme… — filled by paintThemeSheet() (js/app/shell.js) -->
+<div class="modal-backdrop" id="themeModal" onclick="handleThemeBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="themeTitle">
+  <div class="modal detail-modal" id="themeBody"></div>
 </div>
 
 <!-- A set (box set, collection, bundle) — filled by openSetSheet() (js/app/set-view.js) -->
