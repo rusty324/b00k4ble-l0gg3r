@@ -1,21 +1,55 @@
 // shell.js — app chrome: theme toggle, the ⋯ settings dropdown, and
 // tab switching. Split out of app.js.
 
-// ─── THEME ────────────────────────────────────────────────────────────
+// ─── THEMES ───────────────────────────────────────────────────────────
+// A theme is a set of colour tokens: :root holds Light, and each other theme
+// is a [data-theme="<key>"] block in css/base.css that overrides them. To add
+// one, add its block there and an entry here; ⋯ → Theme… lists them all.
+// `swatch` is what its card in the picker shows: background, surface, accent, text.
+const THEMES = [
+  { key: 'light', label: 'Light', swatch: ['#FAF8F4', '#FFFFF8', '#412402', '#2C2C2A'] },
+  { key: 'dark',  label: 'Dark',  swatch: ['#161513', '#1f1e1b', '#FAC775', '#f0efe8'] },
+];
+const themeByKey = k => THEMES.find(t => t.key === k) || THEMES.find(t => t.key === 'dark');
+
 function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  const icon  = theme === 'dark' ? '☀️' : '🌙';
-  const label = theme === 'dark' ? 'Light mode' : 'Dark mode';
-  const themeIconEl  = document.getElementById('settingsThemeIcon');
-  const themeLabelEl = document.getElementById('settingsThemeLabel');
-  if (themeIconEl)  themeIconEl.textContent  = icon;
-  if (themeLabelEl) themeLabelEl.textContent = label;
-  localStorage.setItem('theme', theme);
+  const t = themeByKey(theme);
+  document.documentElement.setAttribute('data-theme', t.key);
+  const label = document.getElementById('settingsThemeLabel');
+  if (label) label.textContent = `Theme: ${t.label}`;
+  try { localStorage.setItem('theme', t.key); } catch { /* private mode: this session only */ }
+  if (document.getElementById('themeModal')?.classList.contains('open')) paintThemeSheet();
 }
 
+function paintThemeSheet() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  document.getElementById('themeBody').innerHTML = `
+    <div class="modal-title" id="themeTitle">Theme</div>
+    <div class="theme-grid" role="radiogroup" aria-labelledby="themeTitle">
+      ${THEMES.map(t => `<button type="button" class="theme-card${t.key === cur ? ' on' : ''}" role="radio" aria-checked="${t.key === cur}"
+          data-theme-key="${t.key}" onclick="applyTheme('${t.key}')">
+        <span class="theme-swatch" aria-hidden="true" style="background:${t.swatch[0]}">
+          <span style="background:${t.swatch[1]};border-color:${t.swatch[3]}22"><i style="background:${t.swatch[2]}"></i><i style="background:${t.swatch[3]}"></i></span>
+        </span>
+        <span class="theme-name">${t.key === cur ? '✓ ' : ''}${esc(t.label)}</span></button>`).join('')}
+    </div>
+    <div class="detail-actions"><span class="detail-spacer"></span>
+      <button type="button" class="btn" onclick="closeThemeSheet()">Done</button></div>`;
+}
+
+function openThemeSheet() {
+  paintThemeSheet();
+  document.getElementById('themeModal').classList.add('open');
+  document.querySelector('#themeBody .theme-card.on')?.focus();
+}
+function closeThemeSheet() { document.getElementById('themeModal')?.classList.remove('open'); }
+function handleThemeBackdrop(e) { if (e.target === document.getElementById('themeModal')) closeThemeSheet(); }
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('themeModal')?.classList.contains('open')) closeThemeSheet();
+});
+// Kept for anything still calling it: flips between Light and Dark.
 function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme');
-  applyTheme(current === 'dark' ? 'light' : 'dark');
+  applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
 }
 
 // The view a tab actually shows: Series exists only on Books, and the other

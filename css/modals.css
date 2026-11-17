@@ -482,3 +482,16 @@ img.fmt-icon { width: 1.15em; height: 1.15em; object-fit: contain; vertical-alig
 .set-tile { font-size: 20px; background: var(--surface-2, transparent); }
 .set-all-btn { width: 100%; margin-top: 10px; min-height: 44px; }
 .set-link { background: none; border: 0; padding: 0; color: var(--accent, inherit); text-decoration: underline; cursor: pointer; font: inherit; }
+
+/* ⋯ → Theme… (js/app/shell.js) */
+.theme-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin: 8px 0 4px; }
+.theme-card { display: flex; flex-direction: column; gap: 8px; padding: 8px; border: 2px solid var(--border); border-radius: 10px;
+  background: var(--surface); color: var(--text); cursor: pointer; font: inherit; text-align: left; min-height: 44px; }
+.theme-card.on { border-color: var(--amber-900); }
+.theme-card:focus-visible { outline: 2px solid var(--amber-200); outline-offset: 2px; }
+.theme-swatch { display: flex; align-items: flex-end; height: 64px; border-radius: 6px; padding: 8px; }
+.theme-swatch > span { flex: 1; height: 34px; border-radius: 4px; border: 1px solid; display: flex; align-items: center; gap: 6px; padding: 0 8px; }
+.theme-swatch i { display: block; height: 6px; border-radius: 3px; }
+.theme-swatch i:first-child { width: 22px; }
+.theme-swatch i:last-child { width: 40px; opacity: 0.6; }
+.theme-name { font-weight: 500; font-size: 14px; }
