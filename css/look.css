@@ -85,3 +85,63 @@
 [data-font="serif"] body, [data-font="serif"] body * { font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif !important; }
 [data-font="rounded"] body, [data-font="rounded"] body * { font-family: ui-rounded, 'SF Pro Rounded', 'Nunito', 'Varela Round', system-ui, sans-serif !important; }
 [data-font="mono"] body, [data-font="mono"] body * { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace !important; }
+
+/* ─── Console: flat colour blocks on black, one rounded corner, Antonio ─── */
+.sp-console { background: #000; }
+.sp-console .sp-card { border-radius: 12px 0 12px 0; border: 2px solid #FF9966; box-shadow: none; background: #0B0A0F; }
+.sp-console .sp-card + .sp-card { border-color: #CC99CC; }
+.sp-console .sp-card b { border-radius: 0; background: #FFCC66; }
+
+html[data-style="console"] {
+  --console-peach: #FF9966; --console-gold: #FFCC66; --console-lilac: #CC99CC; --console-peri: #9999FF;
+  --console-sky: #99CCFF; --console-tan: #FFCC99; --console-rose: #CC6666; --console-dim: #241B2B;
+  --bg: #000; --surface: #0B0A0F; --text: #E9DFF2; --text-muted: #B0A8BE; --text-light: #B0A8BE;
+  --border: #241B2B; --border-mid: #4A3D57; --ctl-border: #7A7088; --shadow: none;
+  --amber-50: #241B2B; --amber-100: #FFCC99; --amber-200: #FF9966; --amber-600: #FFCC66; --amber-800: #FFCC99; --amber-900: #FFCC66;
+  --gray-50: #241B2B; --gray-100: #3A2F44; --gray-200: #4A3D57; --gray-400: #B0A8BE; --gray-600: #B0A8BE; --gray-800: #E9DFF2; --gray-900: #E9DFF2;
+  --teal-50: #99CCFF; --teal-600: #000; --blue-50: #241B2B; --blue-600: #99CCFF; --coral-50: #241B2B; --coral-200: #CC6666; --coral-600: #CC6666;
+  --owned: #99CCFF; --missing: #241B2B; --gap-text: #FFCC99; --row-tint: #150F1B;
+}
+html[data-style="console"] body { background: #000; }
+/* header: peach brand block with the rounded elbow, tabs as blocks */
+html[data-style="console"] .brand { background: var(--console-peach); color: #000; padding: .55rem 1.1rem .35rem; border-radius: 28px 0 0 0; letter-spacing: .05em; text-transform: uppercase; font-weight: 700; }
+html[data-style="console"] .brand span { color: #000; }
+html[data-style="console"] .tab-bar { border-top: 0; gap: 6px; padding: 6px 1.5rem 0; }
+html[data-style="console"] .tab { background: var(--console-dim); color: var(--console-peach); border: 0; padding: .55rem 1.1rem .35rem; display: flex; align-items: flex-end; min-height: 44px; font-size: 16px; letter-spacing: .08em; text-transform: uppercase; }
+html[data-style="console"] .tab:hover { color: var(--console-gold); }
+html[data-style="console"] .tab.active { background: var(--console-peach); color: #000; }
+/* controls: flat blocks, one rounded end */
+html[data-style="console"] .btn { background: var(--console-dim); color: var(--console-peach); border: 0; border-radius: 16px 0 0 16px; letter-spacing: .08em; text-transform: uppercase; }
+html[data-style="console"] .btn-primary { background: var(--console-gold); color: #000; }
+html[data-style="console"] .btn-danger { background: var(--console-rose); color: #000; }
+html[data-style="console"] .view-btn[aria-pressed="true"] { background: var(--console-peach); color: #000; }
+html[data-style="console"] .pill { background: transparent; border: 2px solid #7A7088; color: var(--text); font-size: 14px; letter-spacing: .06em; text-transform: uppercase; }
+html[data-style="console"] .pill.active, html[data-style="console"] .pill[aria-pressed="true"] { background: var(--console-gold); border-color: var(--console-gold); color: #000; }
+html[data-style="console"] input, html[data-style="console"] select, html[data-style="console"] textarea { background: var(--console-dim); color: var(--text); border: 0; border-bottom: 3px solid var(--console-gold); border-radius: 0; }
+/* cards and rows: one rounded diagonal, each in its own block colour */
+html[data-style="console"] .book-card, html[data-style="console"] .book-row, html[data-style="console"] .stat-card, html[data-style="console"] .series-block, html[data-style="console"] .missing-item {
+  --hue: var(--console-peach); background: var(--surface); border: 2px solid var(--hue); border-radius: 28px 0 28px 0; box-shadow: none; overflow: hidden; }
+html[data-style="console"] .book-row { border-radius: 22px 0 22px 0; }
+html[data-style="console"] :is(.book-card, .book-row, .stat-card):nth-child(6n+2) { --hue: var(--console-lilac); }
+html[data-style="console"] :is(.book-card, .book-row, .stat-card):nth-child(6n+3) { --hue: var(--console-peri); }
+html[data-style="console"] :is(.book-card, .book-row, .stat-card):nth-child(6n+4) { --hue: var(--console-gold); }
+html[data-style="console"] :is(.book-card, .book-row, .stat-card):nth-child(6n+5) { --hue: var(--console-sky); }
+html[data-style="console"] :is(.book-card, .book-row, .stat-card):nth-child(6n+6) { --hue: var(--console-tan); }
+html[data-style="console"] .book-card-cover, html[data-style="console"] .book-row-thumb { border-radius: 0; }
+html[data-style="console"] .book-title, html[data-style="console"] .book-row-title, html[data-style="console"] .detail-title { color: var(--hue, var(--console-gold)); text-transform: uppercase; letter-spacing: .04em; }
+/* status is always a block with its word, never colour alone */
+html[data-style="console"] .badge { border-radius: 0; text-transform: uppercase; letter-spacing: .1em; font-size: 12px; padding: .1rem .55rem; }
+html[data-style="console"] :is(.badge-physical, .badge-ebook, .badge-audio, .badge-digital, .badge-media, .badge-platform, .badge-tag) { background: transparent; color: var(--text); border: 1px solid #7A7088; }
+html[data-style="console"] :is(.badge-read, .badge-watched) { background: var(--console-sky); color: #000; }
+html[data-style="console"] .badge-reading { background: var(--console-gold); color: #000; }
+html[data-style="console"] .badge-want { background: var(--console-dim); color: var(--console-lilac); }
+html[data-style="console"] .badge-hold { background: var(--console-peri); color: #000; }
+html[data-style="console"] .badge-dlc, html[data-style="console"] .badge-seasons { background: var(--console-peri); color: #000; }
+/* dialogs and the settings menu */
+html[data-style="console"] .modal { border: 0; border-top: 4px solid var(--console-peach); border-radius: 0; background: var(--surface); }
+html[data-style="console"] .modal-title { color: var(--console-peach); text-transform: uppercase; letter-spacing: .04em; font-size: 1.6rem; }
+html[data-style="console"] .settings-menu, html[data-style="console"] .look-sheet { border-radius: 0; border-color: var(--console-peri); box-shadow: none; }
+
+/* Console type: Barlow for text, Antonio for labels and titles */
+[data-font="console"] body, [data-font="console"] body * { font-family: 'Barlow Semi Condensed', system-ui, sans-serif !important; }
+[data-font="console"] :is(.brand, .tab, .btn, .pill, .badge, .modal-title, .book-title, .book-row-title, .detail-title, .look-label, .look-head h2, .stat-card h3, h1, h2) { font-family: Antonio, 'Barlow Semi Condensed', sans-serif !important; }
