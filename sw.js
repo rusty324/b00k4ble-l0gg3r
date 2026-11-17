@@ -16,7 +16,9 @@ self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
 
 async function fromNetwork(request, cache) {
-  const res = await fetch(request);
+  // no-cache: always ask the server (a cheap 304 when nothing changed), so the
+  // browser's own HTTP cache can't hand back an old script beside a new page.
+  const res = await fetch(request, { cache: 'no-cache' });
   if (res.ok) cache.put(request, res.clone()).catch(() => {});
   return res;
 }

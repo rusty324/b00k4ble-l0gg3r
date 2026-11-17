@@ -116,5 +116,5 @@ window.addEventListener('scroll', () => {
 
 
 // ─── INIT ─────────────────────────────────────────────────────────────
-applyTheme(localStorage.getItem('theme') || 'dark');
+// The look (theme) is applied by js/app/look.js as it loads.
 switchTab(activeTab);
