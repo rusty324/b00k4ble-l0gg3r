@@ -762,11 +762,15 @@ const PS_PLATFORMS = new Set(['ps3', 'ps4', 'ps5']);
 // How a copy is held, in the copies editor. A PS Plus copy is a subscription
 // copy whose store is ps-plus; the derived `platforms` still says 'ps-plus'.
 const GAME_COPY_FORMATS = ['physical', 'digital', 'subscription'];
+// On PlayStation the only subscription is PS Plus, so the format menu says so
+// and the copy's store is set to it; no service picker.
+const copyFormatLabel = (f, platform) =>
+  f === 'subscription' && PS_PLATFORMS.has(platform) ? 'PlayStation Plus' : GAME_FORMAT_LABEL[f];
 
 // The platforms the form offers first. Any other value (a Switch, say) is
 // typed in once and then offered like these, from the data.
-const GAME_PLATFORMS = ['pc', 'ps3', 'ps4', 'ps5', 'xbox'];
-const GAME_PLATFORM_LABEL = { pc: 'PC', ps3: 'PS3', ps4: 'PS4', ps5: 'PS5', xbox: 'Xbox', steam: 'Steam' };
+const GAME_PLATFORMS = ['pc', 'ps2', 'ps3', 'ps4', 'ps5', 'xbox'];
+const GAME_PLATFORM_LABEL = { pc: 'PC', ps2: 'PS2', ps3: 'PS3', ps4: 'PS4', ps5: 'PS5', xbox: 'Xbox', steam: 'Steam' };
 // A typed platform is stored lowercased; shown with capitals ("switch" -> "Switch").
 const platformLabel = p => GAME_PLATFORM_LABEL[p] || String(p || '').replace(/(^|\s)\S/g, c => c.toUpperCase());
 
