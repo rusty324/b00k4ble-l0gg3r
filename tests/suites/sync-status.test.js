@@ -50,6 +50,15 @@ async function open(browser, { gh, seed = {} }) {
     for (const [k, v] of Object.entries(s.ls || {})) d(k, v);
   }, seed);
   await page.goto(BASE + '/index.html'); await page.waitForTimeout(900);
+  // The first sync has to read the repo before a test edits anything: an edit
+  // that lands while it is still comparing this device with the repo makes
+  // them differ, and the app (rightly) stops to ask how to combine them. On a
+  // busy CI runner, 900ms alone was not always enough.
+  // Settled = the repo's books file has been read (whatever the status says:
+  // several cases here make uploads fail on purpose), plus a moment for the
+  // merge that follows the read.
+  for (let t = 0; t < 150 && !gh.log.some(l => l.startsWith('GET data/books.json')); t++) await page.waitForTimeout(100);
+  await page.waitForTimeout(300);
   return { ctx, page, errors };
 }
 const status = page => page.evaluate(() => { const s = ghStore.syncStatus(); return { status: s.status, err: s.error ? s.error.name + ': ' + s.error.message : null, queue: ghStore.cache.getQueue().length }; });

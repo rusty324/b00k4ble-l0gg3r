@@ -47,7 +47,10 @@ const J = JSON.stringify;
 
   // Style and font
   const radius = () => page.evaluate(() => getComputedStyle(document.getElementById('settingsBtn')).borderTopLeftRadius);
-  await page.click('#lookBody [data-look-style="sharp"]'); await page.waitForTimeout(150);
+  await page.click('#lookBody [data-look-style="sharp"]');
+  // Buttons animate their corners (transition: all), so wait for it to settle
+  // rather than reading mid-way on a slow runner.
+  await page.waitForFunction(() => parseFloat(getComputedStyle(document.getElementById('settingsBtn')).borderTopLeftRadius) < 0.5, null, { timeout: 3000 }).catch(() => {});
   check('Sharp squares the corners', await attr('data-style') === 'sharp' && parseFloat(await radius()) < 0.5, await radius());
   await page.click('#lookBody [data-look-style="paper"]'); await page.waitForTimeout(150);
   check('Paper textures the page', await page.evaluate(() => getComputedStyle(document.body).backgroundImage.includes('gradient')));
