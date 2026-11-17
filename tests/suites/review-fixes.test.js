@@ -35,6 +35,10 @@ async function device(browser, seed, ctxOpts = {}) {
   const ctx = await browser.newContext({ acceptDownloads: true, ...ctxOpts });
   await ctx.route('**/fonts.g**', r => r.abort()); await ctx.route('**/data/*.json', r => r.abort());
   await ctx.route('https://api.github.com/**', github);
+  // No cover lookups: on a runner that can reach Open Library, the app finds a
+  // cover for Alpha in the background and saves it — an edit of its own to the
+  // very record the conflict check is about, at an unpredictable moment.
+  await ctx.route(/openlibrary\.org/, r => r.abort());
   const page = await ctx.newPage(); const errors = []; page.on('pageerror', e => errors.push(e.message));
   page.on('dialog', d => d.accept());
   const asked = [];      // this device's own GitHub requests
