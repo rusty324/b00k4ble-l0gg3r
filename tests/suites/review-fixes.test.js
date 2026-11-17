@@ -76,7 +76,14 @@ const st = page => page.evaluate(() => ({ s: ghStore.syncStatus().status, q: ghS
   // Another device marks Alpha as read. This one hasn't seen that, and edits Bravo.
   remote['data/books.json'] = { sha: 'other-device', text: J(remoteBooks().map(r => (r.id === A.id ? { ...r, status: 'read', notes: 'theirs' } : r)), null, 2) };
   await d1.page.evaluate(id => { books.find(b => b.id === id).notes = 'mine'; save(); }, B.id);
-  await d1.page.waitForTimeout(1500);
+  // The conflict round trip (rejected write, re-read, merge, write again) takes
+  // as long as it takes on a busy runner: wait for the merged write to land.
+  for (let t = 0; t < 100; t++) {
+    const r = Object.fromEntries(remoteBooks().map(x => [x.title, x]));
+    if (r.Bravo && r.Bravo.notes === 'mine' && (await st(d1.page)).q === 0) break;
+    await d1.page.waitForTimeout(100);
+  }
+  await d1.page.waitForTimeout(300);
   const after = Object.fromEntries(remoteBooks().map(r => [r.title, r]));
   check('the other device\'s edit survives the merge', after.Alpha.status === 'read' && after.Alpha.notes === 'theirs', J(after.Alpha));
   check('and so does this device\'s', after.Bravo.notes === 'mine', J(after.Bravo));
