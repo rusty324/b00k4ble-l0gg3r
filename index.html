@@ -4,9 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>My Library</title>
-<!-- The saved theme, before anything paints: the dark default above would
-     otherwise show for a moment to someone who chose light. -->
-<script>try { var t = localStorage.getItem('theme'); if (t) document.documentElement.setAttribute('data-theme', t); } catch (e) {}</script>
+<!-- The saved look (js/app/look.js), before anything paints: the dark
+     default above would otherwise show for a moment to someone who chose
+     otherwise. -->
+<script>try { var d = document.documentElement, L = JSON.parse(localStorage.getItem('look') || '{}') || {}, t = L.mode || localStorage.getItem('theme');
+  if (t) d.setAttribute('data-theme', t); if (L.style) d.setAttribute('data-style', L.style); if (L.font) d.setAttribute('data-font', L.font);
+  var c = localStorage.getItem('lookCss'); if (c) { var st = document.createElement('style'); st.id = 'lookStyle'; st.textContent = c; document.head.appendChild(st); } } catch (e) {}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <!-- Split from one styles.css into five files for readability. Order is
@@ -18,6 +21,7 @@
 <link rel="stylesheet" href="css/modals.css">
 <link rel="stylesheet" href="css/responsive.css">
 <link rel="stylesheet" href="css/features.css">
+<link rel="stylesheet" href="css/look.css">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="Library Logger">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -51,7 +55,7 @@
         <button class="btn btn-sm" id="settingsBtn" onclick="toggleSettingsMenu()" title="Settings">⋯</button>
         <div id="settingsMenu" class="settings-menu" style="display:none">
           <button class="settings-item" id="settingsThemeBtn" onclick="openThemeSheet(); closeSettingsMenu()">
-            <span aria-hidden="true">🌗</span> <span id="settingsThemeLabel">Theme</span>…
+            <span aria-hidden="true">🌗</span> <span id="settingsThemeLabel">Themes</span>
           </button>
           <button class="settings-item" id="settingsExportBtn" onclick="exportData(); closeSettingsMenu()">⬇ Export library</button>
           <button class="settings-item" id="settingsImportBtn" onclick="document.getElementById('importFile').click(); closeSettingsMenu()">⬆ Import library</button>
@@ -829,9 +833,10 @@
   <div class="modal detail-modal series-sheet" id="seriesBody"></div>
 </div>
 
-<!-- ⋯ → Theme… — filled by paintThemeSheet() (js/app/shell.js) -->
-<div class="modal-backdrop" id="themeModal" onclick="handleThemeBackdrop(event)" role="dialog" aria-modal="true" aria-labelledby="themeTitle">
-  <div class="modal detail-modal" id="themeBody"></div>
+<!-- ⋯ → Themes — a panel from the right, over the page; filled by paintLookPanel() (js/app/look.js) -->
+<div class="look-panel" id="lookPanel" hidden>
+  <div class="look-scrim" onclick="closeLookPanel()"></div>
+  <aside class="look-sheet" id="lookBody" role="dialog" aria-modal="true" aria-labelledby="lookTitle"></aside>
 </div>
 
 <!-- A set (box set, collection, bundle) — filled by openSetSheet() (js/app/set-view.js) -->
@@ -912,6 +917,7 @@
 <script src="js/app/core.js"></script>
 <script src="js/app/state.js"></script>
 <script src="js/app/shell.js"></script>
+<script src="js/app/look.js"></script>
 <script src="js/app/render-books.js"></script>
 <script src="js/app/render-media.js"></script>
 <script src="js/app/render-games.js"></script>

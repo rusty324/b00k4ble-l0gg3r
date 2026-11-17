@@ -1,0 +1,87 @@
+/* look.css — ⋯ → Themes (js/app/look.js): the side panel, and the graphical
+   styles and fonts it switches between ([data-style], [data-font] on <html>).
+   The colour palettes are custom properties written by look.js. */
+
+/* ─── the panel ──────────────────────────────────────────────────────── */
+.look-panel { position: fixed; inset: 0; z-index: 400; }
+.look-panel[hidden] { display: none; }
+.look-scrim { position: absolute; inset: 0; background: rgba(0,0,0,0); transition: background .22s; }
+.look-panel.open .look-scrim { background: rgba(0,0,0,.35); }
+.look-sheet { position: absolute; top: 0; right: 0; bottom: 0; width: min(440px, 90vw); display: flex; flex-direction: column;
+  background: var(--surface); color: var(--text); border-left: 1px solid var(--border-mid); box-shadow: -12px 0 32px rgba(0,0,0,.25);
+  transform: translateX(100%); transition: transform .22s ease; }
+.look-panel.open .look-sheet { transform: none; }
+@media (prefers-reduced-motion: reduce) { .look-sheet, .look-scrim { transition: none; } }
+.look-head { display: flex; align-items: center; gap: 8px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.look-head h2 { flex: 1; margin: 0; font-size: 18px; font-weight: 500; }
+.look-head .btn { min-height: 36px; }
+.look-scroll { flex: 1; overflow-y: auto; padding: 4px 16px 24px; -webkit-overflow-scrolling: touch; }
+.look-sec { margin-top: 18px; }
+.look-label { display: block; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+.look-label .opt { text-transform: none; letter-spacing: 0; font-weight: 400; }
+.look-seg { display: inline-flex; border: 1px solid var(--border-mid); border-radius: 999px; padding: 3px; gap: 3px; }
+.look-seg button { border: 0; background: none; color: var(--text-muted); font: inherit; font-size: 14px; padding: 6px 14px; border-radius: 999px; cursor: pointer; min-height: 36px; }
+.look-seg button.on { background: var(--amber-900); color: var(--amber-50); }
+.look-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.look-card { display: flex; flex-direction: column; gap: 6px; padding: 6px; border: 2px solid var(--border); border-radius: 10px;
+  background: var(--bg); color: var(--text); cursor: pointer; font: inherit; text-align: left; }
+.look-card.on { border-color: var(--amber-200); }
+.look-card:focus-visible, .look-swatch:focus-visible, .look-seg button:focus-visible { outline: 2px solid var(--amber-200); outline-offset: 2px; }
+.look-card-name { font-size: 13px; font-weight: 500; padding: 0 2px 2px; display: flex; flex-direction: column; }
+.look-card-sub { font-size: 11px; font-weight: 400; color: var(--text-muted); }
+.look-preview { display: flex; height: 64px; border-radius: 6px; overflow: hidden; }
+.lp-side { width: 26%; display: flex; flex-direction: column; gap: 5px; padding: 8px 6px; background: rgba(127,127,127,.08); }
+.lp-side i, .lp-card i { display: block; height: 4px; border-radius: 2px; }
+.lp-main { flex: 1; padding: 8px; display: flex; }
+.lp-card { flex: 1; border: 1px solid; border-radius: 4px; padding: 6px; display: flex; flex-direction: column; gap: 5px; }
+.lp-card b { display: block; width: 40%; height: 8px; border-radius: 4px; margin-top: auto; }
+.look-swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.look-swatch { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--border-mid); cursor: pointer; padding: 0; position: relative; }
+.look-swatch.on { box-shadow: 0 0 0 2px var(--text); }
+.look-swatch-none { background: conic-gradient(var(--amber-200) 0 50%, var(--surface) 0); }
+.look-swatch-custom { background: conic-gradient(#e44, #ec3, #4c6, #39e, #a4e, #e44); overflow: hidden; }
+.look-swatch-custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+#lookFont { width: 100%; min-height: 40px; }
+/* style previews */
+.style-preview { background: var(--bg); gap: 6px; padding: 8px; align-items: stretch; }
+.sp-card { flex: 1; background: var(--surface); border: 1px solid var(--border-mid); border-radius: 8px; padding: 6px; display: flex; flex-direction: column; gap: 4px; box-shadow: var(--shadow); }
+.sp-card i { display: block; height: 4px; border-radius: 2px; background: var(--text); opacity: .4; }
+.sp-card i + i { width: 60%; opacity: .25; }
+.sp-card b { margin-top: auto; height: 7px; width: 55%; border-radius: 4px; background: var(--amber-200); }
+.sp-soft .sp-card { border-radius: 14px; border-color: transparent; box-shadow: 0 4px 10px rgba(0,0,0,.18); }
+.sp-soft .sp-card b { border-radius: 99px; }
+.sp-sharp .sp-card { border-radius: 0; box-shadow: none; border: 2px solid var(--text); }
+.sp-sharp .sp-card b { border-radius: 0; }
+.sp-paper { background-image: repeating-linear-gradient(0deg, rgba(127,100,60,.07) 0 1px, transparent 1px 6px); }
+.sp-paper .sp-card { border-radius: 2px; box-shadow: 1px 2px 0 rgba(0,0,0,.15); }
+
+/* ─── styles: the graphical look ─────────────────────────────────────── */
+/* Soft: round, borderless, floating. */
+[data-style="soft"] .book-card, [data-style="soft"] .book-row, [data-style="soft"] .stat-card, [data-style="soft"] .modal,
+[data-style="soft"] .series-block, [data-style="soft"] .missing-item { border-radius: 18px !important; border-color: transparent !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,.12) !important; }
+[data-style="soft"] .btn, [data-style="soft"] input.plain, [data-style="soft"] select, [data-style="soft"] textarea,
+[data-style="soft"] .badge, [data-style="soft"] .search-wrap input { border-radius: 999px !important; }
+[data-style="soft"] textarea { border-radius: 16px !important; }
+[data-style="soft"] .book-card-cover, [data-style="soft"] .hcard-cover { border-radius: 12px !important; }
+
+/* Sharp: square, flat, outlined. */
+[data-style="sharp"] *:not(.look-swatch) { border-radius: 0 !important; }
+[data-style="sharp"] .book-card, [data-style="sharp"] .book-row, [data-style="sharp"] .stat-card, [data-style="sharp"] .modal,
+[data-style="sharp"] .series-block, [data-style="sharp"] .missing-item { box-shadow: none !important; border: 1.5px solid var(--border-mid) !important; }
+[data-style="sharp"] .btn, [data-style="sharp"] .pill { border-width: 1.5px !important; }
+
+/* Paper: a faintly ruled page, serif type, cards like index cards. */
+[data-style="paper"] body { background-image:
+  repeating-linear-gradient(0deg, color-mix(in srgb, var(--text) 4%, transparent) 0 1px, transparent 1px 28px),
+  radial-gradient(circle at 20% 10%, color-mix(in srgb, var(--amber-200) 6%, transparent), transparent 60%);
+  background-attachment: fixed; }
+[data-style="paper"] .book-card, [data-style="paper"] .book-row, [data-style="paper"] .stat-card, [data-style="paper"] .series-block {
+  border-radius: 3px !important; box-shadow: 2px 3px 0 color-mix(in srgb, var(--text) 12%, transparent) !important; }
+[data-style="paper"] .book-title, [data-style="paper"] .book-row-title, [data-style="paper"] .detail-title { font-family: 'Playfair Display', Georgia, serif !important; }
+
+/* ─── fonts ──────────────────────────────────────────────────────────── */
+[data-font="system"] body, [data-font="system"] body * { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important; }
+[data-font="serif"] body, [data-font="serif"] body * { font-family: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif !important; }
+[data-font="rounded"] body, [data-font="rounded"] body * { font-family: ui-rounded, 'SF Pro Rounded', 'Nunito', 'Varela Round', system-ui, sans-serif !important; }
+[data-font="mono"] body, [data-font="mono"] body * { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace !important; }
