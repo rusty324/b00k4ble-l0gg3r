@@ -4,7 +4,7 @@
 //   Colours  a preset palette for that mode: page, surface and accent.
 //   Accent   one colour on top of the preset (or the preset's own).
 //   Style    the graphical look: corners, shadows, borders, background
-//            (Classic, Soft, Sharp, Paper) — [data-style] rules in css/look.css.
+//            (Classic, Soft, Sharp, Paper, Console) — [data-style] rules in css/look.css.
 //   Font     the typeface for the whole page — [data-font] rules there too.
 //
 // A palette is generated as CSS custom properties: the accent scale (the
@@ -42,6 +42,9 @@ const LOOK_STYLES = [
   { key: 'soft',    label: 'Soft',    note: 'Extra-round, floating cards' },
   { key: 'sharp',   label: 'Sharp',   note: 'Square corners, flat, outlined' },
   { key: 'paper',   label: 'Paper',   note: 'Textured page, bookish serif' },
+  // Console brings its own black ground, colour blocks and type, so choosing it
+  // also sets Dark, the original colours and the Console font.
+  { key: 'console', label: 'Console', note: 'Flat colour blocks, one rounded corner', also: { mode: 'dark', palette: 'classic', accent: '', font: 'console' } },
 ];
 const LOOK_FONTS = [
   { key: 'classic', label: 'Classic (DM Sans + Playfair)' },
@@ -49,6 +52,7 @@ const LOOK_FONTS = [
   { key: 'serif',   label: 'Serif' },
   { key: 'rounded', label: 'Rounded' },
   { key: 'mono',    label: 'Monospace' },
+  { key: 'console', label: 'Console (Antonio + Barlow)' },
 ];
 const LOOK_DEFAULT = { mode: 'dark', palette: 'classic', accent: '', style: 'classic', font: 'classic' };
 
@@ -117,6 +121,11 @@ function applyLook(look) {
 }
 
 function setLook(change) { applyLook({ ...readLook(), ...change }); }
+// Picking a style; Console also sets what it needs, and leaving it gives back the original font.
+function setLookStyle(key) {
+  const s = LOOK_STYLES.find(x => x.key === key) || LOOK_STYLES[0];
+  setLook({ style: s.key, ...(s.also || {}), ...(s.key !== 'console' && readLook().font === 'console' ? { font: 'classic' } : {}) });
+}
 
 // The old entry points.
 function applyTheme(mode) { setLook({ mode: LOOK_PALETTES[mode] ? mode : 'dark', palette: readLook().mode === mode ? readLook().palette : 'classic' }); }
@@ -179,7 +188,7 @@ function paintLookPanel() {
       <section class="look-sec">
         <div class="look-label" id="lookStyleLabel">Style</div>
         <div class="look-grid" role="radiogroup" aria-labelledby="lookStyleLabel">
-          ${LOOK_STYLES.map(s => card(`data-look-style="${s.key}" onclick="setLook({ style: '${s.key}' })"`, look.style === s.key, stylePreview(s), s.label, s.note)).join('')}
+          ${LOOK_STYLES.map(s => card(`data-look-style="${s.key}" onclick="setLookStyle('${s.key}')"`, look.style === s.key, stylePreview(s), s.label, s.note)).join('')}
         </div>
       </section>
       <section class="look-sec">
