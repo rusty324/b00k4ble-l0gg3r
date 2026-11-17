@@ -47,7 +47,7 @@ function renderGameCopies() {
   const plats = knownGamePlatforms();
   box.innerHTML = _gameCopies.length ? _gameCopies.map((c, i) => {
     const n = i + 1;
-    const pc = c.platform === 'pc', sub = c.format === 'subscription';
+    const pc = c.platform === 'pc', sub = c.format === 'subscription' && !PS_PLATFORMS.has(c.platform);
     const platOpts = [...new Set([...plats, ...(c.platform ? [c.platform] : [])])];
     const other = c._other || (c.platform && !plats.includes(c.platform));
     return `<fieldset class="copy-row" data-copy="${i}">
@@ -66,7 +66,7 @@ function renderGameCopies() {
         <label class="copy-field"><span>Format</span>
           <select class="plain" data-field="format" onchange="setGameCopyField(${i}, this)">
             <option value=""${!c.format ? ' selected' : ''}>Not set</option>
-            ${GAME_COPY_FORMATS.map(f => `<option value="${f}"${c.format === f ? ' selected' : ''}>${esc(GAME_FORMAT_LABEL[f])}</option>`).join('')}
+            ${GAME_COPY_FORMATS.map(f => `<option value="${f}"${c.format === f ? ' selected' : ''}>${esc(copyFormatLabel(f, c.platform))}</option>`).join('')}
           </select></label>
         ${pc || sub ? `<label class="copy-field"><span>${sub ? 'Service' : 'Store'}</span>
           <select class="plain" data-field="store" onchange="setGameCopyField(${i}, this)">${storeOptions(c, 'store')}</select></label>` : ''}
@@ -119,12 +119,14 @@ function setGameCopyField(i, el, repaint = false) {
     c._other = v === '__other';
     c.platform = c._other ? '' : v;
     if (c.platform !== 'pc') { delete c.opensIn; if (c.format !== 'subscription') delete c.store; }
+    if (c.format === 'subscription' && PS_PLATFORMS.has(c.platform)) c.store = 'ps-plus';
   } else if (f === 'platformText') {
     c.platform = v.trim().toLowerCase();
     if (!repaint) { syncGameCopySummary(); return; }
   } else if (f === 'format') {
     c.format = v;
     if (c.platform !== 'pc' && v !== 'subscription') delete c.store;
+    if (v === 'subscription' && PS_PLATFORMS.has(c.platform)) c.store = 'ps-plus';
   } else if (f === 'store' || f === 'opensIn') {
     const flag = f === 'store' ? '_storeOther' : '_opensOther';
     c[flag] = v === '__other';
